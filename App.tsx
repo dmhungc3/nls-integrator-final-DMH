@@ -99,8 +99,7 @@ const App: React.FC = () => {
           <div className="absolute inset-x-0 top-0 h-full bg-slate-50/95 backdrop-blur-xl shadow-lg border-b border-white/50 rounded-b-[2rem] -z-10"></div>
           
           <div className="py-3 px-4 flex items-center justify-between gap-4 h-20">
-              
-              {/* 1. TÁC GIẢ */}
+              {/* TÁC GIẢ */}
               <div className="flex items-center gap-3 group shrink-0">
                   <div className="relative w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 shrink-0 ring-2 ring-white group-hover:scale-105 transition-transform">
                       <User className="w-5 h-5" />
@@ -113,7 +112,7 @@ const App: React.FC = () => {
                   </div>
               </div>
 
-              {/* 2. CHỮ CHẠY */}
+              {/* CHỮ CHẠY */}
               <div className="flex-1 overflow-hidden relative h-10 flex items-center bg-indigo-50/50 rounded-lg border border-indigo-100/50 mx-2">
                  <div className="animate-marquee flex items-center gap-4 text-indigo-700 font-bold text-sm tracking-wide">
                     <Sparkles className="w-4 h-4 text-amber-500 inline-block" /> 
@@ -128,7 +127,7 @@ const App: React.FC = () => {
                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-indigo-50 to-transparent z-10"></div>
               </div>
 
-              {/* 3. API KEY */}
+              {/* API KEY */}
               <div className="flex items-center justify-end shrink-0">
                   {isKeySaved ? (
                       <div className="flex items-center gap-2 bg-white p-1 pl-3 pr-1 rounded-full border border-emerald-100 shadow-sm">
@@ -169,8 +168,55 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-6 mb-6">
-                      <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase ml-1">Môn học</label><div className="relative"><select className="w-full p-4 rounded-2xl border border-slate-200 bg-white/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 appearance-none" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}><option value="">-- Chọn môn --</option><optgroup label="Cơ bản"><option value="Toán">Toán</option><option value="Ngữ văn">Văn</option><option value="Tiếng Anh">Anh</option></optgroup><optgroup label="KHTN"><option value="Vật lí">Lý</option><option value="Hóa học">Hóa</option><option value="Sinh học">Sinh</option></optgroup><optgroup label="KHXH"><option value="Lịch sử">Sử</option><option value="Địa lí">Địa</option><option value="GDKT & PL">GDKT&PL</option></optgroup><optgroup label="Công nghệ"><option value="Tin học">Tin</option><option value="Công nghệ (Công nghiệp)">CN (CN)</option><option value="Công nghệ (Nông nghiệp)">CN (NN)</option></optgroup></select><ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" /></div></div>
                       
+                      {/* --- PHẦN MÔN HỌC (ĐÃ CHUẨN HÓA GDPT 2018) --- */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">Môn học (GDPT 2018)</label>
+                        <div className="relative">
+                            <select 
+                                className="w-full p-4 rounded-2xl border border-slate-200 bg-white/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 appearance-none" 
+                                value={state.subject} 
+                                onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}
+                            >
+                                <option value="">-- Chọn môn học --</option>
+                                <optgroup label="Môn Bắt buộc (Chung)">
+                                    <option value="Toán">Toán học</option>
+                                    <option value="Ngữ văn">Ngữ văn</option>
+                                    <option value="Tiếng Anh">Tiếng Anh</option>
+                                    <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                </optgroup>
+
+                                <optgroup label="Cấp 3 (THPT): Tự chọn & Chuyên sâu">
+                                    <option value="Vật lí">Vật lí</option>
+                                    <option value="Hóa học">Hóa học</option>
+                                    <option value="Sinh học">Sinh học</option>
+                                    <option value="Lịch sử">Lịch sử</option>
+                                    <option value="Địa lí">Địa lí</option>
+                                    <option value="GDKT & PL">Giáo dục KT & PL</option>
+                                    <option value="Tin học">Tin học</option>
+                                    <option value="Công nghệ (Công nghiệp)">Công nghệ (Công nghiệp)</option>
+                                    <option value="Công nghệ (Nông nghiệp)">Công nghệ (Nông nghiệp)</option>
+                                    <option value="GDQP & AN">Giáo dục QP & AN</option>
+                                </optgroup>
+
+                                <optgroup label="Cấp 2 (THCS): Tích hợp & Cơ bản">
+                                    <option value="Khoa học tự nhiên">Khoa học tự nhiên (Lý-Hóa-Sinh)</option>
+                                    <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
+                                    <option value="GDCD">Giáo dục công dân (GDCD)</option>
+                                    <option value="Công nghệ">Công nghệ (THCS)</option>
+                                </optgroup>
+
+                                <optgroup label="Nghệ thuật & HĐ Giáo dục">
+                                    <option value="Âm nhạc">Âm nhạc</option>
+                                    <option value="Mỹ thuật">Mỹ thuật</option>
+                                    <option value="HĐ Trải nghiệm, HN">HĐ Trải nghiệm, Hướng nghiệp</option>
+                                    <option value="Nội dung GD địa phương">Nội dung GD địa phương</option>
+                                </optgroup>
+                            </select>
+                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+                        </div>
+                      </div>
+
                       {/* --- PHẦN KHỐI LỚP (ĐÃ CHIA NHÓM) --- */}
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase ml-1">Khối lớp</label>
