@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight, Key,
-  User, School, Terminal, Smartphone, Zap
+  User, School, Terminal, Smartphone, Zap, Layers
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
-import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
+import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils'; // Import thêm PEDAGOGY_MODELS
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 import SmartEditor from './components/SmartEditor';
@@ -13,6 +13,9 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
+  // Thêm state pedagogy
+  const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
+  
   const [state, setState] = useState<AppState>({
     file: null, subject: '', grade: '', isProcessing: false, step: 'upload', logs: [],
     config: { insertObjectives: true, insertMaterials: true, insertActivities: true, appendTable: true },
@@ -51,11 +54,15 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, isProcessing: true, logs: [`🚀 Kích hoạt AI Mode: ${mode === 'NAI' ? 'AI Competency' : 'Digital Competency'}...`] }));
 
     try {
+      addLog(`⚙️ Mô hình sư phạm: ${PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS].name}`);
       addLog("Đang đọc file Word...");
       const textContext = await extractTextFromDocx(state.file);
-      const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode);
+      
+      // Truyền pedagogy vào hàm tạo prompt
+      const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
+      
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✓ Đã tạo nội dung ${mode}.`);
+      addLog(`✓ Đã tạo nội dung ${mode} theo mô hình ${pedagogy}.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
       addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Unknown"}`);
@@ -68,7 +75,7 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "Đang ghi file Word..."] }));
     try {
       const newBlob = await injectContentIntoDocx(state.file, finalContent, mode, addLog);
-      setState(prev => ({ ...prev, isProcessing: false, step: 'done', result: { fileName: `${mode}_${state.file?.name}`, blob: newBlob }, logs: [...prev.logs, "✨ Thành công!"] }));
+      setState(prev => ({ ...prev, isProcessing: false, step: 'done', result: { fileName: `${mode}_${pedagogy}_${state.file?.name}`, blob: newBlob }, logs: [...prev.logs, "✨ Thành công!"] }));
     } catch (error) {
        addLog(`❌ Lỗi tạo file: ${error instanceof Error ? error.message : "Unknown"}`);
        setState(prev => ({ ...prev, isProcessing: false }));
@@ -88,11 +95,9 @@ const App: React.FC = () => {
         }
       `}</style>
 
-      {/* --- STICKY HEADER --- */}
+      {/* HEADER GIỮ NGUYÊN */}
       <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-              
-              {/* TÁC GIẢ (Sửa lại danh xưng cho chuyên nghiệp) */}
               <div className="flex items-center gap-3 shrink-0">
                   <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md">
                       <User className="w-5 h-5" />
@@ -102,8 +107,6 @@ const App: React.FC = () => {
                       <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">THPT Lý Nhân Tông</span>
                   </div>
               </div>
-
-              {/* CHỮ CHẠY (Nội dung Pro hơn) */}
               <div className="flex-1 overflow-hidden relative h-9 flex items-center bg-slate-100/50 rounded-md border border-slate-200/50 mx-4 hidden md:flex">
                  <div className="animate-marquee flex items-center gap-6 text-indigo-700 font-bold text-xs tracking-wide">
                     <span className="flex items-center gap-2"><Sparkles className="w-3 h-3 text-amber-500" /> NLS Integrator Pro — Giải pháp Tích hợp Năng lực Số & AI</span>
@@ -117,8 +120,6 @@ const App: React.FC = () => {
                  <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-100 to-transparent z-10"></div>
                  <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-slate-100 to-transparent z-10"></div>
               </div>
-
-              {/* API KEY */}
               <div className="flex items-center justify-end shrink-0">
                   {isKeySaved ? (
                       <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
@@ -133,10 +134,9 @@ const App: React.FC = () => {
           </div>
       </div>
 
-      {/* --- MAIN DASHBOARD --- */}
       <div className="w-full max-w-7xl px-4 py-6 flex flex-col gap-6">
         
-        {/* STEPPER COMPACT */}
+        {/* STEPPER */}
         <div className="flex items-center justify-center">
              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
                 <span className={`text-xs font-bold ${state.step === 'upload' ? 'text-indigo-600' : 'text-slate-400'}`}>1. Tải lên</span>
@@ -149,7 +149,6 @@ const App: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full">
           
-          {/* CỘT TRÁI */}
           <div className="lg:col-span-8 flex flex-col gap-4">
             {state.step === 'upload' && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -201,6 +200,7 @@ const App: React.FC = () => {
                                   </optgroup>
                               </select>
                           </div>
+                          
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-500 uppercase">Khối lớp</label>
                               <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
@@ -209,6 +209,21 @@ const App: React.FC = () => {
                                   <optgroup label="THCS (Cấp 2)"><option value="Lớp 6">Lớp 6</option><option value="Lớp 7">Lớp 7</option><option value="Lớp 8">Lớp 8</option><option value="Lớp 9">Lớp 9</option></optgroup>
                               </select>
                           </div>
+                      </div>
+
+                      {/* --- THÊM PHẦN CHỌN MÔ HÌNH DẠY HỌC --- */}
+                      <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1"><Layers className="w-3 h-3" /> Mô hình Sư phạm (Pedagogy Model)</label>
+                          <select 
+                              className="w-full p-3 rounded-xl border-2 border-indigo-100 bg-indigo-50/50 text-sm font-bold text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer hover:bg-indigo-50"
+                              value={pedagogy}
+                              onChange={(e) => setPedagogy(e.target.value)}
+                          >
+                              {Object.entries(PEDAGOGY_MODELS).map(([key, value]) => (
+                                  <option key={key} value={key}>{value.name}</option>
+                              ))}
+                          </select>
+                          <p className="text-[10px] text-slate-500 italic px-1">{PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS].desc}</p>
                       </div>
 
                       <label className={`flex items-center justify-center w-full h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer hover:bg-slate-50 group ${state.file ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300'}`}>
@@ -249,7 +264,6 @@ const App: React.FC = () => {
             )}
           </div>
           
-          {/* CỘT PHẢI */}
           <div className="lg:col-span-4 flex flex-col gap-4 h-full">
              <div className="bg-slate-900 rounded-2xl p-4 shadow-lg flex flex-col h-[280px] border border-slate-800">
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
