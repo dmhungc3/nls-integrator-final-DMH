@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight, Key,
-  User, School, Phone, Activity, Terminal, Smartphone, Zap
+  User, School, Phone, Terminal, Smartphone, Zap
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
@@ -91,8 +91,6 @@ const App: React.FC = () => {
       {/* --- STICKY HEADER --- */}
       <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-              
-              {/* TÁC GIẢ */}
               <div className="flex items-center gap-3 shrink-0">
                   <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md">
                       <User className="w-5 h-5" />
@@ -103,7 +101,6 @@ const App: React.FC = () => {
                   </div>
               </div>
 
-              {/* CHỮ CHẠY */}
               <div className="flex-1 overflow-hidden relative h-9 flex items-center bg-slate-100/50 rounded-md border border-slate-200/50 mx-4 hidden md:flex">
                  <div className="animate-marquee flex items-center gap-6 text-indigo-700 font-bold text-xs tracking-wide">
                     <span>🚀 NLS Integrator Pro — Tích hợp Năng lực Số & AI vào Giáo án 2018</span>
@@ -118,7 +115,6 @@ const App: React.FC = () => {
                  <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-slate-100 to-transparent z-10"></div>
               </div>
 
-              {/* API KEY */}
               <div className="flex items-center justify-end shrink-0">
                   {isKeySaved ? (
                       <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
@@ -167,48 +163,47 @@ const App: React.FC = () => {
                   <div className="p-6 space-y-6">
                       <div className="grid grid-cols-2 gap-4">
                           
-                          {/* --- SELECT MÔN HỌC (ĐẦY ĐỦ GDPT 2018) --- */}
+                          {/* --- SELECT MÔN HỌC (ĐÃ SỬA TÊN GỌI CHUẨN) --- */}
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-500 uppercase">Môn học (GDPT 2018)</label>
                               <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                                   <option value="">-- Chọn môn học --</option>
+                                  
                                   <optgroup label="Môn Bắt buộc (Chung)">
                                       <option value="Toán">Toán học</option>
                                       <option value="Ngữ văn">Ngữ văn</option>
                                       <option value="Tiếng Anh">Tiếng Anh</option>
+                                      <option value="Lịch sử">Lịch sử (Bắt buộc)</option>
                                       <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                      <option value="GDQP & AN">Giáo dục QP & AN</option>
+                                      <option value="HĐ Trải nghiệm, HN">HĐ Trải nghiệm, HN</option>
+                                      <option value="Nội dung GD địa phương">Nội dung GD địa phương</option>
                                   </optgroup>
 
-                                  <optgroup label="Cấp 3 (THPT): Tự chọn & Chuyên sâu">
+                                  <optgroup label="Cấp 3: Môn Lựa chọn (Theo tổ hợp)">
                                       <option value="Vật lí">Vật lí</option>
                                       <option value="Hóa học">Hóa học</option>
                                       <option value="Sinh học">Sinh học</option>
-                                      <option value="Lịch sử">Lịch sử</option>
                                       <option value="Địa lí">Địa lí</option>
                                       <option value="GDKT & PL">Giáo dục KT & PL</option>
                                       <option value="Tin học">Tin học</option>
                                       <option value="Công nghệ (Công nghiệp)">Công nghệ (Công nghiệp)</option>
                                       <option value="Công nghệ (Nông nghiệp)">Công nghệ (Nông nghiệp)</option>
-                                      <option value="GDQP & AN">Giáo dục QP & AN</option>
-                                  </optgroup>
-
-                                  <optgroup label="Cấp 2 (THCS): Tích hợp & Cơ bản">
-                                      <option value="Khoa học tự nhiên">Khoa học tự nhiên (Lý-Hóa-Sinh)</option>
-                                      <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
-                                      <option value="GDCD">Giáo dục công dân (GDCD)</option>
-                                      <option value="Công nghệ">Công nghệ (THCS)</option>
-                                  </optgroup>
-
-                                  <optgroup label="Nghệ thuật & HĐ Giáo dục">
                                       <option value="Âm nhạc">Âm nhạc</option>
                                       <option value="Mỹ thuật">Mỹ thuật</option>
-                                      <option value="HĐ Trải nghiệm, HN">HĐ Trải nghiệm, Hướng nghiệp</option>
-                                      <option value="Nội dung GD địa phương">Nội dung GD địa phương</option>
+                                  </optgroup>
+
+                                  <optgroup label="Cấp 2 (THCS): Môn Tích hợp">
+                                      <option value="Khoa học tự nhiên">Khoa học tự nhiên (Lý-Hóa-Sinh)</option>
+                                      <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
+                                      <option value="GDCD">Giáo dục công dân</option>
+                                      <option value="Công nghệ">Công nghệ</option>
+                                      <option value="Tin học">Tin học</option>
                                   </optgroup>
                               </select>
                           </div>
                           
-                          {/* --- SELECT KHỐI LỚP (CHIA NHÓM) --- */}
+                          {/* --- SELECT KHỐI LỚP --- */}
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-500 uppercase">Khối lớp</label>
                               <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
