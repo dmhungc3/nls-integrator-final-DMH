@@ -110,7 +110,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100 pb-20">
       
       {/* BACKGROUND */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
@@ -118,17 +118,23 @@ const App: React.FC = () => {
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-200/30 rounded-full blur-[100px]"></div>
       </div>
 
-      {/* TOP BAR - SỬA LẠI GIAO DIỆN TẠI ĐÂY */}
-      <div className="relative z-10 w-full max-w-7xl mb-8">
-        <div className="bg-white/80 backdrop-blur-md p-4 rounded-3xl border border-white/50 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* --- TOP BAR (ĐÃ SỬA ĐỂ DÍNH LẠI) --- */}
+      {/* Thêm 'sticky top-4 z-50' để thanh này luôn nổi và dính ở trên đầu */}
+      <div className="sticky top-4 z-50 w-full max-w-7xl mb-8">
+        <div className="bg-white/80 backdrop-blur-md p-4 rounded-3xl border border-white/50 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
             
-            {/* Tác giả (Bên trái) */}
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 shrink-0">
-                  <User className="w-6 h-6" />
+            {/* Tác giả (Bên trái) - Thêm hiệu ứng nổi bật */}
+            <div className="flex items-center gap-4 group">
+               {/* Thêm lớp tạo hiệu ứng phát sáng (glow) */}
+               <div className="relative">
+                 <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-cyan-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+                 <div className="relative w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 shrink-0 ring-2 ring-white">
+                    <User className="w-6 h-6" />
+                 </div>
                </div>
+               
                <div className="flex flex-col">
-                  <h2 className="font-bold text-slate-800 text-base">Đặng Mạnh Hùng</h2>
+                  <h2 className="font-bold text-slate-800 text-base group-hover:text-indigo-700 transition-colors">Tác giả: Đặng Mạnh Hùng</h2>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 font-medium mt-1">
                       <span className="flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded text-indigo-700"><School className="w-3 h-3" /> THPT Lý Nhân Tông</span>
                       <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> 097 8386 357</span>
@@ -139,7 +145,7 @@ const App: React.FC = () => {
             {/* API Key (Bên phải) */}
             <div className="flex items-center justify-end w-full md:w-auto">
                 {isKeySaved ? (
-                    <div className="group flex items-center gap-3 bg-white p-2 pl-4 pr-2 rounded-full border border-emerald-100 shadow-sm hover:shadow-md transition-all">
+                    <div className="group flex items-center gap-3 bg-white/90 p-2 pl-4 pr-2 rounded-full border border-emerald-100 shadow-sm hover:shadow-md transition-all">
                         <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
                             <div className="relative flex h-2 w-2">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -152,7 +158,7 @@ const App: React.FC = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-indigo-100 shadow-sm w-full md:w-80 focus-within:ring-2 focus-within:ring-indigo-200 transition-all">
+                    <div className="flex items-center gap-2 bg-white/90 p-1 rounded-2xl border border-indigo-100 shadow-sm w-full md:w-80 focus-within:ring-2 focus-within:ring-indigo-200 transition-all">
                         <div className="pl-3"><Key className="w-4 h-4 text-amber-500" /></div>
                         <input 
                             type="password" 
@@ -170,7 +176,7 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl">
+      <div className="relative z-10 w-full max-w-7xl mt-4">
         <header className="mb-10 text-center">
           <div className="inline-flex items-center justify-center p-3 bg-white/80 backdrop-blur rounded-2xl mb-4 shadow-xl shadow-indigo-100 border border-white">
             <Sparkles className="w-8 h-8 text-indigo-600" />
