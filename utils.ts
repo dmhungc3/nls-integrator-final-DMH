@@ -16,33 +16,25 @@ const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: stri
   "Lớp 12": { ten: "Nâng cao 1", kyHieu: "NC1", nhiemVu: "Nhiệm vụ phức tạp, hướng dẫn người khác" },
 };
 
-// 1. PROMPT CHO NĂNG LỰC SỐ (DIGITAL COMPETENCY) - CŨ
+// 1. KHUNG NĂNG LỰC SỐ (ĐÃ BỔ SUNG MỤC 6: AI CƠ BẢN)
 const NLS_CONTEXT = `
-KHUNG NĂNG LỰC SỐ (Cốt lõi):
-1. Khai thác dữ liệu: Tìm kiếm, lọc, đánh giá, quản lý dữ liệu.
-2. Giao tiếp hợp tác: Tương tác qua Zalo/Padlet, chia sẻ tài nguyên, Netiquette.
-3. Sáng tạo nội dung: Soạn thảo (Word), Trình chiếu (PPT), Đa phương tiện (Canva/Video).
-4. An toàn số: Bảo vệ thiết bị, dữ liệu, sức khỏe.
-5. Giải quyết vấn đề: Xử lý lỗi kỹ thuật, tùy chỉnh môi trường số.
+KHUNG NĂNG LỰC SỐ (DigComp):
+1. Khai thác dữ liệu: Tìm kiếm thông tin, đánh giá độ tin cậy, lưu trữ dữ liệu.
+2. Giao tiếp và hợp tác: Tương tác qua mạng xã hội (Zalo, Padlet), chia sẻ tài liệu, quy tắc ứng xử mạng (Netiquette).
+3. Sáng tạo nội dung số: Soạn thảo văn bản, tạo bài trình chiếu, chỉnh sửa ảnh/video cơ bản.
+4. An toàn số: Bảo vệ thiết bị, dữ liệu cá nhân, sức khỏe thể chất và tinh thần.
+5. Giải quyết vấn đề: Xử lý lỗi kỹ thuật, sử dụng công nghệ để giải quyết bài tập.
+6. Trí tuệ nhân tạo (Mới): Hiểu biết cơ bản về AI, sử dụng AI để hỗ trợ học tập đơn giản.
 `;
 
-// 2. PROMPT CHO NĂNG LỰC AI (AI COMPETENCY) - MỚI
+// 2. KHUNG NĂNG LỰC AI CHUYÊN SÂU (Dành cho chế độ NAI)
 const NAI_CONTEXT = `
-KHUNG NĂNG LỰC TRÍ TUỆ NHÂN TẠO (AI Competency):
-1. Hiểu biết về AI (AI Literacy):
-- Hiểu khái niệm cơ bản: AI tạo sinh (GenAI), LLM là gì.
-- Phân biệt được AI và phần mềm truyền thống.
-2. Kỹ năng sử dụng AI (AI Usage):
-- Kỹ năng Prompting (Ra lệnh): Biết cách đặt câu hỏi rõ ràng, bối cảnh cụ thể để AI trả lời đúng.
-- Sử dụng công cụ: ChatGPT, Gemini, Copilot, Canva Magic, Gamma App.
-3. Tư duy phản biện với AI (Critical Thinking):
-- Fact-check: Luôn kiểm chứng thông tin AI đưa ra, không tin tuyệt đối.
-- Phát hiện ảo giác (Hallucination) của AI.
-4. Đạo đức và Trách nhiệm (AI Ethics):
-- Không gian lận: Sử dụng AI để hỗ trợ ý tưởng, không sao chép nguyên văn để nộp bài.
-- Tôn trọng bản quyền và quyền riêng tư dữ liệu.
-5. Sáng tạo cùng AI (Co-creation):
-- Dùng AI làm "Trợ lý ảo" để brainstorm ý tưởng, sửa lỗi văn bản, tạo hình ảnh minh họa.
+KHUNG NĂNG LỰC AI (AI Competency - Chuyên sâu):
+1. Hiểu biết về AI (AI Literacy): Hiểu cơ chế hoạt động của GenAI, phân biệt AI và con người.
+2. Kỹ năng Prompting: Kỹ thuật đặt câu lệnh (Prompt) rõ ràng, bối cảnh cụ thể, tinh chỉnh câu hỏi.
+3. Tư duy phản biện (Critical Thinking): Kiểm chứng thông tin (Fact-check), phát hiện ảo giác AI, không tin tưởng mù quáng.
+4. Đạo đức AI (AI Ethics): Liêm chính học thuật, không gian lận, tôn trọng bản quyền và quyền riêng tư.
+5. Đồng sáng tạo (Co-creation): Sử dụng AI như "Trợ lý ảo" (Co-pilot) để brainstorm, lập dàn ý, tối ưu hóa giải pháp.
 `;
 
 /**
@@ -52,7 +44,7 @@ export const createIntegrationTextPrompt = (
   text: string, 
   subject: string, 
   grade: string, 
-  mode: 'NLS' | 'NAI' // Thêm tham số mode
+  mode: 'NLS' | 'NAI'
 ): string => {
   const mucDo = LEVEL_MAPPING[grade] || { ten: "Cơ bản", kyHieu: "CB", nhiemVu: "Cơ bản" };
   
@@ -62,9 +54,10 @@ export const createIntegrationTextPrompt = (
     ? "Chuyên gia Giáo dục về AI Generative (Trí tuệ nhân tạo)" 
     : "Chuyên gia Sư phạm số và Công nghệ giáo dục";
   
+  // Hướng dẫn trọng tâm
   const focusInstruction = mode === 'NAI'
-    ? "Tập trung đề xuất các hoạt động học sinh sử dụng AI (ChatGPT, Gemini, Canva...) làm trợ lý (Co-pilot), rèn luyện kỹ năng Prompting và Tư duy phản biện."
-    : "Tập trung đề xuất các hoạt động sử dụng phần mềm, thiết bị số, khai thác Internet và công cụ CNTT truyền thống.";
+    ? "Tập trung đề xuất hoạt động sử dụng AI (ChatGPT, Gemini) làm trợ lý, rèn luyện kỹ năng Prompting và Phản biện."
+    : "Tập trung đề xuất sử dụng phần mềm, thiết bị số, Internet. CÓ THỂ kết hợp AI ở mức độ cơ bản (tra cứu, gợi ý).";
 
   return `
     Đóng vai là: ${role}.
@@ -84,7 +77,7 @@ export const createIntegrationTextPrompt = (
     YÊU CẦU ĐẦU RA (BẮT BUỘC DÙNG ĐÚNG CÁC THẺ SAU ĐỂ MÁY TÍNH ĐỌC):
 
     ===BAT_DAU_MUC_TIEU===
-    (Viết 3-4 gạch đầu dòng mục tiêu. Cấu trúc: [Mã]: [Hành động]. Ví dụ: Sử dụng AI để gợi ý dàn ý...)
+    (Viết 3-4 gạch đầu dòng mục tiêu. Cấu trúc: [Mã]: [Hành động]. Ví dụ: 6.1.TC1: Sử dụng AI để...)
     ===KET_THUC_MUC_TIEU===
 
     ===BAT_DAU_HOC_LIEU===
@@ -108,9 +101,6 @@ export const createIntegrationTextPrompt = (
   `;
 };
 
-/**
- * Hàm đọc file Word sử dụng thư viện Mammoth (Hiện đại & Ổn định hơn FileReader cũ)
- */
 export const extractTextFromDocx = async (file: File): Promise<string> => {
   const arrayBuffer = await file.arrayBuffer();
   const result = await mammoth.extractRawText({ arrayBuffer });
