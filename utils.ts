@@ -1,6 +1,7 @@
 import mammoth from 'mammoth';
 
 // --- CẤU HÌNH MỨC ĐỘ NĂNG LỰC ---
+// (Giữ nguyên phần LEVEL_MAPPING cũ)
 const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: string }> = {
   "Lớp 1": { ten: "Khám phá (Level 1)", kyHieu: "L1", nhiemVu: "Nhận biết, thao tác đơn giản." },
   "Lớp 2": { ten: "Khám phá (Level 1)", kyHieu: "L1", nhiemVu: "Sử dụng phần mềm đơn giản." },
@@ -16,9 +17,9 @@ const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: stri
   "Lớp 12": { ten: "Chuyên gia (Level 6)", kyHieu: "L6", nhiemVu: "Quản trị dự án, giải pháp mới." },
 };
 
-// --- ĐỊNH NGHĨA CÁC MÔ HÌNH DẠY HỌC (PEDAGOGICAL MODELS) ---
+// --- ĐỊNH NGHĨA CÁC MÔ HÌNH DẠY HỌC ---
 export const PEDAGOGY_MODELS = {
-  "DEFAULT": { name: "Mặc định (Truyền thống)", desc: "Tích hợp hoạt động vào các bước lên lớp thông thường." },
+  "DEFAULT": { name: "Mặc định (Cơ bản)", desc: "Tích hợp hoạt động vào các bước lên lớp thông thường." },
   "5E": { name: "Mô hình 5E (STEM/KHTN)", desc: "5 bước: Gắn kết (Engage) - Khám phá (Explore) - Giải thích (Explain) - Áp dụng (Elaborate) - Đánh giá (Evaluate)." },
   "PBL": { name: "Dạy học Dự án (Project-Based)", desc: "Học sinh giải quyết vấn đề thực tế thông qua việc thực hiện một dự án dài hạn." },
   "FLIPPED": { name: "Lớp học đảo ngược (Flipped)", desc: "Học sinh xem tài liệu/video tại nhà (dùng CNTT), lên lớp để thảo luận và thực hành." },
@@ -42,12 +43,10 @@ const NAI_CONTEXT = `KHUNG NĂNG LỰC AI (AI Literacy):
 
 export const createIntegrationTextPrompt = (
   text: string, subject: string, grade: string, mode: 'NLS' | 'NAI',
-  pedagogy: string // Thêm tham số Mô hình dạy học
+  pedagogy: string
 ): string => {
   const mucDo = LEVEL_MAPPING[grade] || { ten: "Cơ bản", kyHieu: "L1", nhiemVu: "Làm quen" };
   const context = mode === 'NAI' ? NAI_CONTEXT : NLS_CONTEXT;
-  
-  // Lấy thông tin mô hình
   const selectedModel = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS] || PEDAGOGY_MODELS["DEFAULT"];
 
   const instruction = mode === 'NAI'
@@ -58,9 +57,13 @@ export const createIntegrationTextPrompt = (
     Đóng vai: Chuyên gia Sư phạm số Quốc tế & GDPT 2018.
     Nhiệm vụ: Tích hợp ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'} vào giáo án môn ${subject} lớp ${grade}.
     
-    YÊU CẦU ĐẶC BIỆT - MÔ HÌNH DẠY HỌC: **${selectedModel.name}**
-    Hãy thiết kế các hoạt động tuân thủ chặt chẽ theo mô hình này: ${selectedModel.desc}.
+    YÊU CẦU QUAN TRỌNG VỀ TRÌNH BÀY (FORMAT):
+    1. Trình bày KHOA HỌC, NGẮN GỌN, SÚC TÍCH.
+    2. Sử dụng gạch đầu dòng (-) cho các ý nhỏ.
+    3. KHÔNG viết thành đoạn văn dài dòng.
+    4. Phân tách rõ ràng giữa Giáo viên và Học sinh.
     
+    MÔ HÌNH DẠY HỌC: **${selectedModel.name}** (${selectedModel.desc}).
     ĐỐI TƯỢNG: ${mucDo.ten} (${mucDo.kyHieu}) - ${mucDo.nhiemVu}.
     KHUNG NĂNG LỰC: ${context}
     ${instruction}
@@ -70,26 +73,34 @@ export const createIntegrationTextPrompt = (
     ${text.substring(0, 30000)}
     """
 
-    YÊU CẦU ĐẦU RA (BẮT BUỘC DÙNG CÁC THẺ SAU):
+    YÊU CẦU ĐẦU RA (BẮT BUỘC DÙNG ĐÚNG CÁC THẺ SAU):
 
     ===BAT_DAU_MUC_TIEU===
-    (Mục tiêu phát triển năng lực theo mô hình ${selectedModel.name})
+    (Viết mục tiêu bổ sung. Dùng gạch đầu dòng. Ví dụ:
+    - Kiến thức: ...
+    - Năng lực số: ...
+    - Phẩm chất: ...)
     ===KET_THUC_MUC_TIEU===
 
     ===BAT_DAU_HOC_LIEU===
-    (Công cụ/Phần mềm cần thiết)
+    (Chia rõ 2 phần:
+    1. Giáo viên: (Liệt kê phần mềm, thiết bị, link video...)
+    2. Học sinh: (Thiết bị cá nhân, App cần cài...))
     ===KET_THUC_HOC_LIEU===
 
     ===BAT_DAU_HOAT_DONG===
     ANCHOR: (Trích dẫn điểm neo trong bài)
-    CONTENT: (Mô tả hoạt động theo tinh thần ${selectedModel.name}. Bắt đầu bằng **➤ Hoạt động (${mode}):**. Nêu rõ: GV làm gì? HS dùng công cụ gì?)
+    CONTENT: (Mô tả hoạt động. Bắt đầu bằng **➤ Hoạt động (${mode}):**. Xuống dòng rõ ràng:
+    - GV: ...
+    - HS: ...
+    - Sản phẩm: ...)
     ---PHAN_CACH_HOAT_DONG---
     ANCHOR: (Điểm neo 2...)
     CONTENT: (Nội dung 2...)
     ===KET_THUC_HOAT_DONG===
 
     ===BAT_DAU_PHU_LUC===
-    (Tiêu chí đánh giá/Rubric cho hoạt động)
+    (Bảng tiêu chí đánh giá ngắn gọn)
     ===KET_THUC_PHU_LUC===
   `;
 };
