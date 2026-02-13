@@ -77,7 +77,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
-      {/* CSS Animation cho chữ chạy */}
       <style>{`
         @keyframes marquee {
           0% { transform: translateX(100%); }
@@ -89,7 +88,7 @@ const App: React.FC = () => {
         }
       `}</style>
 
-      {/* --- STICKY HEADER (CỐ ĐỊNH) --- */}
+      {/* --- STICKY HEADER --- */}
       <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
               
@@ -104,7 +103,7 @@ const App: React.FC = () => {
                   </div>
               </div>
 
-              {/* CHỮ CHẠY (MARQUEE) */}
+              {/* CHỮ CHẠY */}
               <div className="flex-1 overflow-hidden relative h-9 flex items-center bg-slate-100/50 rounded-md border border-slate-200/50 mx-4 hidden md:flex">
                  <div className="animate-marquee flex items-center gap-6 text-indigo-700 font-bold text-xs tracking-wide">
                     <span>🚀 NLS Integrator Pro — Tích hợp Năng lực Số & AI vào Giáo án 2018</span>
@@ -150,17 +149,15 @@ const App: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full">
           
-          {/* CỘT TRÁI: KHU VỰC THAO TÁC (WORKSTATION) */}
+          {/* CỘT TRÁI: THAO TÁC */}
           <div className="lg:col-span-8 flex flex-col gap-4">
             {state.step === 'upload' && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                  {/* Header Card */}
                   <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                       <div className="flex items-center gap-2 text-slate-700 font-bold">
                           <BookOpen className="w-5 h-5 text-indigo-600" />
                           <span>Thiết lập Giáo án</span>
                       </div>
-                      {/* MODE SWITCHER COMPACT */}
                       <div className="flex bg-slate-200/50 p-1 rounded-lg">
                           <button onClick={() => setMode('NLS')} className={`px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${mode === 'NLS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}><Smartphone className="w-3.5 h-3.5" /> Năng lực Số</button>
                           <button onClick={() => setMode('NAI')} className={`px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${mode === 'NAI' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}><Zap className="w-3.5 h-3.5" /> Năng lực AI</button>
@@ -168,65 +165,85 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="p-6 space-y-6">
-                      {/* Grid chọn Môn & Khối */}
                       <div className="grid grid-cols-2 gap-4">
+                          
+                          {/* --- SELECT MÔN HỌC (ĐẦY ĐỦ GDPT 2018) --- */}
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-500 uppercase">Môn học (GDPT 2018)</label>
                               <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
-                                  <option value="">-- Chọn môn --</option>
-                                  <optgroup label="Môn Chung"><option value="Toán">Toán</option><option value="Ngữ văn">Văn</option><option value="Tiếng Anh">Anh</option></optgroup>
-                                  <optgroup label="KHTN"><option value="Vật lí">Lý</option><option value="Hóa học">Hóa</option><option value="Sinh học">Sinh</option></optgroup>
-                                  <optgroup label="KHXH"><option value="Lịch sử">Sử</option><option value="Địa lí">Địa</option><option value="GDKT & PL">GDKT&PL</option></optgroup>
-                                  <optgroup label="Công nghệ"><option value="Tin học">Tin</option><option value="Công nghệ (Công nghiệp)">CN (CN)</option><option value="Công nghệ (Nông nghiệp)">CN (NN)</option></optgroup>
+                                  <option value="">-- Chọn môn học --</option>
+                                  <optgroup label="Môn Bắt buộc (Chung)">
+                                      <option value="Toán">Toán học</option>
+                                      <option value="Ngữ văn">Ngữ văn</option>
+                                      <option value="Tiếng Anh">Tiếng Anh</option>
+                                      <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                  </optgroup>
+
+                                  <optgroup label="Cấp 3 (THPT): Tự chọn & Chuyên sâu">
+                                      <option value="Vật lí">Vật lí</option>
+                                      <option value="Hóa học">Hóa học</option>
+                                      <option value="Sinh học">Sinh học</option>
+                                      <option value="Lịch sử">Lịch sử</option>
+                                      <option value="Địa lí">Địa lí</option>
+                                      <option value="GDKT & PL">Giáo dục KT & PL</option>
+                                      <option value="Tin học">Tin học</option>
+                                      <option value="Công nghệ (Công nghiệp)">Công nghệ (Công nghiệp)</option>
+                                      <option value="Công nghệ (Nông nghiệp)">Công nghệ (Nông nghiệp)</option>
+                                      <option value="GDQP & AN">Giáo dục QP & AN</option>
+                                  </optgroup>
+
+                                  <optgroup label="Cấp 2 (THCS): Tích hợp & Cơ bản">
+                                      <option value="Khoa học tự nhiên">Khoa học tự nhiên (Lý-Hóa-Sinh)</option>
+                                      <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
+                                      <option value="GDCD">Giáo dục công dân (GDCD)</option>
+                                      <option value="Công nghệ">Công nghệ (THCS)</option>
+                                  </optgroup>
+
+                                  <optgroup label="Nghệ thuật & HĐ Giáo dục">
+                                      <option value="Âm nhạc">Âm nhạc</option>
+                                      <option value="Mỹ thuật">Mỹ thuật</option>
+                                      <option value="HĐ Trải nghiệm, HN">HĐ Trải nghiệm, Hướng nghiệp</option>
+                                      <option value="Nội dung GD địa phương">Nội dung GD địa phương</option>
+                                  </optgroup>
                               </select>
                           </div>
+                          
+                          {/* --- SELECT KHỐI LỚP (CHIA NHÓM) --- */}
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-500 uppercase">Khối lớp</label>
                               <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                   <option value="">-- Chọn khối --</option>
-                                  <optgroup label="THPT"><option value="Lớp 10">Lớp 10</option><option value="Lớp 11">Lớp 11</option><option value="Lớp 12">Lớp 12</option></optgroup>
-                                  <optgroup label="THCS"><option value="Lớp 6">Lớp 6</option><option value="Lớp 7">Lớp 7</option><option value="Lớp 8">Lớp 8</option><option value="Lớp 9">Lớp 9</option></optgroup>
+                                  <optgroup label="THPT (Cấp 3)">
+                                      <option value="Lớp 10">Lớp 10</option>
+                                      <option value="Lớp 11">Lớp 11</option>
+                                      <option value="Lớp 12">Lớp 12</option>
+                                  </optgroup>
+                                  <optgroup label="THCS (Cấp 2)">
+                                      <option value="Lớp 6">Lớp 6</option>
+                                      <option value="Lớp 7">Lớp 7</option>
+                                      <option value="Lớp 8">Lớp 8</option>
+                                      <option value="Lớp 9">Lớp 9</option>
+                                  </optgroup>
                               </select>
                           </div>
                       </div>
 
-                      {/* Upload Area (Wide & Low profile) */}
                       <label className={`flex items-center justify-center w-full h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer hover:bg-slate-50 group ${state.file ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300'}`}>
                           <div className="flex flex-col items-center justify-center text-center p-4">
                               {state.file ? (
                                   <div className="flex items-center gap-3">
                                       <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center"><FileCheck className="w-5 h-5" /></div>
-                                      <div className="text-left">
-                                          <p className="font-bold text-indigo-900 text-sm">{state.file.name}</p>
-                                          <p className="text-xs text-indigo-500">Đã sẵn sàng xử lý</p>
-                                      </div>
+                                      <div className="text-left"><p className="font-bold text-indigo-900 text-sm">{state.file.name}</p><p className="text-xs text-indigo-500">Đã sẵn sàng xử lý</p></div>
                                   </div>
                               ) : (
-                                  <>
-                                    <FileUp className="w-8 h-8 text-slate-300 mb-2 group-hover:text-indigo-500 transition-colors" />
-                                    <p className="font-bold text-slate-600 text-sm">Nhấn để tải file giáo án (.docx)</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">Hỗ trợ MathType & Hình ảnh</p>
-                                  </>
+                                  <><FileUp className="w-8 h-8 text-slate-300 mb-2 group-hover:text-indigo-500 transition-colors" /><p className="font-bold text-slate-600 text-sm">Nhấn để tải file giáo án (.docx)</p><p className="text-[10px] text-slate-400 mt-1">Hỗ trợ MathType & Hình ảnh</p></>
                               )}
                           </div>
                           <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
                       </label>
 
-                      {/* Action Button */}
-                      <button 
-                        disabled={!state.file || state.isProcessing} 
-                        onClick={handleAnalyze} 
-                        className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] ${
-                            !state.file || state.isProcessing 
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                            : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-indigo-500/25'
-                        }`}
-                      >
-                        {state.isProcessing ? (
-                            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Hệ thống đang phân tích...</>
-                        ) : (
-                            <><Wand2 className="w-4 h-4" /> Bắt đầu tích hợp ngay</>
-                        )}
+                      <button disabled={!state.file || state.isProcessing} onClick={handleAnalyze} className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] ${!state.file || state.isProcessing ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-indigo-500/25'}`}>
+                        {state.isProcessing ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Hệ thống đang phân tích...</>) : (<><Wand2 className="w-4 h-4" /> Bắt đầu tích hợp ngay</>)}
                       </button>
                   </div>
               </div>
@@ -249,48 +266,31 @@ const App: React.FC = () => {
             )}
           </div>
           
-          {/* CỘT PHẢI: THÔNG TIN & GIÁM SÁT */}
+          {/* CỘT PHẢI: THÔNG TIN */}
           <div className="lg:col-span-4 flex flex-col gap-4 h-full">
-             
-             {/* Nhật ký hệ thống (Terminal Style) */}
              <div className="bg-slate-900 rounded-2xl p-4 shadow-lg flex flex-col h-[280px] border border-slate-800">
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                        <Terminal className="w-3 h-3" /> System Logs
-                    </div>
+                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider"><Terminal className="w-3 h-3" /> System Logs</div>
                     <div className="flex gap-1.5"><div className="w-2 h-2 rounded-full bg-rose-500"></div><div className="w-2 h-2 rounded-full bg-amber-500"></div><div className="w-2 h-2 rounded-full bg-emerald-500"></div></div>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 font-mono text-[11px]">
                    {state.logs.length === 0 && <span className="text-slate-600 italic">Ready to start...</span>}
-                   {state.logs.map((log, i) => (
-                       <div key={i} className="flex gap-2">
-                           <span className="text-slate-500 shrink-0">{new Date().toLocaleTimeString([], {hour12: false, hour:'2-digit', minute:'2-digit'})}</span>
-                           <span className={`${log.includes("❌") ? "text-rose-400" : log.includes("✓") ? "text-emerald-400" : "text-slate-300"}`}>{log.replace("✓ ", "").replace("🚀 ", "")}</span>
-                       </div>
-                   ))}
+                   {state.logs.map((log, i) => (<div key={i} className="flex gap-2"><span className="text-slate-500 shrink-0">{new Date().toLocaleTimeString([], {hour12: false, hour:'2-digit', minute:'2-digit'})}</span><span className={`${log.includes("❌") ? "text-rose-400" : log.includes("✓") ? "text-emerald-400" : "text-slate-300"}`}>{log.replace("✓ ", "").replace("🚀 ", "")}</span></div>))}
                    {state.isProcessing && <div className="text-indigo-400 animate-pulse">_ Processing data...</div>}
                 </div>
              </div>
              
-             {/* Góc sư phạm (Card Info) */}
              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex-1">
                 <h4 className="font-bold text-sm text-indigo-900 mb-3 flex items-center gap-2"><GraduationCap className="w-4 h-4 text-indigo-500" /> Góc Sư phạm</h4>
                 <div className="space-y-3">
-                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                        <p className="text-xs font-bold text-indigo-700 mb-1">📱 Chế độ Năng lực Số</p>
-                        <p className="text-[11px] text-slate-600 leading-relaxed">Tích hợp các kỹ năng CNTT cơ bản: Soạn thảo văn bản, Làm bài trình chiếu, Tra cứu Web, Sử dụng phần mềm dạy học (GeoGebra, Azota...).</p>
-                    </div>
-                    <div className="p-3 bg-rose-50 rounded-lg border border-rose-100">
-                        <p className="text-xs font-bold text-rose-700 mb-1">⚡ Chế độ Năng lực AI</p>
-                        <p className="text-[11px] text-slate-600 leading-relaxed">Tích hợp GenAI (ChatGPT, Gemini) làm trợ lý ảo. Chú trọng kỹ năng Prompting (Ra lệnh), Tư duy phản biện & Kiểm chứng thông tin.</p>
-                    </div>
+                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100"><p className="text-xs font-bold text-indigo-700 mb-1">📱 Chế độ Năng lực Số</p><p className="text-[11px] text-slate-600 leading-relaxed">Tích hợp các kỹ năng CNTT cơ bản: Soạn thảo văn bản, Làm bài trình chiếu, Tra cứu Web, Sử dụng phần mềm dạy học (GeoGebra, Azota...).</p></div>
+                    <div className="p-3 bg-rose-50 rounded-lg border border-rose-100"><p className="text-xs font-bold text-rose-700 mb-1">⚡ Chế độ Năng lực AI</p><p className="text-[11px] text-slate-600 leading-relaxed">Tích hợp GenAI (ChatGPT, Gemini) làm trợ lý ảo. Chú trọng kỹ năng Prompting (Ra lệnh), Tư duy phản biện & Kiểm chứng thông tin.</p></div>
                 </div>
              </div>
           </div>
         </div>
       </div>
 
-      {/* FOOTER */}
       <div className="w-full mt-auto py-6 text-center text-slate-400 text-[10px]">
           <p>© 2024 NLS Integrator Pro • Design by Dang Manh Hung</p>
       </div>
