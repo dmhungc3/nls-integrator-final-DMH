@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight, Key,
-  User, School, Phone, Terminal, Smartphone, Zap
+  User, School, Terminal, Smartphone, Zap
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
@@ -83,7 +83,7 @@ const App: React.FC = () => {
           100% { transform: translateX(-100%); }
         }
         .animate-marquee {
-          animation: marquee 25s linear infinite;
+          animation: marquee 30s linear infinite;
           white-space: nowrap;
         }
       `}</style>
@@ -91,6 +91,8 @@ const App: React.FC = () => {
       {/* --- STICKY HEADER --- */}
       <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+              
+              {/* TÁC GIẢ (Sửa lại danh xưng cho chuyên nghiệp) */}
               <div className="flex items-center gap-3 shrink-0">
                   <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md">
                       <User className="w-5 h-5" />
@@ -101,20 +103,22 @@ const App: React.FC = () => {
                   </div>
               </div>
 
+              {/* CHỮ CHẠY (Nội dung Pro hơn) */}
               <div className="flex-1 overflow-hidden relative h-9 flex items-center bg-slate-100/50 rounded-md border border-slate-200/50 mx-4 hidden md:flex">
                  <div className="animate-marquee flex items-center gap-6 text-indigo-700 font-bold text-xs tracking-wide">
-                    <span>🚀 NLS Integrator Pro — Tích hợp Năng lực Số & AI vào Giáo án 2018</span>
+                    <span className="flex items-center gap-2"><Sparkles className="w-3 h-3 text-amber-500" /> NLS Integrator Pro — Giải pháp Tích hợp Năng lực Số & AI</span>
                     <span className="text-slate-400">|</span>
-                    <span>Sáng kiến kinh nghiệm - Đặng Mạnh Hùng</span>
+                    <span>Nghiên cứu & Phát triển: Đặng Mạnh Hùng</span>
                     <span className="text-slate-400">|</span>
-                    <span>Nhanh chóng • Chính xác • Hiện đại</span>
+                    <span>Ứng dụng mô hình AI Generative tiên tiến</span>
                     <span className="text-slate-400">|</span>
-                    <span>Hỗ trợ ChatGPT & Gemini Pro</span>
+                    <span>Tương thích hoàn toàn CT GDPT 2018</span>
                  </div>
                  <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-100 to-transparent z-10"></div>
                  <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-slate-100 to-transparent z-10"></div>
               </div>
 
+              {/* API KEY */}
               <div className="flex items-center justify-end shrink-0">
                   {isKeySaved ? (
                       <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
@@ -145,7 +149,7 @@ const App: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full">
           
-          {/* CỘT TRÁI: THAO TÁC */}
+          {/* CỘT TRÁI */}
           <div className="lg:col-span-8 flex flex-col gap-4">
             {state.step === 'upload' && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -162,13 +166,10 @@ const App: React.FC = () => {
 
                   <div className="p-6 space-y-6">
                       <div className="grid grid-cols-2 gap-4">
-                          
-                          {/* --- SELECT MÔN HỌC (ĐÃ SỬA TÊN GỌI CHUẨN) --- */}
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-500 uppercase">Môn học (GDPT 2018)</label>
                               <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                                   <option value="">-- Chọn môn học --</option>
-                                  
                                   <optgroup label="Môn Bắt buộc (Chung)">
                                       <option value="Toán">Toán học</option>
                                       <option value="Ngữ văn">Ngữ văn</option>
@@ -179,7 +180,6 @@ const App: React.FC = () => {
                                       <option value="HĐ Trải nghiệm, HN">HĐ Trải nghiệm, HN</option>
                                       <option value="Nội dung GD địa phương">Nội dung GD địa phương</option>
                                   </optgroup>
-
                                   <optgroup label="Cấp 3: Môn Lựa chọn (Theo tổ hợp)">
                                       <option value="Vật lí">Vật lí</option>
                                       <option value="Hóa học">Hóa học</option>
@@ -192,7 +192,6 @@ const App: React.FC = () => {
                                       <option value="Âm nhạc">Âm nhạc</option>
                                       <option value="Mỹ thuật">Mỹ thuật</option>
                                   </optgroup>
-
                                   <optgroup label="Cấp 2 (THCS): Môn Tích hợp">
                                       <option value="Khoa học tự nhiên">Khoa học tự nhiên (Lý-Hóa-Sinh)</option>
                                       <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
@@ -202,23 +201,12 @@ const App: React.FC = () => {
                                   </optgroup>
                               </select>
                           </div>
-                          
-                          {/* --- SELECT KHỐI LỚP --- */}
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-500 uppercase">Khối lớp</label>
                               <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                   <option value="">-- Chọn khối --</option>
-                                  <optgroup label="THPT (Cấp 3)">
-                                      <option value="Lớp 10">Lớp 10</option>
-                                      <option value="Lớp 11">Lớp 11</option>
-                                      <option value="Lớp 12">Lớp 12</option>
-                                  </optgroup>
-                                  <optgroup label="THCS (Cấp 2)">
-                                      <option value="Lớp 6">Lớp 6</option>
-                                      <option value="Lớp 7">Lớp 7</option>
-                                      <option value="Lớp 8">Lớp 8</option>
-                                      <option value="Lớp 9">Lớp 9</option>
-                                  </optgroup>
+                                  <optgroup label="THPT (Cấp 3)"><option value="Lớp 10">Lớp 10</option><option value="Lớp 11">Lớp 11</option><option value="Lớp 12">Lớp 12</option></optgroup>
+                                  <optgroup label="THCS (Cấp 2)"><option value="Lớp 6">Lớp 6</option><option value="Lớp 7">Lớp 7</option><option value="Lớp 8">Lớp 8</option><option value="Lớp 9">Lớp 9</option></optgroup>
                               </select>
                           </div>
                       </div>
@@ -261,7 +249,7 @@ const App: React.FC = () => {
             )}
           </div>
           
-          {/* CỘT PHẢI: THÔNG TIN */}
+          {/* CỘT PHẢI */}
           <div className="lg:col-span-4 flex flex-col gap-4 h-full">
              <div className="bg-slate-900 rounded-2xl p-4 shadow-lg flex flex-col h-[280px] border border-slate-800">
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
@@ -287,7 +275,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="w-full mt-auto py-6 text-center text-slate-400 text-[10px]">
-          <p>© 2024 NLS Integrator Pro • Design by Dang Manh Hung</p>
+          <p>© 2026 Developed by Dang Manh Hung. All rights reserved.</p>
       </div>
     </div>
   );
