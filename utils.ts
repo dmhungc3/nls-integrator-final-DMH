@@ -1,7 +1,6 @@
 import mammoth from 'mammoth';
 
 // --- CẤU HÌNH MỨC ĐỘ NĂNG LỰC ---
-// (Giữ nguyên phần LEVEL_MAPPING cũ)
 const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: string }> = {
   "Lớp 1": { ten: "Khám phá (Level 1)", kyHieu: "L1", nhiemVu: "Nhận biết, thao tác đơn giản." },
   "Lớp 2": { ten: "Khám phá (Level 1)", kyHieu: "L1", nhiemVu: "Sử dụng phần mềm đơn giản." },
@@ -17,83 +16,71 @@ const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: stri
   "Lớp 12": { ten: "Chuyên gia (Level 6)", kyHieu: "L6", nhiemVu: "Quản trị dự án, giải pháp mới." },
 };
 
-// --- ĐỊNH NGHĨA CÁC MÔ HÌNH DẠY HỌC ---
+// --- CÁC MÔ HÌNH DẠY HỌC ---
 export const PEDAGOGY_MODELS = {
-  "DEFAULT": { name: "Mặc định (Cơ bản)", desc: "Tích hợp hoạt động vào các bước lên lớp thông thường." },
-  "5E": { name: "Mô hình 5E (STEM/KHTN)", desc: "5 bước: Gắn kết (Engage) - Khám phá (Explore) - Giải thích (Explain) - Áp dụng (Elaborate) - Đánh giá (Evaluate)." },
-  "PBL": { name: "Dạy học Dự án (Project-Based)", desc: "Học sinh giải quyết vấn đề thực tế thông qua việc thực hiện một dự án dài hạn." },
-  "FLIPPED": { name: "Lớp học đảo ngược (Flipped)", desc: "Học sinh xem tài liệu/video tại nhà (dùng CNTT), lên lớp để thảo luận và thực hành." },
-  "GAMIFICATION": { name: "Trò chơi hóa (Gamification)", desc: "Biến hoạt động học tập thành trò chơi (Quizizz, Kahoot, Bảng xếp hạng)." }
+  "DEFAULT": { name: "Mặc định (Truyền thống)", desc: "Tích hợp công nghệ vào các bước lên lớp thông thường." },
+  "5E": { name: "Mô hình 5E (STEM)", desc: "5 bước: Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá." },
+  "PBL": { name: "Dạy học Dự án (PBL)", desc: "Học sinh thực hiện dự án giải quyết vấn đề thực tiễn." },
+  "FLIPPED": { name: "Lớp học đảo ngược", desc: "HS xem tài liệu số ở nhà, lên lớp thảo luận/thực hành." },
+  "GAMIFICATION": { name: "Trò chơi hóa", desc: "Sử dụng trò chơi số (Quizizz, Kahoot) để dạy học." }
 };
 
 const NLS_CONTEXT = `KHUNG NĂNG LỰC SỐ (DigComp & GDPT 2018):
 1. Vận hành thiết bị & Phần mềm.
-2. Khai thác dữ liệu & Thông tin.
+2. Khai thác dữ liệu.
 3. Giao tiếp & Hợp tác số.
 4. Sáng tạo nội dung số.
-5. An toàn & An ninh số.
-6. Giải quyết vấn đề với Công nghệ.`;
+5. An toàn số.
+6. Giải quyết vấn đề.`;
 
-const NAI_CONTEXT = `KHUNG NĂNG LỰC AI (AI Literacy):
-1. Hiểu biết về AI (Cơ chế, Ảo giác).
-2. Kỹ năng Prompting (Ra lệnh hiệu quả).
-3. Tư duy phản biện với AI (Fact-check).
-4. Đạo đức AI (Liêm chính, Bản quyền).
-5. Đồng sáng tạo (AI as Co-pilot).`;
+const NAI_CONTEXT = `KHUNG NĂNG LỰC AI:
+1. Hiểu biết AI.
+2. Kỹ năng Prompting.
+3. Tư duy phản biện AI.
+4. Đạo đức AI.
+5. Đồng sáng tạo.`;
 
 export const createIntegrationTextPrompt = (
-  text: string, subject: string, grade: string, mode: 'NLS' | 'NAI',
-  pedagogy: string
+  text: string, subject: string, grade: string, mode: 'NLS' | 'NAI', pedagogy: string
 ): string => {
   const mucDo = LEVEL_MAPPING[grade] || { ten: "Cơ bản", kyHieu: "L1", nhiemVu: "Làm quen" };
   const context = mode === 'NAI' ? NAI_CONTEXT : NLS_CONTEXT;
   const selectedModel = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS] || PEDAGOGY_MODELS["DEFAULT"];
 
   const instruction = mode === 'NAI'
-    ? "Tập trung vào các hoạt động tương tác với AI (ChatGPT, Gemini) để phát triển tư duy bậc cao."
+    ? "Tập trung vào tương tác với AI (ChatGPT, Gemini) để phát triển tư duy."
     : "Tập trung vào sử dụng phần mềm, thiết bị số, khai thác Internet.";
 
   return `
-    Đóng vai: Chuyên gia Sư phạm số Quốc tế & GDPT 2018.
-    Nhiệm vụ: Tích hợp ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'} vào giáo án môn ${subject} lớp ${grade}.
+    Đóng vai: Chuyên gia Sư phạm số. Nhiệm vụ: Tích hợp ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'} vào giáo án môn ${subject} lớp ${grade}.
+    Mô hình: ${selectedModel.name}.
+    Đối tượng: ${mucDo.ten} - ${mucDo.nhiemVu}.
     
-    YÊU CẦU QUAN TRỌNG VỀ TRÌNH BÀY (FORMAT):
-    1. Trình bày KHOA HỌC, NGẮN GỌN, SÚC TÍCH.
-    2. Sử dụng gạch đầu dòng (-) cho các ý nhỏ.
+    QUY TẮC TRÌNH BÀY (BẮT BUỘC):
+    1. Viết ngắn gọn, súc tích, gạch đầu dòng (-).
+    2. Xuống dòng rõ ràng giữa các ý.
     3. KHÔNG viết thành đoạn văn dài dòng.
-    4. Phân tách rõ ràng giữa Giáo viên và Học sinh.
-    
-    MÔ HÌNH DẠY HỌC: **${selectedModel.name}** (${selectedModel.desc}).
-    ĐỐI TƯỢNG: ${mucDo.ten} (${mucDo.kyHieu}) - ${mucDo.nhiemVu}.
-    KHUNG NĂNG LỰC: ${context}
-    ${instruction}
 
-    NỘI DUNG GIÁO ÁN GỐC:
-    """
-    ${text.substring(0, 30000)}
-    """
+    NỘI DUNG GIÁO ÁN: """${text.substring(0, 30000)}"""
 
-    YÊU CẦU ĐẦU RA (BẮT BUỘC DÙNG ĐÚNG CÁC THẺ SAU):
+    YÊU CẦU ĐẦU RA (ĐÚNG ĐỊNH DẠNG):
 
     ===BAT_DAU_MUC_TIEU===
-    (Viết mục tiêu bổ sung. Dùng gạch đầu dòng. Ví dụ:
     - Kiến thức: ...
     - Năng lực số: ...
-    - Phẩm chất: ...)
+    - Phẩm chất: ...
     ===KET_THUC_MUC_TIEU===
 
     ===BAT_DAU_HOC_LIEU===
-    (Chia rõ 2 phần:
-    1. Giáo viên: (Liệt kê phần mềm, thiết bị, link video...)
-    2. Học sinh: (Thiết bị cá nhân, App cần cài...))
+    - Giáo viên: (Liệt kê phần mềm, link...)
+    - Học sinh: (Thiết bị, App...)
     ===KET_THUC_HOC_LIEU===
 
     ===BAT_DAU_HOAT_DONG===
-    ANCHOR: (Trích dẫn điểm neo trong bài)
-    CONTENT: (Mô tả hoạt động. Bắt đầu bằng **➤ Hoạt động (${mode}):**. Xuống dòng rõ ràng:
-    - GV: ...
-    - HS: ...
-    - Sản phẩm: ...)
+    ANCHOR: (Trích dẫn điểm neo)
+    CONTENT: (Mô tả hoạt động. Bắt đầu bằng "➤ Hoạt động ${mode}:".
+    - GV: Yêu cầu...
+    - HS: Sử dụng...)
     ---PHAN_CACH_HOAT_DONG---
     ANCHOR: (Điểm neo 2...)
     CONTENT: (Nội dung 2...)
