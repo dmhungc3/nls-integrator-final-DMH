@@ -1,7 +1,6 @@
-// Declare globals for the libraries loaded via script tags
-declare const mammoth: any;
+import mammoth from 'mammoth';
 
-// Hardcoded mapping for simplified level lookup
+// Mapping mức độ năng lực theo khối lớp
 const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: string }> = {
   "Lớp 1": { ten: "Cơ bản 1", kyHieu: "CB1", nhiemVu: "Nhiệm vụ đơn giản, có hướng dẫn" },
   "Lớp 2": { ten: "Cơ bản 1", kyHieu: "CB1", nhiemVu: "Nhiệm vụ đơn giản, có hướng dẫn" },
@@ -17,114 +16,103 @@ const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: stri
   "Lớp 12": { ten: "Nâng cao 1", kyHieu: "NC1", nhiemVu: "Nhiệm vụ phức tạp, hướng dẫn người khác" },
 };
 
-// Condensed Framework Text for AI Context
-const KHUNG_NLS_CONTEXT = `
-KHUNG NĂNG LỰC SỐ (Tóm tắt cho AI):
-1. Khai thác dữ liệu (I):
-- 1.1. Tìm kiếm và lọc (TC1: Tìm theo quy trình; TC2: Tổ chức chiến lược tìm kiếm).
-- 1.2. Đánh giá dữ liệu (TC1: So sánh độ tin cậy; TC2: Phân tích nguồn tin).
-- 1.3. Quản lý dữ liệu (TC1: Lưu trữ có cấu trúc; TC2: Sắp xếp để dễ truy xuất).
-
-2. Giao tiếp và hợp tác (II):
-- 2.1. Tương tác (TC1: Tương tác thường xuyên; TC2: Chọn nhiều công cụ phù hợp bối cảnh như Zalo, Padlet, LMS).
-- 2.2. Chia sẻ (TC1: Chọn công nghệ phù hợp; TC2: Vận dụng chia sẻ, trích dẫn nguồn).
-- 2.3. Trách nhiệm công dân (TC1: Tham gia dịch vụ số; TC2: Đề xuất dịch vụ số).
-- 2.4. Hợp tác (TC1: Chọn công cụ hợp tác; TC2: Đồng sáng tạo sản phẩm).
-- 2.5. Netiquette (TC1: Ứng xử phù hợp; TC2: Điều chỉnh chiến lược giao tiếp).
-
-3. Sáng tạo nội dung số (III):
-- 3.1. Phát triển nội dung (TC1: Tạo định dạng cơ bản Word/PPT; TC2: Tạo đa định dạng Video/Infographic/Podcast).
-- 3.2. Tích hợp nội dung (TC1: Sửa đổi cơ bản; TC2: Tích hợp, tạo cái mới độc đáo).
-- 3.3. Bản quyền (TC1: Phân biệt giấy phép; TC2: Áp dụng quy định bản quyền).
-- 3.4. Lập trình (TC1: Viết lệnh đơn giản; TC2: Hiểu nguyên lý, viết chuỗi lệnh).
-
-4. An toàn (IV): Bảo vệ thiết bị, dữ liệu cá nhân, sức khỏe và môi trường.
-5. Giải quyết vấn đề (V):
-- 5.1. Vấn đề kỹ thuật (TC1: Xử lý lỗi cơ bản; TC2: Phân tích nguyên nhân lỗi).
-- 5.2. Nhu cầu công nghệ (TC1: Chọn công cụ phù hợp; TC2: Tùy chỉnh môi trường số, chọn giải pháp tối ưu).
-- 5.3. Sáng tạo công nghệ (TC1: Tạo sản phẩm mới; TC2: Đổi mới quy trình, giải quyết tình huống thực tế).
-- 5.4. Lỗ hổng năng lực (TC1: Tìm cơ hội học tập; TC2: Lập kế hoạch tự học).
-
-6. Trí tuệ nhân tạo (VI): Hiểu biết, sử dụng có đạo đức và đánh giá công cụ AI.
+// 1. PROMPT CHO NĂNG LỰC SỐ (DIGITAL COMPETENCY) - CŨ
+const NLS_CONTEXT = `
+KHUNG NĂNG LỰC SỐ (Cốt lõi):
+1. Khai thác dữ liệu: Tìm kiếm, lọc, đánh giá, quản lý dữ liệu.
+2. Giao tiếp hợp tác: Tương tác qua Zalo/Padlet, chia sẻ tài nguyên, Netiquette.
+3. Sáng tạo nội dung: Soạn thảo (Word), Trình chiếu (PPT), Đa phương tiện (Canva/Video).
+4. An toàn số: Bảo vệ thiết bị, dữ liệu, sức khỏe.
+5. Giải quyết vấn đề: Xử lý lỗi kỹ thuật, tùy chỉnh môi trường số.
 `;
 
-export function createIntegrationTextPrompt(keHoachText: string, monHoc: string, khoiLop: string): string {
-  const mucDoInfo = LEVEL_MAPPING[khoiLop];
-  
-  if (!mucDoInfo) {
-    throw new Error(`Chưa hỗ trợ ${khoiLop}`);
-  }
-
-  return `Bạn là Chuyên gia Sư phạm số và Công nghệ giáo dục. Nhiệm vụ: Tích hợp Năng lực số (NLS) sâu và cụ thể vào giáo án ${monHoc} ${khoiLop}.
-
-Cấp độ NLS áp dụng: ${mucDoInfo.ten} (${mucDoInfo.kyHieu}). Nhiệm vụ: ${mucDoInfo.nhiemVu}.
-
-THAM CHIẾU KHUNG NLS:
-${KHUNG_NLS_CONTEXT}
-
-Dưới đây là nội dung giáo án gốc:
-"""
-${keHoachText.substring(0, 30000)} 
-"""
-
-### CHIẾN LƯỢC TÍCH HỢP (THEO MÔN HỌC):
-1. **Toán/KHTN:** 
-   - Kiểm chứng: Dùng Casio/Excel/GeoGebra kiểm tra kết quả tính tay.
-   - Mô phỏng: Dùng PhET/Desmos quan sát hiện tượng/đồ thị.
-   - Mã NLS gợi ý: 5.2 (Chọn công cụ), 5.3 (Sáng tạo/Hiểu sâu), 1.2 (Đánh giá dữ liệu).
-2. **Xã hội/Nghệ thuật:**
-   - Sáng tạo: Canva (Infographic), CapCut (Video), Podcast.
-   - Chia sẻ: Padlet, Zalo, Google Drive.
-   - Mã NLS gợi ý: 3.1 (Tạo nội dung), 2.2 (Chia sẻ), 2.4 (Hợp tác).
-3. **Chung:**
-   - Đánh giá: Kahoot, Quizizz, Google Forms.
-
-### YÊU CẦU ĐẦU RA (ĐỊNH DẠNG TEXT THÔ BẮT BUỘC):
-Dùng chính xác các thẻ phân cách sau:
-
-===BAT_DAU_MUC_TIEU===
-(Viết 3-4 gạch đầu dòng mục tiêu NLS. Cấu trúc: [Mã NLS]: [Hành động cụ thể]. Ví dụ: 5.2.TC2b: Sử dụng GeoGebra để...)
-===KET_THUC_MUC_TIEU===
-
-===BAT_DAU_HOC_LIEU===
-(Liệt kê thiết bị/phần mềm. Ví dụ: Máy tính cầm tay, Điện thoại, App Desmos, Padlet...)
-===KET_THUC_HOC_LIEU===
-
-===BAT_DAU_HOAT_DONG===
-(Chọn 2-3 hoạt động tiêu biểu nhất để chèn NLS)
-
-ANCHOR: (Trích dẫn chính xác 1 câu ngắn trong giáo án gốc làm điểm neo)
-CONTENT: (Mô tả chi tiết. Bắt đầu bằng **➤ Tích hợp NLS ([Mã]):**. Mô tả rõ: GV yêu cầu gì? HS dùng công cụ gì? Kết quả là gì?)
----PHAN_CACH_HOAT_DONG---
-ANCHOR: (Điểm neo 2...)
-CONTENT: (Nội dung 2...)
-===KET_THUC_HOAT_DONG===
-
-===BAT_DAU_PHU_LUC===
-(Tạo Bảng tổng hợp mã năng lực. Trình bày dạng Markdown Table gồm 3 cột: Mã NLS | Yêu cầu cần đạt | Học sinh làm gì (Cụ thể).)
-===KET_THUC_PHU_LUC===
+// 2. PROMPT CHO NĂNG LỰC AI (AI COMPETENCY) - MỚI
+const NAI_CONTEXT = `
+KHUNG NĂNG LỰC TRÍ TUỆ NHÂN TẠO (AI Competency):
+1. Hiểu biết về AI (AI Literacy):
+- Hiểu khái niệm cơ bản: AI tạo sinh (GenAI), LLM là gì.
+- Phân biệt được AI và phần mềm truyền thống.
+2. Kỹ năng sử dụng AI (AI Usage):
+- Kỹ năng Prompting (Ra lệnh): Biết cách đặt câu hỏi rõ ràng, bối cảnh cụ thể để AI trả lời đúng.
+- Sử dụng công cụ: ChatGPT, Gemini, Copilot, Canva Magic, Gamma App.
+3. Tư duy phản biện với AI (Critical Thinking):
+- Fact-check: Luôn kiểm chứng thông tin AI đưa ra, không tin tuyệt đối.
+- Phát hiện ảo giác (Hallucination) của AI.
+4. Đạo đức và Trách nhiệm (AI Ethics):
+- Không gian lận: Sử dụng AI để hỗ trợ ý tưởng, không sao chép nguyên văn để nộp bài.
+- Tôn trọng bản quyền và quyền riêng tư dữ liệu.
+5. Sáng tạo cùng AI (Co-creation):
+- Dùng AI làm "Trợ lý ảo" để brainstorm ý tưởng, sửa lỗi văn bản, tạo hình ảnh minh họa.
 `;
-}
 
 /**
- * Extracts raw text from Docx using Mammoth
+ * Tạo câu lệnh Prompt gửi cho Gemini
  */
-export async function extractTextFromDocx(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const arrayBuffer = event.target?.result;
-      if (!mammoth) {
-        reject(new Error('Thư viện Mammoth chưa được tải.'));
-        return;
-      }
-      mammoth.extractRawText({ arrayBuffer: arrayBuffer })
-        .then((result: any) => {
-          resolve(result.value);
-        })
-        .catch((err: any) => reject(err));
-    };
-    reader.onerror = (err) => reject(err);
-    reader.readAsArrayBuffer(file);
-  });
-}
+export const createIntegrationTextPrompt = (
+  text: string, 
+  subject: string, 
+  grade: string, 
+  mode: 'NLS' | 'NAI' // Thêm tham số mode
+): string => {
+  const mucDo = LEVEL_MAPPING[grade] || { ten: "Cơ bản", kyHieu: "CB", nhiemVu: "Cơ bản" };
+  
+  // Chọn ngữ cảnh dựa trên Mode
+  const context = mode === 'NAI' ? NAI_CONTEXT : NLS_CONTEXT;
+  const role = mode === 'NAI' 
+    ? "Chuyên gia Giáo dục về AI Generative (Trí tuệ nhân tạo)" 
+    : "Chuyên gia Sư phạm số và Công nghệ giáo dục";
+  
+  const focusInstruction = mode === 'NAI'
+    ? "Tập trung đề xuất các hoạt động học sinh sử dụng AI (ChatGPT, Gemini, Canva...) làm trợ lý (Co-pilot), rèn luyện kỹ năng Prompting và Tư duy phản biện."
+    : "Tập trung đề xuất các hoạt động sử dụng phần mềm, thiết bị số, khai thác Internet và công cụ CNTT truyền thống.";
+
+  return `
+    Đóng vai là: ${role}.
+    Nhiệm vụ: Phân tích giáo án môn ${subject} lớp ${grade} và tích hợp ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'}.
+    Cấp độ học sinh: ${mucDo.ten} (${mucDo.kyHieu}).
+
+    THAM CHIẾU KHUNG NĂNG LỰC:
+    ${context}
+
+    ${focusInstruction}
+
+    NỘI DUNG GIÁO ÁN GỐC:
+    """
+    ${text.substring(0, 30000)}
+    """
+
+    YÊU CẦU ĐẦU RA (BẮT BUỘC DÙNG ĐÚNG CÁC THẺ SAU ĐỂ MÁY TÍNH ĐỌC):
+
+    ===BAT_DAU_MUC_TIEU===
+    (Viết 3-4 gạch đầu dòng mục tiêu. Cấu trúc: [Mã]: [Hành động]. Ví dụ: Sử dụng AI để gợi ý dàn ý...)
+    ===KET_THUC_MUC_TIEU===
+
+    ===BAT_DAU_HOC_LIEU===
+    (Liệt kê thiết bị/phần mềm/AI Tool cần dùng. Ví dụ: Máy tính, ChatGPT, Canva...)
+    ===KET_THUC_HOC_LIEU===
+
+    ===BAT_DAU_HOAT_DONG===
+    (Chọn 2-3 vị trí đắt giá nhất để chèn hoạt động)
+
+    ANCHOR: (Trích dẫn chính xác 1 câu ngắn trong giáo án gốc làm điểm neo)
+    CONTENT: (Mô tả chi tiết hoạt động ${mode}. Bắt đầu bằng **➤ Tích hợp ${mode}:**. Mô tả rõ: GV yêu cầu gì? HS tương tác với công cụ thế nào?)
+    ---PHAN_CACH_HOAT_DONG---
+
+    ANCHOR: (Điểm neo 2...)
+    CONTENT: (Nội dung 2...)
+    ===KET_THUC_HOAT_DONG===
+
+    ===BAT_DAU_PHU_LUC===
+    (Tạo bảng tiêu chí đánh giá dạng text. Cột 1: Tiêu chí, Cột 2: Yêu cầu cần đạt)
+    ===KET_THUC_PHU_LUC===
+  `;
+};
+
+/**
+ * Hàm đọc file Word sử dụng thư viện Mammoth (Hiện đại & Ổn định hơn FileReader cũ)
+ */
+export const extractTextFromDocx = async (file: File): Promise<string> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return result.value;
+};
