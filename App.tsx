@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  FileUp, Wand2, FileCheck, Info, Download, Save, Edit3,
-  BookOpen, GraduationCap, Sparkles, Zap, ChevronRight, ArrowLeft, Key,
-  User, School, Phone, Activity, Terminal, Layout 
+  FileUp, Wand2, FileCheck, Download, Edit3,
+  BookOpen, GraduationCap, Sparkles, ChevronRight, ArrowLeft, Key,
+  User, School, Phone, Activity, Terminal
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
@@ -144,7 +144,6 @@ const App: React.FC = () => {
   };
 
   return (
-    // Nền Gradient nhẹ nhàng, hiện đại
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100">
       
       {/* BACKGROUND DECOR BLOBS */}
@@ -215,28 +214,28 @@ const App: React.FC = () => {
             NLS <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">Integrator</span> Pro
           </h1>
           <p className="text-slate-500 text-base max-w-2xl mx-auto font-medium">
-            Trợ lý AI tích hợp Năng lực số vào Giáo án • <span className="text-indigo-500">Nhanh chóng</span> • <span className="text-indigo-500">Chính xác</span> • <span className="text-indigo-500">Hiện đại</span>
+            Trợ lý AI tích hợp Năng lực số vào Giáo án • <span className="text-indigo-500">Chính xác</span> • <span className="text-indigo-500">Chuẩn GDPT 2018</span>
           </p>
         </header>
 
         {/* STEPPER MODERN */}
         <div className="flex justify-center mb-10">
-             <div className="flex items-center gap-6 bg-white/70 backdrop-blur-md px-8 py-3 rounded-full shadow-lg shadow-indigo-900/5 border border-white/50">
-                 <div className={`flex items-center gap-2 ${state.step === 'upload' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
-                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'upload' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>1</span> 
-                     <span className="text-sm">Tải lên</span>
-                 </div>
-                 <div className="w-12 h-0.5 bg-slate-200/80"></div>
-                 <div className={`flex items-center gap-2 ${state.step === 'review' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
-                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'review' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>2</span> 
-                     <span className="text-sm">Xử lý</span>
-                 </div>
-                 <div className="w-12 h-0.5 bg-slate-200/80"></div>
-                 <div className={`flex items-center gap-2 ${state.step === 'done' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
-                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'done' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>3</span> 
-                     <span className="text-sm">Hoàn tất</span>
-                 </div>
-             </div>
+              <div className="flex items-center gap-6 bg-white/70 backdrop-blur-md px-8 py-3 rounded-full shadow-lg shadow-indigo-900/5 border border-white/50">
+                  <div className={`flex items-center gap-2 ${state.step === 'upload' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'upload' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>1</span> 
+                      <span className="text-sm">Tải lên</span>
+                  </div>
+                  <div className="w-12 h-0.5 bg-slate-200/80"></div>
+                  <div className={`flex items-center gap-2 ${state.step === 'review' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'review' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>2</span> 
+                      <span className="text-sm">Xử lý</span>
+                  </div>
+                  <div className="w-12 h-0.5 bg-slate-200/80"></div>
+                  <div className={`flex items-center gap-2 ${state.step === 'done' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'done' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>3</span> 
+                      <span className="text-sm">Hoàn tất</span>
+                  </div>
+              </div>
          </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -259,7 +258,7 @@ const App: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Môn học</label>
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Môn học (GDPT 2018)</label>
                           <div className="relative">
                             <select 
                                 className="w-full p-4 rounded-2xl border border-slate-200 bg-white/50 text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all appearance-none cursor-pointer hover:bg-white"
@@ -267,17 +266,43 @@ const App: React.FC = () => {
                                 onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}
                             >
                                 <option value="">-- Chọn môn học --</option>
-                                <option value="Toán">Toán học</option>
-                                <option value="Vật lý">Vật lý</option>
-                                <option value="Hóa học">Hóa học</option>
-                                <option value="Sinh học">Sinh học</option>
-                                <option value="Khoa học tự nhiên">Khoa học tự nhiên</option>
-                                <option value="Ngữ văn">Ngữ văn</option>
-                                <option value="Tiếng Anh">Tiếng Anh</option>
-                                <option value="Tin học">Tin học</option>
-                                <option value="Lịch sử">Lịch sử</option>
-                                <option value="Địa lý">Địa lý</option>
-                                <option value="GDCD">GDCD</option>
+                                <optgroup label="Môn Cơ bản (Chung)">
+                                    <option value="Toán">Toán học</option>
+                                    <option value="Ngữ văn">Ngữ văn</option>
+                                    <option value="Tiếng Anh">Tiếng Anh</option>
+                                </optgroup>
+
+                                <optgroup label="Cấp 3 (THPT): Khoa học Tự nhiên">
+                                    <option value="Vật lí">Vật lí</option>
+                                    <option value="Hóa học">Hóa học</option>
+                                    <option value="Sinh học">Sinh học</option>
+                                </optgroup>
+
+                                <optgroup label="Cấp 3 (THPT): Khoa học Xã hội">
+                                    <option value="Lịch sử">Lịch sử</option>
+                                    <option value="Địa lí">Địa lí</option>
+                                    <option value="GDKT & PL">Giáo dục KT & PL (GDCD)</option>
+                                </optgroup>
+
+                                <optgroup label="Cấp 3 (THPT): Công nghệ & Tin học">
+                                    <option value="Tin học">Tin học</option>
+                                    <option value="Công nghệ (Công nghiệp)">Công nghệ (Công nghiệp)</option>
+                                    <option value="Công nghệ (Nông nghiệp)">Công nghệ (Nông nghiệp)</option>
+                                </optgroup>
+
+                                <optgroup label="Cấp 2 (THCS): Môn Tích hợp">
+                                    <option value="Khoa học tự nhiên">Khoa học tự nhiên (Lý-Hóa-Sinh)</option>
+                                    <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
+                                    <option value="Công nghệ">Công nghệ (THCS)</option>
+                                </optgroup>
+
+                                <optgroup label="Nghệ thuật & Thể chất (Chung)">
+                                    <option value="Âm nhạc">Âm nhạc</option>
+                                    <option value="Mỹ thuật">Mỹ thuật</option>
+                                    <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                    <option value="GDQP & AN">Giáo dục QP & AN</option>
+                                    <option value="HĐ Trải nghiệm, HN">HĐ Trải nghiệm, Hướng nghiệp</option>
+                                </optgroup>
                             </select>
                             <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
                           </div>
@@ -291,13 +316,17 @@ const App: React.FC = () => {
                                 onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}
                             >
                                 <option value="">-- Chọn khối lớp --</option>
-                                <option value="Lớp 6">Lớp 6</option>
-                                <option value="Lớp 7">Lớp 7</option>
-                                <option value="Lớp 8">Lớp 8</option>
-                                <option value="Lớp 9">Lớp 9</option>
-                                <option value="Lớp 10">Lớp 10</option>
-                                <option value="Lớp 11">Lớp 11</option>
-                                <option value="Lớp 12">Lớp 12</option>
+                                <optgroup label="Trung học Phổ thông">
+                                    <option value="Lớp 10">Lớp 10</option>
+                                    <option value="Lớp 11">Lớp 11</option>
+                                    <option value="Lớp 12">Lớp 12</option>
+                                </optgroup>
+                                <optgroup label="Trung học Cơ sở">
+                                    <option value="Lớp 6">Lớp 6</option>
+                                    <option value="Lớp 7">Lớp 7</option>
+                                    <option value="Lớp 8">Lớp 8</option>
+                                    <option value="Lớp 9">Lớp 9</option>
+                                </optgroup>
                             </select>
                             <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
                           </div>

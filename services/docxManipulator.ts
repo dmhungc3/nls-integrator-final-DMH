@@ -1,162 +1,189 @@
-import { GeneratedNLSContent } from "../types";
-
-declare const JSZip: any;
+import JSZip from 'jszip';
+import { GeneratedNLSContent } from '../types';
 
 /**
- * Main function to process the DOCX file
- * 1. Unzips the docx
- * 2. Parses document.xml
- * 3. Injects content based on AI generation
- * 4. Zips it back
+ * Hàm chính: Chèn nội dung AI vào file Word (.docx)
  */
-export async function injectContentIntoDocx(file: File, nlsContent: GeneratedNLSContent, log: (msg: string) => void): Promise<Blob> {
-  if (!JSZip) throw new Error("JSZip library not loaded");
-
-  log("Đang giải nén cấu trúc file Word...");
+export const injectContentIntoDocx = async (
+  file: File,
+  content: GeneratedNLSContent,
+  log: (msg: string) => void
+): Promise<Blob> => {
+  log("⚙️ Đang giải nén file Word...");
+  
+  // 1. Load file Word (cấu trúc thực tế là file Zip)
   const zip = new JSZip();
-  const fileData = await file.arrayBuffer();
-  const loadedZip = await zip.loadAsync(fileData);
-
-  const docXmlFile = loadedZip.file("word/document.xml");
-  if (!docXmlFile) throw new Error("File word/document.xml không tồn tại.");
-
-  let docXmlStr = await docXmlFile.async("string");
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(docXmlStr, "application/xml");
+  const zipContent = await zip.loadAsync(file);
   
-  // Namespace for Word
-  const w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+  // 2. Lấy nội dung XML chính (document.xml)
+  let xml = await zipContent.file("word/document.xml")?.async("string");
+  if (!xml) throw new Error("File Word bị lỗi (không tìm thấy document.xml)");
 
-  log("Đang chèn nội dung vào các vị trí...");
-
-  // 1. Insert Objectives (Mục tiêu)
-  if (nlsContent.objectives_addition) {
-    const objectivesPara = findParagraphByText(xmlDoc, ["Về năng lực", "Năng lực:", "2. Năng lực"]);
-    if (objectivesPara) {
-      log("✓ Đã tìm thấy mục Năng lực");
-      const newPara = createParagraphNode(xmlDoc, nlsContent.objectives_addition, true);
-      objectivesPara.parentNode?.insertBefore(newPara, objectivesPara.nextSibling);
-    } else {
-        log("⚠ Không tìm thấy mục 'Năng lực', chèn vào đầu phần Mục tiêu.");
-         // Fallback logic could go here
-    }
-  }
-
-  // 2. Insert Materials (Thiết bị/Học liệu)
-  if (nlsContent.materials_addition) {
-    const materialsPara = findParagraphByText(xmlDoc, ["Thiết bị dạy học", "Học liệu", "Chuẩn bị của giáo viên"]);
-    if (materialsPara) {
-      log("✓ Đã tìm thấy mục Thiết bị dạy học");
-      const newPara = createParagraphNode(xmlDoc, "Học liệu số: " + nlsContent.materials_addition, true);
-      materialsPara.parentNode?.insertBefore(newPara, materialsPara.nextSibling);
-    }
-  }
-
-  // 3. Insert Activities
-  if (nlsContent.activities_integration && nlsContent.activities_integration.length > 0) {
-    let count = 0;
-    for (const item of nlsContent.activities_integration) {
-      // We look for a paragraph containing the anchor text
-      const anchorPara = findParagraphByFuzzyText(xmlDoc, item.anchor_text);
-      if (anchorPara) {
-        const newPara = createParagraphNode(xmlDoc, item.content, false, "107C10"); // Green text
-        anchorPara.parentNode?.insertBefore(newPara, anchorPara.nextSibling);
-        count++;
-      }
-    }
-    log(`✓ Đã chèn ${count}/${nlsContent.activities_integration.length} hoạt động tích hợp.`);
-  }
-
-  // 4. Append Appendix Table (Simple text format for safety in XML)
-  const body = xmlDoc.getElementsByTagNameNS(w, "body")[0];
-  if (body) {
-    log("Đang tạo bảng tổng hợp cuối bài...");
-    const headerPara = createParagraphNode(xmlDoc, "PHỤ LỤC: BẢNG TỔNG HỢP MÃ NĂNG LỰC SỐ", true);
-    body.appendChild(headerPara);
+  // =========================================================================
+  // BƯỚC 1: CHÈN MỤC TIÊU NLS VÀO PHẦN "2. NĂNG LỰC"
+  // =========================================================================
+  if (content.objectives_addition) {
+    log("🎯 Đang chèn vào mục '2. Năng lực'...");
     
-    // Split table text by newlines and add as paragraphs
-    const lines = nlsContent.appendix_table.split('\n');
-    lines.forEach(line => {
-      if (line.trim()) {
-         body.appendChild(createParagraphNode(xmlDoc, line, false));
-      }
-    });
-  }
+    // Các từ khóa để nhận diện mục Năng lực trong giáo án
+    const targetKeywords = [
+        "2. Năng lực", 
+        "II. Năng lực", 
+        "Năng lực", 
+        "Yêu cầu cần đạt", 
+        "Mục tiêu bài học"
+    ];
 
-  // Serialize back to XML
-  const serializer = new XMLSerializer();
-  const newDocXmlStr = serializer.serializeToString(xmlDoc);
+    // Tạo đoạn văn XML màu xanh dương, in đậm để chèn vào
+    const xmlToInsert = createParagraphXML(
+        `👉 Tích hợp NLS: ${content.objectives_addition}`, 
+        "1D4ED8" // Màu xanh (Indigo-600)
+    );
 
-  // Update zip
-  loadedZip.file("word/document.xml", newDocXmlStr);
+    let inserted = false;
+    for (const keyword of targetKeywords) {
+        // Tìm vị trí từ khóa (Case insensitive - không phân biệt hoa thường)
+        // Lưu ý: Trong XML, chữ có thể bị ngắt bởi các thẻ style, nên tìm tương đối
+        const regex = new RegExp(`(<w:t>|<w:t [^>]*>)[^<]*${keyword}[^<]*</w:t>`, 'i');
+        const match = xml.match(regex);
 
-  log("Đang đóng gói file Word...");
-  const outBlob = await loadedZip.generateAsync({ type: "blob" });
-  return outBlob;
-}
+        if (match && match.index !== undefined) {
+            // Tìm điểm kết thúc của đoạn văn (paragraph) chứa từ khóa này (</w:p>)
+            const endOfParaIndex = xml.indexOf("</w:p>", match.index);
+            
+            if (endOfParaIndex !== -1) {
+                const insertPosition = endOfParaIndex + 6; // +6 là độ dài của chuỗi "</w:p>"
+                
+                // Cắt chuỗi và chèn vào giữa
+                xml = xml.slice(0, insertPosition) + xmlToInsert + xml.slice(insertPosition);
+                inserted = true;
+                break; // Đã chèn xong thì thoát vòng lặp
+            }
+        }
+    }
 
-/**
- * Helper to find a paragraph node (<w:p>) containing specific text
- */
-function findParagraphByText(xmlDoc: Document, searchPhrases: string[]): Element | null {
-  const paragraphs = xmlDoc.getElementsByTagName("w:p");
-  for (let i = 0; i < paragraphs.length; i++) {
-    const p = paragraphs[i];
-    const textContent = p.textContent || "";
-    for (const phrase of searchPhrases) {
-      if (textContent.toLowerCase().includes(phrase.toLowerCase())) {
-        return p;
-      }
+    if (!inserted) {
+        log("⚠️ Không tìm thấy mục 'Năng lực'. Đã chèn vào đầu tài liệu.");
+        // Nếu không tìm thấy thì chèn vào đầu body
+        const bodyStart = xml.indexOf("<w:body>") + 8;
+        xml = xml.slice(0, bodyStart) + xmlToInsert + xml.slice(bodyStart);
     }
   }
-  return null;
-}
 
-/**
- * Fuzzy search for anchor text (supports partial matches due to formatting splits)
- */
-function findParagraphByFuzzyText(xmlDoc: Document, anchor: string): Element | null {
-  const paragraphs = xmlDoc.getElementsByTagName("w:p");
-  const cleanAnchor = anchor.trim().toLowerCase().substring(0, 30); // Take first 30 chars
-  
-  for (let i = 0; i < paragraphs.length; i++) {
-    const p = paragraphs[i];
-    const textContent = (p.textContent || "").trim().toLowerCase();
-    if (textContent.includes(cleanAnchor)) {
-      return p;
+  // =========================================================================
+  // BƯỚC 2: CHÈN HỌC LIỆU SỐ VÀO PHẦN "THIẾT BỊ/HỌC LIỆU"
+  // =========================================================================
+  if (content.materials_addition) {
+    log("💻 Đang bổ sung Học liệu số...");
+    const materialKeywords = ["Thiết bị", "Học liệu", "Chuẩn bị", "Đồ dùng"];
+    const xmlToInsert = createParagraphXML(`👉 Bổ sung Học liệu số: ${content.materials_addition}`, "059669"); // Màu xanh lá
+
+    let inserted = false;
+    for (const keyword of materialKeywords) {
+        const regex = new RegExp(`(<w:t>|<w:t [^>]*>)[^<]*${keyword}[^<]*</w:t>`, 'i');
+        const match = xml.match(regex);
+        if (match && match.index !== undefined) {
+            const endOfParaIndex = xml.indexOf("</w:p>", match.index);
+            if (endOfParaIndex !== -1) {
+                const insertPosition = endOfParaIndex + 6;
+                xml = xml.slice(0, insertPosition) + xmlToInsert + xml.slice(insertPosition);
+                inserted = true;
+                break;
+            }
+        }
     }
   }
-  return null;
-}
+
+  // =========================================================================
+  // BƯỚC 3: CHÈN HOẠT ĐỘNG (DỰA VÀO ANCHOR TEXT)
+  // =========================================================================
+  if (content.activities_integration.length > 0) {
+      log("⚡ Đang lồng ghép Hoạt động...");
+      content.activities_integration.forEach(act => {
+          // Chỉ lấy khoảng 20 ký tự đầu của Anchor để tìm cho dễ trúng (tránh lỗi do format Word)
+          const searchKey = act.anchor_text.substring(0, 20).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          
+          // Tạo XML hoạt động (Màu tím, có khung viền giả lập bằng thụt đầu dòng)
+          const actXml = createParagraphXML(`➤ HOẠT ĐỘNG NLS: ${act.content}`, "7C3AED", true);
+
+          // Tìm vị trí chèn
+          const regex = new RegExp(`(<w:t>|<w:t [^>]*>)[^<]*${searchKey}`, 'i');
+          const match = xml.match(regex);
+          
+          if (match && match.index !== undefined) {
+               const endOfParaIndex = xml.indexOf("</w:p>", match.index);
+               if (endOfParaIndex !== -1) {
+                   const insertPos = endOfParaIndex + 6;
+                   xml = xml.slice(0, insertPos) + actXml + xml.slice(insertPos);
+               }
+          }
+      });
+  }
+
+  // =========================================================================
+  // BƯỚC 4: CHÈN BẢNG PHỤ LỤC VÀO CUỐI BÀI
+  // =========================================================================
+  if (content.appendix_table) {
+      log("📊 Đang tạo bảng Phụ lục cuối bài...");
+      const bodyEndIndex = xml.lastIndexOf("</w:sectPr>"); // Tìm vị trí trước khi kết thúc section cuối
+      
+      if (bodyEndIndex !== -1) {
+          // Tiêu đề phụ lục
+          let appendixXml = createParagraphXML("PHỤ LỤC: MA TRẬN NĂNG LỰC SỐ", "DC2626", true);
+          
+          // Tách các dòng trong bảng để tạo các đoạn văn (Giả lập bảng bằng các dòng text)
+          // *Lưu ý: Tạo bảng Table chuẩn trong XML rất phức tạp, ở đây dùng text in đậm để an toàn*
+          const lines = content.appendix_table.split('\n');
+          lines.forEach(line => {
+              if (line.trim()) {
+                  appendixXml += createParagraphXML(line, "4B5563"); // Màu xám đậm
+              }
+          });
+
+          xml = xml.slice(0, bodyEndIndex) + appendixXml + xml.slice(bodyEndIndex);
+      }
+  }
+
+  // 3. Cập nhật lại file document.xml trong gói zip
+  zip.file("word/document.xml", xml);
+
+  log("📦 Đang đóng gói file hoàn chỉnh...");
+  return await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+};
 
 /**
- * Creates a valid Word XML Paragraph Node
+ * Hàm phụ trợ: Tạo chuỗi XML cho một đoạn văn (Paragraph) chuẩn của Word
+ * @param text Nội dung văn bản
+ * @param colorHex Mã màu (không có dấu #), ví dụ: "FF0000"
+ * @param isBold Có in đậm không
  */
-function createParagraphNode(xmlDoc: Document, text: string, isBold: boolean = false, colorHex: string = "000000"): Element {
-  const w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-  
-  const p = xmlDoc.createElementNS(w, "w:p");
-  const r = xmlDoc.createElementNS(w, "w:r");
-  const rPr = xmlDoc.createElementNS(w, "w:rPr");
-  
-  // Style
-  if (isBold) {
-    const b = xmlDoc.createElementNS(w, "w:b");
-    rPr.appendChild(b);
-  }
-  
-  const color = xmlDoc.createElementNS(w, "w:color");
-  color.setAttribute("w:val", colorHex);
-  rPr.appendChild(color);
+function createParagraphXML(text: string, colorHex: string = "000000", isBold: boolean = true): string {
+    // Escape các ký tự đặc biệt của XML
+    const safeText = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
 
-  // Text
-  const t = xmlDoc.createElementNS(w, "w:t");
-  t.setAttribute("xml:space", "preserve");
-  t.textContent = text;
-
-  r.appendChild(rPr);
-  r.appendChild(t);
-  p.appendChild(r);
-
-  return p;
+    return `
+    <w:p>
+        <w:pPr>
+            <w:spacing w:before="120" w:after="120"/>
+            <w:rPr>
+                <w:b w:val="${isBold ? '1' : '0'}"/>
+                <w:color w:val="${colorHex}"/>
+                <w:sz w:val="24"/> 
+            </w:rPr>
+        </w:pPr>
+        <w:r>
+            <w:rPr>
+                <w:b w:val="${isBold ? '1' : '0'}"/>
+                <w:color w:val="${colorHex}"/>
+                <w:sz w:val="24"/>
+            </w:rPr>
+            <w:t xml:space="preserve">${safeText}</w:t>
+        </w:r>
+    </w:p>
+    `;
 }
