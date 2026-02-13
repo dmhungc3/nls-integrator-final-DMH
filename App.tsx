@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
-  BookOpen, GraduationCap, Sparkles, ChevronRight, ArrowLeft, Key,
-  User, School, Phone, Activity, Terminal, Smartphone, Zap, Heart
+  BookOpen, GraduationCap, Sparkles, ChevronRight, Key,
+  User, School, Phone, Activity, Terminal, Smartphone, Zap
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
@@ -76,7 +76,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 font-sans text-slate-900 flex flex-col items-center">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
       {/* CSS Animation cho chữ chạy */}
       <style>{`
         @keyframes marquee {
@@ -84,236 +84,216 @@ const App: React.FC = () => {
           100% { transform: translateX(-100%); }
         }
         .animate-marquee {
-          animation: marquee 20s linear infinite;
+          animation: marquee 25s linear infinite;
           white-space: nowrap;
         }
       `}</style>
 
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-200/30 rounded-full blur-[100px]"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-200/30 rounded-full blur-[100px]"></div>
-      </div>
-
-      {/* --- STICKY HEADER --- */}
-      <div className="sticky top-0 z-50 w-full max-w-7xl transition-all">
-          <div className="absolute inset-x-0 top-0 h-full bg-slate-50/95 backdrop-blur-xl shadow-lg border-b border-white/50 rounded-b-[2rem] -z-10"></div>
-          
-          <div className="py-3 px-4 flex items-center justify-between gap-4 h-20">
+      {/* --- STICKY HEADER (CỐ ĐỊNH) --- */}
+      <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+              
               {/* TÁC GIẢ */}
-              <div className="flex items-center gap-3 group shrink-0">
-                  <div className="relative w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 shrink-0 ring-2 ring-white group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-3 shrink-0">
+                  <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md">
                       <User className="w-5 h-5" />
                   </div>
-                  <div className="hidden md:flex flex-col">
-                      <h2 className="font-bold text-slate-800 text-sm group-hover:text-indigo-700 transition-colors">Đặng Mạnh Hùng</h2>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-500 font-medium">
-                          <span className="flex items-center gap-1"><School className="w-3 h-3" /> THPT Lý Nhân Tông</span>
-                      </div>
+                  <div className="flex flex-col">
+                      <h2 className="font-bold text-slate-800 text-sm">Đặng Mạnh Hùng</h2>
+                      <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">THPT Lý Nhân Tông</span>
                   </div>
               </div>
 
-              {/* CHỮ CHẠY */}
-              <div className="flex-1 overflow-hidden relative h-10 flex items-center bg-indigo-50/50 rounded-lg border border-indigo-100/50 mx-2">
-                 <div className="animate-marquee flex items-center gap-4 text-indigo-700 font-bold text-sm tracking-wide">
-                    <Sparkles className="w-4 h-4 text-amber-500 inline-block" /> 
-                    NLS Integrator Pro — Tích hợp Năng lực Số & Năng lực AI vào Giáo án chuẩn 2018 
-                    <span className="text-slate-400 mx-2">|</span> 
-                    Sáng kiến kinh nghiệm của Đặng Mạnh Hùng 
-                    <span className="text-slate-400 mx-2">|</span> 
-                    Nhanh chóng • Chính xác • Hiện đại
-                    <Sparkles className="w-4 h-4 text-amber-500 inline-block" />
+              {/* CHỮ CHẠY (MARQUEE) */}
+              <div className="flex-1 overflow-hidden relative h-9 flex items-center bg-slate-100/50 rounded-md border border-slate-200/50 mx-4 hidden md:flex">
+                 <div className="animate-marquee flex items-center gap-6 text-indigo-700 font-bold text-xs tracking-wide">
+                    <span>🚀 NLS Integrator Pro — Tích hợp Năng lực Số & AI vào Giáo án 2018</span>
+                    <span className="text-slate-400">|</span>
+                    <span>Sáng kiến kinh nghiệm - Đặng Mạnh Hùng</span>
+                    <span className="text-slate-400">|</span>
+                    <span>Nhanh chóng • Chính xác • Hiện đại</span>
+                    <span className="text-slate-400">|</span>
+                    <span>Hỗ trợ ChatGPT & Gemini Pro</span>
                  </div>
-                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-indigo-50 to-transparent z-10"></div>
-                 <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-indigo-50 to-transparent z-10"></div>
+                 <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-100 to-transparent z-10"></div>
+                 <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-slate-100 to-transparent z-10"></div>
               </div>
 
               {/* API KEY */}
               <div className="flex items-center justify-end shrink-0">
                   {isKeySaved ? (
-                      <div className="flex items-center gap-2 bg-white p-1 pl-3 pr-1 rounded-full border border-emerald-100 shadow-sm">
-                          <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-[10px]">
-                              <div className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></div>
-                              <span className="hidden sm:inline">API Ready</span>
-                          </div>
-                          <button onClick={handleEditKey} className="px-2 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold hover:bg-slate-200">Đổi</button>
+                      <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                          <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+                          <span className="text-emerald-700 font-bold text-xs">API Ready</span>
+                          <button onClick={handleEditKey} className="ml-2 text-[10px] text-slate-400 hover:text-indigo-600 underline">Đổi</button>
                       </div>
                   ) : (
-                      <div className="flex gap-1 bg-white p-1 rounded-xl border border-indigo-100 shadow-sm"><input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập Key..." className="bg-transparent outline-none text-xs w-20 pl-2" /><button onClick={saveKeyToLocal} className="px-2 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold">Lưu</button></div>
+                      <div className="flex gap-1"><input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập API Key..." className="bg-white border border-slate-300 rounded-md px-2 py-1 text-xs w-32 focus:border-indigo-500 outline-none" /><button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700">Lưu</button></div>
                   )}
               </div>
           </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl mt-8 flex-grow">
+      {/* --- MAIN DASHBOARD --- */}
+      <div className="w-full max-w-7xl px-4 py-6 flex flex-col gap-6">
         
-        {/* STEPPER */}
-        <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md px-6 py-2 rounded-full shadow-sm border border-white/50">
-                <div className={`flex items-center gap-2 ${state.step === 'upload' ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}><span className="text-sm">1. Tải lên</span></div>
-                <div className="text-slate-300">→</div>
-                <div className={`flex items-center gap-2 ${state.step === 'review' ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}><span className="text-sm">2. Xử lý</span></div>
-                <div className="text-slate-300">→</div>
-                <div className={`flex items-center gap-2 ${state.step === 'done' ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}><span className="text-sm">3. Hoàn tất</span></div>
-            </div>
+        {/* STEPPER COMPACT */}
+        <div className="flex items-center justify-center">
+             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
+                <span className={`text-xs font-bold ${state.step === 'upload' ? 'text-indigo-600' : 'text-slate-400'}`}>1. Tải lên</span>
+                <ChevronRight className="w-3 h-3 text-slate-300" />
+                <span className={`text-xs font-bold ${state.step === 'review' ? 'text-indigo-600' : 'text-slate-400'}`}>2. Xử lý AI</span>
+                <ChevronRight className="w-3 h-3 text-slate-300" />
+                <span className={`text-xs font-bold ${state.step === 'done' ? 'text-indigo-600' : 'text-slate-400'}`}>3. Hoàn tất</span>
+             </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-8 flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full">
+          
+          {/* CỘT TRÁI: KHU VỰC THAO TÁC (WORKSTATION) */}
+          <div className="lg:col-span-8 flex flex-col gap-4">
             {state.step === 'upload' && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 shadow-xl border border-white animate-fade-in">
-                  <div className="bg-slate-100 p-1 rounded-2xl flex relative mb-6">
-                      <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-xl shadow-sm transition-all duration-300 ${mode === 'NLS' ? 'left-1' : 'left-[calc(50%+2px)]'}`}></div>
-                      <button onClick={() => setMode('NLS')} className={`relative z-10 flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${mode === 'NLS' ? 'text-indigo-600' : 'text-slate-500'}`}><Smartphone className="w-4 h-4" /> Năng lực Số</button>
-                      <button onClick={() => setMode('NAI')} className={`relative z-10 flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${mode === 'NAI' ? 'text-rose-600' : 'text-slate-500'}`}><Zap className="w-4 h-4" /> Năng lực AI</button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6 mb-6">
-                      
-                      {/* --- PHẦN MÔN HỌC (ĐÃ CHUẨN HÓA GDPT 2018) --- */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">Môn học (GDPT 2018)</label>
-                        <div className="relative">
-                            <select 
-                                className="w-full p-4 rounded-2xl border border-slate-200 bg-white/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 appearance-none" 
-                                value={state.subject} 
-                                onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}
-                            >
-                                <option value="">-- Chọn môn học --</option>
-                                <optgroup label="Môn Bắt buộc (Chung)">
-                                    <option value="Toán">Toán học</option>
-                                    <option value="Ngữ văn">Ngữ văn</option>
-                                    <option value="Tiếng Anh">Tiếng Anh</option>
-                                    <option value="Giáo dục thể chất">Giáo dục thể chất</option>
-                                </optgroup>
-
-                                <optgroup label="Cấp 3 (THPT): Tự chọn & Chuyên sâu">
-                                    <option value="Vật lí">Vật lí</option>
-                                    <option value="Hóa học">Hóa học</option>
-                                    <option value="Sinh học">Sinh học</option>
-                                    <option value="Lịch sử">Lịch sử</option>
-                                    <option value="Địa lí">Địa lí</option>
-                                    <option value="GDKT & PL">Giáo dục KT & PL</option>
-                                    <option value="Tin học">Tin học</option>
-                                    <option value="Công nghệ (Công nghiệp)">Công nghệ (Công nghiệp)</option>
-                                    <option value="Công nghệ (Nông nghiệp)">Công nghệ (Nông nghiệp)</option>
-                                    <option value="GDQP & AN">Giáo dục QP & AN</option>
-                                </optgroup>
-
-                                <optgroup label="Cấp 2 (THCS): Tích hợp & Cơ bản">
-                                    <option value="Khoa học tự nhiên">Khoa học tự nhiên (Lý-Hóa-Sinh)</option>
-                                    <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
-                                    <option value="GDCD">Giáo dục công dân (GDCD)</option>
-                                    <option value="Công nghệ">Công nghệ (THCS)</option>
-                                </optgroup>
-
-                                <optgroup label="Nghệ thuật & HĐ Giáo dục">
-                                    <option value="Âm nhạc">Âm nhạc</option>
-                                    <option value="Mỹ thuật">Mỹ thuật</option>
-                                    <option value="HĐ Trải nghiệm, HN">HĐ Trải nghiệm, Hướng nghiệp</option>
-                                    <option value="Nội dung GD địa phương">Nội dung GD địa phương</option>
-                                </optgroup>
-                            </select>
-                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
-                        </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  {/* Header Card */}
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <BookOpen className="w-5 h-5 text-indigo-600" />
+                          <span>Thiết lập Giáo án</span>
                       </div>
-
-                      {/* --- PHẦN KHỐI LỚP (ĐÃ CHIA NHÓM) --- */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">Khối lớp</label>
-                        <div className="relative">
-                            <select 
-                                className="w-full p-4 rounded-2xl border border-slate-200 bg-white/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 appearance-none" 
-                                value={state.grade} 
-                                onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}
-                            >
-                                <option value="">-- Chọn khối --</option>
-                                <optgroup label="Trung học Phổ thông (THPT)">
-                                    <option value="Lớp 10">Lớp 10</option>
-                                    <option value="Lớp 11">Lớp 11</option>
-                                    <option value="Lớp 12">Lớp 12</option>
-                                </optgroup>
-                                <optgroup label="Trung học Cơ sở (THCS)">
-                                    <option value="Lớp 6">Lớp 6</option>
-                                    <option value="Lớp 7">Lớp 7</option>
-                                    <option value="Lớp 8">Lớp 8</option>
-                                    <option value="Lớp 9">Lớp 9</option>
-                                </optgroup>
-                            </select>
-                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
-                        </div>
+                      {/* MODE SWITCHER COMPACT */}
+                      <div className="flex bg-slate-200/50 p-1 rounded-lg">
+                          <button onClick={() => setMode('NLS')} className={`px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${mode === 'NLS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}><Smartphone className="w-3.5 h-3.5" /> Năng lực Số</button>
+                          <button onClick={() => setMode('NAI')} className={`px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${mode === 'NAI' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}><Zap className="w-3.5 h-3.5" /> Năng lực AI</button>
                       </div>
                   </div>
 
-                  <label className={`flex flex-col items-center justify-center w-full h-40 rounded-3xl border-2 border-dashed transition-all cursor-pointer ${state.file ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-300 bg-slate-50/50 hover:bg-white'}`}>
-                      <div className="flex flex-col items-center justify-center text-center">
-                          {state.file ? (<><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg mb-2 text-indigo-600"><FileCheck className="w-6 h-6" /></div><p className="font-bold text-indigo-900">{state.file.name}</p></>) : (<><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-2 text-slate-400"><FileUp className="w-6 h-6" /></div><p className="font-bold text-slate-600">Thả file Giáo án (.docx)</p></>)}
+                  <div className="p-6 space-y-6">
+                      {/* Grid chọn Môn & Khối */}
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase">Môn học (GDPT 2018)</label>
+                              <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
+                                  <option value="">-- Chọn môn --</option>
+                                  <optgroup label="Môn Chung"><option value="Toán">Toán</option><option value="Ngữ văn">Văn</option><option value="Tiếng Anh">Anh</option></optgroup>
+                                  <optgroup label="KHTN"><option value="Vật lí">Lý</option><option value="Hóa học">Hóa</option><option value="Sinh học">Sinh</option></optgroup>
+                                  <optgroup label="KHXH"><option value="Lịch sử">Sử</option><option value="Địa lí">Địa</option><option value="GDKT & PL">GDKT&PL</option></optgroup>
+                                  <optgroup label="Công nghệ"><option value="Tin học">Tin</option><option value="Công nghệ (Công nghiệp)">CN (CN)</option><option value="Công nghệ (Nông nghiệp)">CN (NN)</option></optgroup>
+                              </select>
+                          </div>
+                          <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase">Khối lớp</label>
+                              <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
+                                  <option value="">-- Chọn khối --</option>
+                                  <optgroup label="THPT"><option value="Lớp 10">Lớp 10</option><option value="Lớp 11">Lớp 11</option><option value="Lớp 12">Lớp 12</option></optgroup>
+                                  <optgroup label="THCS"><option value="Lớp 6">Lớp 6</option><option value="Lớp 7">Lớp 7</option><option value="Lớp 8">Lớp 8</option><option value="Lớp 9">Lớp 9</option></optgroup>
+                              </select>
+                          </div>
                       </div>
-                      <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
-                  </label>
 
-                  <button disabled={!state.file || state.isProcessing} onClick={handleAnalyze} className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 mt-6 ${!state.file || state.isProcessing ? 'bg-slate-100 text-slate-400' : 'bg-indigo-600 text-white shadow-xl hover:bg-indigo-700'}`}>
-                    {state.isProcessing ? "Đang phân tích..." : "Kích hoạt AI"}
-                  </button>
+                      {/* Upload Area (Wide & Low profile) */}
+                      <label className={`flex items-center justify-center w-full h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer hover:bg-slate-50 group ${state.file ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300'}`}>
+                          <div className="flex flex-col items-center justify-center text-center p-4">
+                              {state.file ? (
+                                  <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center"><FileCheck className="w-5 h-5" /></div>
+                                      <div className="text-left">
+                                          <p className="font-bold text-indigo-900 text-sm">{state.file.name}</p>
+                                          <p className="text-xs text-indigo-500">Đã sẵn sàng xử lý</p>
+                                      </div>
+                                  </div>
+                              ) : (
+                                  <>
+                                    <FileUp className="w-8 h-8 text-slate-300 mb-2 group-hover:text-indigo-500 transition-colors" />
+                                    <p className="font-bold text-slate-600 text-sm">Nhấn để tải file giáo án (.docx)</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Hỗ trợ MathType & Hình ảnh</p>
+                                  </>
+                              )}
+                          </div>
+                          <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
+                      </label>
+
+                      {/* Action Button */}
+                      <button 
+                        disabled={!state.file || state.isProcessing} 
+                        onClick={handleAnalyze} 
+                        className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] ${
+                            !state.file || state.isProcessing 
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                            : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-indigo-500/25'
+                        }`}
+                      >
+                        {state.isProcessing ? (
+                            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Hệ thống đang phân tích...</>
+                        ) : (
+                            <><Wand2 className="w-4 h-4" /> Bắt đầu tích hợp ngay</>
+                        )}
+                      </button>
+                  </div>
               </div>
             )}
+
             {state.step === 'review' && state.generatedContent && (
                <SmartEditor initialContent={state.generatedContent} onConfirm={handleFinalizeAndDownload} onCancel={() => setState(prev => ({ ...prev, step: 'upload', generatedContent: null }))} />
             )}
+            
             {state.step === 'done' && state.result && (
-              <div className="bg-white/90 backdrop-blur rounded-[2rem] p-10 shadow-2xl border border-white animate-fade-in flex flex-col items-center text-center gap-6">
-                 <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center text-white shadow-xl shadow-green-200"><Sparkles className="w-10 h-10" /></div>
-                 <div><h3 className="text-2xl font-black text-slate-800">Xử lý thành công!</h3><p className="text-slate-500 mt-2">File đã sẵn sàng.</p></div>
-                 <div className="flex gap-3 mt-4">
-                     <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border border-slate-200">Làm bài khác</button>
-                     <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-700 shadow-lg"><Download className="w-5 h-5" /> Tải về</button>
+              <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-100 flex flex-col items-center text-center animate-fade-in">
+                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4"><Sparkles className="w-8 h-8" /></div>
+                 <h3 className="text-xl font-bold text-slate-800">Xử lý thành công!</h3>
+                 <p className="text-sm text-slate-500 mt-1 mb-6">File giáo án đã được tích hợp năng lực {mode === 'NAI' ? 'AI' : 'Số'} hoàn chỉnh.</p>
+                 <div className="flex gap-3">
+                     <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-5 py-2.5 rounded-lg font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm bài khác</button>
+                     <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-200"><Download className="w-4 h-4" /> Tải về máy</button>
                  </div>
               </div>
             )}
           </div>
           
-          <div className="lg:col-span-4 flex flex-col gap-6">
-             {/* LOGS */}
-             <div className="bg-white/80 backdrop-blur-lg rounded-[2rem] p-6 shadow-lg border border-white h-[400px] flex flex-col">
-                <h4 className="font-bold text-xs text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Nhật ký hệ thống</h4>
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-xs">
-                   {state.logs.map((log, i) => (<div key={i} className={`pb-1 border-b border-slate-50 ${log.includes("❌") ? "text-rose-600 font-bold" : "text-slate-600"}`}>{log}</div>))}
-                   {state.isProcessing && <div className="text-indigo-600 animate-pulse font-bold">Checking...</div>}
+          {/* CỘT PHẢI: THÔNG TIN & GIÁM SÁT */}
+          <div className="lg:col-span-4 flex flex-col gap-4 h-full">
+             
+             {/* Nhật ký hệ thống (Terminal Style) */}
+             <div className="bg-slate-900 rounded-2xl p-4 shadow-lg flex flex-col h-[280px] border border-slate-800">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                        <Terminal className="w-3 h-3" /> System Logs
+                    </div>
+                    <div className="flex gap-1.5"><div className="w-2 h-2 rounded-full bg-rose-500"></div><div className="w-2 h-2 rounded-full bg-amber-500"></div><div className="w-2 h-2 rounded-full bg-emerald-500"></div></div>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 font-mono text-[11px]">
+                   {state.logs.length === 0 && <span className="text-slate-600 italic">Ready to start...</span>}
+                   {state.logs.map((log, i) => (
+                       <div key={i} className="flex gap-2">
+                           <span className="text-slate-500 shrink-0">{new Date().toLocaleTimeString([], {hour12: false, hour:'2-digit', minute:'2-digit'})}</span>
+                           <span className={`${log.includes("❌") ? "text-rose-400" : log.includes("✓") ? "text-emerald-400" : "text-slate-300"}`}>{log.replace("✓ ", "").replace("🚀 ", "")}</span>
+                       </div>
+                   ))}
+                   {state.isProcessing && <div className="text-indigo-400 animate-pulse">_ Processing data...</div>}
                 </div>
              </div>
              
-             {/* GÓC SƯ PHẠM */}
-             <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[2rem] p-6 shadow-xl text-white relative overflow-hidden group">
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
-                <h4 className="font-bold text-sm mb-4 flex items-center gap-2 relative z-10"><GraduationCap className="w-5 h-5 text-cyan-400" /> GÓC SƯ PHẠM</h4>
-                <div className="space-y-3 relative z-10">
-                    {[
-                        "Chế độ NLS: Tích hợp CNTT cơ bản (Word, PPT, Web) - Phù hợp bài giảng truyền thống.",
-                        "Chế độ AI: Tích hợp ChatGPT, Gemini - Phù hợp bài giảng STEM, sáng tạo.",
-                        "Lưu ý: Năng lực AI tập trung vào kỹ năng Prompting & Tư duy phản biện.",
-                    ].map((item, i) => (<div key={i} className="flex gap-3 text-xs text-slate-300 items-start"><div className="mt-1 w-1.5 h-1.5 rounded-full bg-cyan-500 shadow shadow-cyan-500/50 shrink-0"></div><span className="leading-relaxed">{item}</span></div>))}
+             {/* Góc sư phạm (Card Info) */}
+             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex-1">
+                <h4 className="font-bold text-sm text-indigo-900 mb-3 flex items-center gap-2"><GraduationCap className="w-4 h-4 text-indigo-500" /> Góc Sư phạm</h4>
+                <div className="space-y-3">
+                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                        <p className="text-xs font-bold text-indigo-700 mb-1">📱 Chế độ Năng lực Số</p>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">Tích hợp các kỹ năng CNTT cơ bản: Soạn thảo văn bản, Làm bài trình chiếu, Tra cứu Web, Sử dụng phần mềm dạy học (GeoGebra, Azota...).</p>
+                    </div>
+                    <div className="p-3 bg-rose-50 rounded-lg border border-rose-100">
+                        <p className="text-xs font-bold text-rose-700 mb-1">⚡ Chế độ Năng lực AI</p>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">Tích hợp GenAI (ChatGPT, Gemini) làm trợ lý ảo. Chú trọng kỹ năng Prompting (Ra lệnh), Tư duy phản biện & Kiểm chứng thông tin.</p>
+                    </div>
                 </div>
              </div>
           </div>
         </div>
       </div>
 
-      {/* --- FOOTER --- */}
-      <footer className="w-full mt-20 py-8 border-t border-indigo-100/50 bg-white/40 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
-              <span className="text-lg font-black text-slate-700">NLS Integrator Pro</span>
-            </div>
-            <p className="text-slate-500 text-xs font-medium">
-              Giải pháp tích hợp Năng lực số & AI vào dạy học • Phát triển bởi Đặng Mạnh Hùng
-            </p>
-            <div className="flex gap-2 mt-2">
-               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-               <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-            </div>
-        </div>
-      </footer>
+      {/* FOOTER */}
+      <div className="w-full mt-auto py-6 text-center text-slate-400 text-[10px]">
+          <p>© 2024 NLS Integrator Pro • Design by Dang Manh Hung</p>
+      </div>
     </div>
   );
 };
