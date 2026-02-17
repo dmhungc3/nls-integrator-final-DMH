@@ -36,43 +36,49 @@ export const createIntegrationTextPrompt = (
   const label = mode === 'NAI' ? "Tích hợp AI" : "Tích hợp NLS";
 
   return `
-    Đóng vai: Chuyên gia Sư phạm Số.
+    Đóng vai: Chuyên gia Sư phạm Số & Công nghệ dạy học (EdTech).
     Nhiệm vụ: Viết phần BỔ SUNG để chèn vào giáo án môn ${subject} lớp ${grade}.
     Chế độ: ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'}. Mô hình: ${selectedModel.name}.
     
-    ⚠️ QUY TẮC CẤM (BẮT BUỘC TUÂN THỦ):
-    1. CẤM xuất hiện từ "Kiến thức:" trong kết quả. (Vì giáo án cũ đã có).
-    2. CẤM liệt kê lại "Máy chiếu", "Bảng đen" nếu không có mục đích số cụ thể.
-    3. CẤM viết lại nội dung bài học cũ. CHỈ VIẾT HÀNH ĐỘNG CÔNG NGHỆ MỚI.
+    ⚠️ QUY TẮC 1: CHỐNG TRÙNG LẶP (Tuyệt đối không viết lại Kiến thức/Phẩm chất cũ).
+    ⚠️ QUY TẮC 2: LEN LỎI (Tìm đúng tên Hoạt động để chèn vào dưới).
     
+    ⚠️ QUY TẮC 3: THÔNG MINH (CONTEXT-AWARE) - QUAN TRỌNG NHẤT ĐỂ ĐẠT 10/10:
+    - Hãy ĐỌC KỸ nội dung bài tập hoặc hoạt động trong giáo án gốc.
+    - Gợi ý công cụ PHẢI KHỚP với nội dung đó.
+      + Ví dụ: Nếu bài có "Vẽ đồ thị/Hình học" -> Gợi ý: "Dùng GeoGebra/Desmos để vẽ [Tên hình]..."
+      + Ví dụ: Nếu bài có "Thảo luận nhóm" -> Gợi ý: "Dùng Padlet/Jamboard để ghi ý kiến..."
+      + Ví dụ: Nếu bài có "Trắc nghiệm" -> Gợi ý: "Dùng Quizizz/Kahoot để kiểm tra..."
+      + Ví dụ: Nếu bài có "Tìm hiểu thực tế" -> Gợi ý: "Tra cứu thông tin/Video về [Chủ đề]..."
+    - TRÁNH viết chung chung kiểu "Dùng phần mềm hỗ trợ". Hãy chỉ đích danh phần mềm phù hợp.
+
     NỘI DUNG GIÁO ÁN GỐC: """${text.substring(0, 30000)}"""
 
-    YÊU CẦU ĐẦU RA (CHỈ GỒM CÁC DÒNG SAU):
+    YÊU CẦU ĐẦU RA (ĐỊNH DẠNG CHUẨN):
 
     ===BAT_DAU_MUC_TIEU===
-    👉 ${label}: [Năng lực số] Sử dụng [Công cụ] để [Hành động]...
-    👉 ${label}: [Năng lực số] Phối hợp trên [Nền tảng] để...
+    👉 ${label}: [Năng lực số] Sử dụng thành thạo [Công cụ cụ thể] để giải quyết [Vấn đề cụ thể trong bài]...
+    👉 ${label}: [Năng lực số] Phối hợp trên [Nền tảng] để hoàn thành nhiệm vụ...
     ===KET_THUC_MUC_TIEU===
 
     ===BAT_DAU_HOC_LIEU===
-    👉 ${label}: [Tên App/Phần mềm] (để mô phỏng/tương tác).
-    👉 ${label}: [Link video/web] (để tra cứu).
-    (Không liệt kê lại thiết bị cơ bản nếu không cần thiết)
+    👉 ${label}: [Tên App/Phần mềm] (để thực hiện hoạt động X).
+    👉 ${label}: [Link video/web] (liên quan đến bài học).
     ===KET_THUC_HOC_LIEU===
 
     ===BAT_DAU_HOAT_DONG===
-    ANCHOR: (Trích dẫn chính xác Tên hoạt động/Bước trong bài. VD: "Hoạt động 1:", "Bước 2:", "GV giao nhiệm vụ")
-    CONTENT: (Mô tả hành động công nghệ:
-    👉 ${label}: GV tổ chức cho HS dùng...
-    👉 ${label}: HS thực hiện thao tác...)
+    ANCHOR: (Trích dẫn Tên hoạt động/Bước thực hiện. VD: "Hoạt động Luyện tập:", "Bài 4.3:")
+    CONTENT: (Mô tả hành động công nghệ CỤ THỂ:
+    👉 ${label}: GV yêu cầu HS dùng [Công cụ A] để giải quyết [Bài tập B]...
+    👉 ${label}: HS nộp sản phẩm/kết quả lên [Nền tảng C]...)
     ---PHAN_CACH_HOAT_DONG---
     ANCHOR: (Điểm neo tiếp theo...)
     CONTENT: (Nội dung...)
     ===KET_THUC_HOAT_DONG===
 
     ===BAT_DAU_PHU_LUC===
-    👉 ${label}: Tiêu chí 1: Thao tác kỹ thuật chính xác.
-    👉 ${label}: Tiêu chí 2: Khai thác thông tin đúng mục đích.
+    👉 ${label}: Tiêu chí 1: Sử dụng đúng chức năng của phần mềm [Tên].
+    👉 ${label}: Tiêu chí 2: Kết quả [Sản phẩm số] chính xác, thẩm mỹ.
     ===KET_THUC_PHU_LUC===
   `;
 };
