@@ -128,6 +128,8 @@ const App: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* CỘT TRÁI: THIẾT LẬP */}
           <div className="lg:col-span-8 flex flex-col gap-6">
             {state.step === 'upload' && (
               <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-white overflow-hidden ring-1 ring-slate-100">
