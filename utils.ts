@@ -17,9 +17,9 @@ const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: stri
 };
 
 export const PEDAGOGY_MODELS = {
-  "DEFAULT": { name: "Truyền thống nâng cao", desc: "Tích hợp công nghệ vào các bước lên lớp." },
-  "5E": { name: "Mô hình 5E (STEM)", desc: "Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá." },
-  "PBL": { name: "Dạy học Dự án", desc: "Giải quyết vấn đề thực tiễn qua dự án dài hạn." },
+  "DEFAULT": { name: "Linh hoạt (Context-Based)", desc: "Tự động điều chỉnh theo đặc thù từng môn học." },
+  "5E": { name: "Mô hình 5E (STEM/KHTN)", desc: "Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá." },
+  "PBL": { name: "Dạy học Dự án (XH/NT)", desc: "Giải quyết vấn đề thực tiễn qua dự án dài hạn." },
   "FLIPPED": { name: "Lớp học đảo ngược", desc: "HS xem tài liệu ở nhà, lên lớp thảo luận sâu." },
   "GAMIFICATION": { name: "Trò chơi hóa", desc: "Học thông qua trò chơi số (Quizizz, Kahoot)." }
 };
@@ -36,49 +36,60 @@ export const createIntegrationTextPrompt = (
   const label = mode === 'NAI' ? "Tích hợp AI" : "Tích hợp NLS";
 
   return `
-    Đóng vai: Chuyên gia Sư phạm Số & Công nghệ dạy học (EdTech).
-    Nhiệm vụ: Viết phần BỔ SUNG để chèn vào giáo án môn ${subject} lớp ${grade}.
+    Đóng vai: Chuyên gia Sư phạm Số & Công nghệ dạy học Đa lĩnh vực.
+    Nhiệm vụ: Phân tích giáo án môn ${subject} lớp ${grade} để chèn hoạt động Công nghệ/AI "thông minh" nhất.
     Chế độ: ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'}. Mô hình: ${selectedModel.name}.
     
-    ⚠️ QUY TẮC 1: CHỐNG TRÙNG LẶP (Tuyệt đối không viết lại Kiến thức/Phẩm chất cũ).
-    ⚠️ QUY TẮC 2: LEN LỎI (Tìm đúng tên Hoạt động để chèn vào dưới).
+    ⚠️ QUY TẮC "BẤT KHẢ XÂM PHẠM":
+    1. CHỐNG TRÙNG LẶP: Không viết lại kiến thức/phẩm chất cũ.
+    2. LEN LỎI: Tìm đúng tên Hoạt động/Bước để chèn vào dưới.
     
-    ⚠️ QUY TẮC 3: THÔNG MINH (CONTEXT-AWARE) - QUAN TRỌNG NHẤT ĐỂ ĐẠT 10/10:
-    - Hãy ĐỌC KỸ nội dung bài tập hoặc hoạt động trong giáo án gốc.
-    - Gợi ý công cụ PHẢI KHỚP với nội dung đó.
-      + Ví dụ: Nếu bài có "Vẽ đồ thị/Hình học" -> Gợi ý: "Dùng GeoGebra/Desmos để vẽ [Tên hình]..."
-      + Ví dụ: Nếu bài có "Thảo luận nhóm" -> Gợi ý: "Dùng Padlet/Jamboard để ghi ý kiến..."
-      + Ví dụ: Nếu bài có "Trắc nghiệm" -> Gợi ý: "Dùng Quizizz/Kahoot để kiểm tra..."
-      + Ví dụ: Nếu bài có "Tìm hiểu thực tế" -> Gợi ý: "Tra cứu thông tin/Video về [Chủ đề]..."
-    - TRÁNH viết chung chung kiểu "Dùng phần mềm hỗ trợ". Hãy chỉ đích danh phần mềm phù hợp.
+    ⚠️ QUY TẮC "THÔNG MINH ĐA MÔN" (CONTEXT-AWARE):
+    Hãy đọc kỹ nội dung bài dạy và áp dụng công cụ tương ứng với đặc thù môn học:
+    
+    1. NHÓM KHTN (Toán, Lý, Hóa, Sinh):
+       - Nếu có hình học/đồ thị/cấu trúc phân tử -> Dùng: GeoGebra, Desmos, KingDraw, PhET Simulations.
+       - Nếu có tính toán/xử lý số liệu -> Dùng: Excel, Google Sheets.
+    
+    2. NHÓM KHXH (Văn, Sử, Địa, GDCD):
+       - Nếu có tìm hiểu tác giả/địa danh -> Dùng: Google Earth, Google Maps, Tra cứu thư viện số.
+       - Nếu có đóng vai/kể chuyện -> Dùng: Canva (làm Poster), PowerPoint (làm Slide), Podcast (thu âm).
+       - Nếu có tranh luận/nghị luận -> Dùng: Padlet/Linoit (để thảo luận nhóm), Kỹ thuật "Bể cá" online.
+
+    3. NHÓM NGHỆ THUẬT/THỂ CHẤT (Âm nhạc, MT, GDTC):
+       - Âm nhạc/Mỹ thuật: Dùng GarageBand, MuseScore, Paint 3D, AI vẽ tranh (Midjourney/Bing).
+       - Thể dục/GDQP: Dùng Video phân tích động tác (Slow motion), App đo bước chân/nhịp tim.
+    
+    4. NHÓM NGOẠI NGỮ:
+       - Dùng: Duolingo, ELSA Speak, Từ điển Online, AI Chatbot để luyện hội thoại.
 
     NỘI DUNG GIÁO ÁN GỐC: """${text.substring(0, 30000)}"""
 
     YÊU CẦU ĐẦU RA (ĐỊNH DẠNG CHUẨN):
 
     ===BAT_DAU_MUC_TIEU===
-    👉 ${label}: [Năng lực số] Sử dụng thành thạo [Công cụ cụ thể] để giải quyết [Vấn đề cụ thể trong bài]...
-    👉 ${label}: [Năng lực số] Phối hợp trên [Nền tảng] để hoàn thành nhiệm vụ...
+    👉 ${label}: [Năng lực số] Sử dụng [Công cụ cụ thể] để [Hành động phù hợp với môn học]...
+    👉 ${label}: [Năng lực số] Khai thác [Nguồn dữ liệu] để...
     ===KET_THUC_MUC_TIEU===
 
     ===BAT_DAU_HOC_LIEU===
-    👉 ${label}: [Tên App/Phần mềm] (để thực hiện hoạt động X).
-    👉 ${label}: [Link video/web] (liên quan đến bài học).
+    👉 ${label}: [Tên App/Phần mềm chuyên dụng cho môn này].
+    👉 ${label}: [Link video/web] (liên quan bài học).
     ===KET_THUC_HOC_LIEU===
 
     ===BAT_DAU_HOAT_DONG===
-    ANCHOR: (Trích dẫn Tên hoạt động/Bước thực hiện. VD: "Hoạt động Luyện tập:", "Bài 4.3:")
+    ANCHOR: (Trích dẫn Tên hoạt động/Bước thực hiện)
     CONTENT: (Mô tả hành động công nghệ CỤ THỂ:
-    👉 ${label}: GV yêu cầu HS dùng [Công cụ A] để giải quyết [Bài tập B]...
-    👉 ${label}: HS nộp sản phẩm/kết quả lên [Nền tảng C]...)
+    👉 ${label}: GV tổ chức cho HS dùng [Công cụ] để [Giải quyết vấn đề của bài]...
+    👉 ${label}: HS nộp sản phẩm [Tranh/Slide/Video/File] lên [Nền tảng]...)
     ---PHAN_CACH_HOAT_DONG---
     ANCHOR: (Điểm neo tiếp theo...)
     CONTENT: (Nội dung...)
     ===KET_THUC_HOAT_DONG===
 
     ===BAT_DAU_PHU_LUC===
-    👉 ${label}: Tiêu chí 1: Sử dụng đúng chức năng của phần mềm [Tên].
-    👉 ${label}: Tiêu chí 2: Kết quả [Sản phẩm số] chính xác, thẩm mỹ.
+    👉 ${label}: Tiêu chí 1: Sử dụng thành thạo [Công cụ đã chọn].
+    👉 ${label}: Tiêu chí 2: Sản phẩm số đảm bảo tính [Thẩm mỹ/Chính xác/Sáng tạo].
     ===KET_THUC_PHU_LUC===
   `;
 };
