@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight,
-  Terminal, Smartphone, Zap, Layers, Cpu
+  Smartphone, Zap, Layers, Cpu
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';

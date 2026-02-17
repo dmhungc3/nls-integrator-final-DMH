@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css'; // <--- QUAN TRỌNG: Dòng này giúp web nhận diện hiệu ứng
+import './index.css'; // File này giờ đã nằm cùng cấp nên import thế này là chuẩn
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
