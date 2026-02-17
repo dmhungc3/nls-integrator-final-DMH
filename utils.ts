@@ -16,9 +16,8 @@ const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: stri
   "Lớp 12": { ten: "Chuyên gia (L6)", kyHieu: "L6", nhiemVu: "Quản trị dự án số, giải pháp mới." },
 };
 
-// --- CÁC MÔ HÌNH DẠY HỌC ---
 export const PEDAGOGY_MODELS = {
-  "DEFAULT": { name: "Truyền thống nâng cao", desc: "Tích hợp công nghệ vào từng bước lên lớp." },
+  "DEFAULT": { name: "Truyền thống nâng cao", desc: "Tích hợp công nghệ vào các bước lên lớp." },
   "5E": { name: "Mô hình 5E (STEM)", desc: "Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá." },
   "PBL": { name: "Dạy học Dự án", desc: "Giải quyết vấn đề thực tiễn qua dự án dài hạn." },
   "FLIPPED": { name: "Lớp học đảo ngược", desc: "HS xem tài liệu ở nhà, lên lớp thảo luận sâu." },
@@ -34,47 +33,45 @@ export const createIntegrationTextPrompt = (
   const mucDo = LEVEL_MAPPING[grade] || { ten: "Cơ bản", kyHieu: "L1", nhiemVu: "Làm quen" };
   const context = mode === 'NAI' ? NAI_CONTEXT : NLS_CONTEXT;
   const selectedModel = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS] || PEDAGOGY_MODELS["DEFAULT"];
+  const label = mode === 'NAI' ? "Tích hợp AI" : "Tích hợp NLS";
 
   return `
     Đóng vai: Chuyên gia Sư phạm Số.
-    Nhiệm vụ: Viết các dòng **BỔ SUNG** để chèn vào giáo án môn ${subject} lớp ${grade}.
+    Nhiệm vụ: Viết phần BỔ SUNG để chèn vào giáo án môn ${subject} lớp ${grade}.
     Chế độ: ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'}. Mô hình: ${selectedModel.name}.
     
-    ⚠️ QUY TẮC SỐ 1 (CHỐNG TRÙNG LẶP - QUAN TRỌNG NHẤT):
-    - KHÔNG ĐƯỢC viết lại các mục "Kiến thức", "Phẩm chất", "Năng lực chung" đã có trong bài.
-    - CHỈ VIẾT DUY NHẤT các gạch đầu dòng về **Công nghệ/AI** để bổ sung vào danh sách có sẵn.
-
-    ⚠️ QUY TẮC SỐ 2 (LEN LỎI VÀO HOẠT ĐỘNG):
-    - Tìm các "Điểm neo" (Anchor) là các bước cụ thể (Ví dụ: "Bước 1", "GV giao nhiệm vụ", "HS thảo luận").
-    - Chèn hoạt động công nghệ ngay sau các bước đó.
+    ⚠️ QUY TẮC CỐT TỬ:
+    1. KHÔNG viết lại kiến thức cũ. CHỈ viết phần công nghệ bổ sung.
+    2. Mỗi ý phải bắt đầu bằng cụm từ: "**👉 ${label}:**".
+    3. Viết ngắn gọn, đi thẳng vào vấn đề: Dùng công cụ gì? Để làm gì?
 
     NỘI DUNG GIÁO ÁN GỐC: """${text.substring(0, 30000)}"""
 
-    YÊU CẦU ĐẦU RA (ĐỊNH DẠNG LIST NGẮN GỌN):
+    YÊU CẦU ĐẦU RA (ĐỊNH DẠNG BẮT BUỘC):
 
     ===BAT_DAU_MUC_TIEU===
-    + Năng lực số/AI (Bổ sung): Sử dụng [Công cụ] để [Hành động]...
-    + Năng lực số/AI (Bổ sung): Phối hợp trên [Nền tảng] để...
+    👉 ${label}: [Năng lực số] Sử dụng [Công cụ] để [Hành động]...
+    👉 ${label}: [Năng lực số] Phối hợp trên [Nền tảng] để...
     ===KET_THUC_MUC_TIEU===
 
     ===BAT_DAU_HOC_LIEU===
-    + Thiết bị (Bổ sung): Máy tính/Điện thoại kết nối mạng.
-    + Phần mềm (Bổ sung): [Tên App], [Link video/web]...
+    👉 ${label}: Máy tính/Điện thoại kết nối mạng.
+    👉 ${label}: [Tên App/Phần mềm], [Link video/web]...
     ===KET_THUC_HOC_LIEU===
 
     ===BAT_DAU_HOAT_DONG===
-    ANCHOR: (Trích dẫn chính xác một câu/tiêu đề bước trong bài. Ví dụ: "Hoạt động 1:", "Bước 2:", "GV yêu cầu:")
-    CONTENT: (Mô tả hành động công nghệ ngắn gọn:
-    + [NLS]: GV tổ chức cho HS dùng...
-    + [NLS]: HS thực hiện thao tác...)
+    ANCHOR: (Trích dẫn chính xác Tên hoạt động/Bước trong bài. VD: "Hoạt động 1:", "Bước 2:", "GV giao nhiệm vụ")
+    CONTENT: (Mô tả hành động công nghệ:
+    👉 ${label}: GV tổ chức cho HS dùng...
+    👉 ${label}: HS thực hiện thao tác...)
     ---PHAN_CACH_HOAT_DONG---
     ANCHOR: (Điểm neo tiếp theo...)
     CONTENT: (Nội dung...)
     ===KET_THUC_HOAT_DONG===
 
     ===BAT_DAU_PHU_LUC===
-    + Tiêu chí số 1: Thao tác kỹ thuật chính xác.
-    + Tiêu chí số 2: Khai thác thông tin đúng mục đích.
+    👉 ${label}: Tiêu chí 1: Thao tác kỹ thuật chính xác.
+    👉 ${label}: Tiêu chí 2: Khai thác thông tin đúng mục đích.
     ===KET_THUC_PHU_LUC===
   `;
 };

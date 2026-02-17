@@ -14,40 +14,51 @@ export const injectContentIntoDocx = async (
   let xml = await zipContent.file("word/document.xml")?.async("string");
   if (!xml) throw new Error("File Word bị lỗi (không tìm thấy document.xml)");
 
-  // Màu sắc chủ đạo (Xanh/Đỏ)
-  const colorCode = mode === 'NAI' ? "E11D48" : "1D4ED8"; 
+  const colorCode = mode === 'NAI' ? "E11D48" : "1D4ED8"; // Đỏ hoặc Xanh
 
-  // Hàm chèn nội dung dạng danh sách (List Item)
-  const insertListItem = (keywordArr: string[], textContent: string, isActivity: boolean = false) => {
+  // Hàm chèn nội dung có định dạng đặc biệt
+  const insertStyledContent = (keywordArr: string[], textContent: string) => {
       let xmlBlock = "";
       const lines = textContent.split('\n');
       
       lines.forEach(line => {
           const cleanLine = line.trim();
           if (!cleanLine) return;
-          
-          // Với Hoạt động, ta không tô màu cả dòng mà chỉ tô đậm từ khóa đầu dòng (xử lý sau nếu cần)
-          // Ở đây ta dùng màu để làm nổi bật phần bổ sung
-          xmlBlock += createParagraphXML(cleanLine, colorCode, false, true); 
+
+          // Tách phần Tiêu đề (👉 Tích hợp NLS:) và Nội dung để format riêng
+          const parts = cleanLine.split(':');
+          if (parts.length > 1 && cleanLine.includes("👉")) {
+              const prefix = parts[0] + ":"; // Phần tiêu đề (VD: 👉 Tích hợp NLS:)
+              const body = cleanLine.substring(prefix.length); // Phần nội dung
+              
+              // Tạo đoạn văn: Tiêu đề in đậm màu, Nội dung bình thường
+              xmlBlock += `<w:p>
+                  <w:pPr><w:spacing w:before="60" w:after="60"/><w:ind w:left="720"/></w:pPr>
+                  <w:r>
+                      <w:rPr><w:b/><w:color w:val="${colorCode}"/><w:sz w:val="26"/></w:rPr>
+                      <w:t xml:space="preserve">${prefix}</w:t>
+                  </w:r>
+                  <w:r>
+                      <w:rPr><w:color w:val="000000"/><w:sz w:val="26"/></w:rPr>
+                      <w:t xml:space="preserve">${body}</w:t>
+                  </w:r>
+              </w:p>`;
+          } else {
+              // Dòng bình thường
+              xmlBlock += createParagraphXML(cleanLine, "000000", false, true);
+          }
       });
 
       let inserted = false;
       for (const keyword of keywordArr) {
-          // Tìm từ khóa (Tiêu đề hoạt động, Mục tiêu...)
-          // Regex này tìm đoạn text chứa keyword nằm trong thẻ <w:t>
           const regex = new RegExp(`(<w:t>|<w:t [^>]*>)[^<]*${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^<]*</w:t>`, 'i');
           const match = xml!.match(regex);
-          
           if (match && match.index !== undefined) {
-              // Tìm điểm kết thúc của đoạn văn chứa từ khóa đó (</w:p>)
               const endOfParaIndex = xml!.indexOf("</w:p>", match.index);
               if (endOfParaIndex !== -1) {
                   const insertPosition = endOfParaIndex + 6;
-                  // Chèn ngay bên dưới
                   xml = xml!.slice(0, insertPosition) + xmlBlock + xml!.slice(insertPosition);
                   inserted = true;
-                  // Với hoạt động, chỉ chèn 1 lần cho mỗi từ khóa tìm thấy đầu tiên để tránh lặp
-                  if(isActivity) break; 
               }
           }
       }
@@ -56,35 +67,33 @@ export const injectContentIntoDocx = async (
 
   // 1. CHÈN MỤC TIÊU
   if (content.objectives_addition) {
-    log(`🎯 Bổ sung Mục tiêu...`);
-    insertListItem(["Năng lực", "Yêu cầu cần đạt", "Mục tiêu"], content.objectives_addition);
+    log(`🎯 Bổ sung Năng lực...`);
+    let inserted = insertStyledContent(["Năng lực", "Yêu cầu cần đạt"], content.objectives_addition);
+    if (!inserted) insertStyledContent(["Mục tiêu"], content.objectives_addition);
   }
 
   // 2. CHÈN HỌC LIỆU
   if (content.materials_addition) {
     log("💻 Bổ sung Học liệu...");
-    insertListItem(["Thiết bị", "Học liệu", "Chuẩn bị"], content.materials_addition);
+    insertStyledContent(["Thiết bị", "Học liệu", "Chuẩn bị"], content.materials_addition);
   }
 
-  // 3. CHÈN HOẠT ĐỘNG (Quan trọng)
+  // 3. CHÈN HOẠT ĐỘNG
   if (content.activities_integration.length > 0) {
-      log("⚡ Lồng ghép Hoạt động vào bài...");
+      log("⚡ Lồng ghép Hoạt động...");
       content.activities_integration.forEach(act => {
-          // Lấy Anchor text từ AI (thường là tên hoạt động)
-          const searchKey = act.anchor_text.trim(); 
-          // Nếu anchor quá dài, cắt bớt để dễ tìm
-          const shortKey = searchKey.length > 50 ? searchKey.substring(0, 40) : searchKey;
-          
-          insertListItem([shortKey], act.content, true);
+          const searchKey = act.anchor_text.trim();
+          const shortKey = searchKey.length > 60 ? searchKey.substring(0, 50) : searchKey;
+          insertStyledContent([shortKey], act.content);
       });
   }
 
   // 4. PHỤ LỤC
   if (content.appendix_table) {
-      log("📊 Tạo bảng Phụ lục...");
+      log("📊 Tạo bảng đánh giá...");
       const bodyEndIndex = xml.lastIndexOf("</w:sectPr>");
       if (bodyEndIndex !== -1) {
-          let appendixXml = createParagraphXML(`PHỤ LỤC: TIÊU CHÍ ĐÁNH GIÁ (BỔ SUNG)`, colorCode, true, false);
+          let appendixXml = createParagraphXML(`--- PHỤ LỤC: TIÊU CHÍ ĐÁNH GIÁ CÔNG NGHỆ ---`, colorCode, true, false);
           const lines = content.appendix_table.split('\n');
           lines.forEach(line => { 
               if (line.trim()) appendixXml += createParagraphXML(line.trim(), "000000", false, true); 
@@ -99,9 +108,7 @@ export const injectContentIntoDocx = async (
 
 function createParagraphXML(text: string, colorHex: string = "000000", isBold: boolean = false, isIndent: boolean = false): string {
     const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-    // Thụt đầu dòng (w:ind) để hòa nhập vào bài
     const indentXML = isIndent ? '<w:ind w:left="720"/>' : '';
-
     return `<w:p>
               <w:pPr>
                 ${indentXML}
@@ -110,7 +117,6 @@ function createParagraphXML(text: string, colorHex: string = "000000", isBold: b
                     <w:b w:val="${isBold ? '1' : '0'}"/>
                     <w:color w:val="${colorHex}"/>
                     <w:sz w:val="26"/> 
-                    <w:szCs w:val="26"/>
                 </w:rPr>
               </w:pPr>
               <w:r>
@@ -118,7 +124,6 @@ function createParagraphXML(text: string, colorHex: string = "000000", isBold: b
                     <w:b w:val="${isBold ? '1' : '0'}"/>
                     <w:color w:val="${colorHex}"/>
                     <w:sz w:val="26"/>
-                    <w:szCs w:val="26"/>
                 </w:rPr>
                 <w:t xml:space="preserve">${safeText}</w:t>
               </w:r>
