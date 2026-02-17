@@ -230,6 +230,7 @@ const App: React.FC = () => {
             )}
           </div>
           
+          {/* CỘT PHẢI: LOGS */}
           <div className="lg:col-span-4 flex flex-col gap-6 h-full">
              <div className="bg-[#1e1e2e] rounded-2xl p-5 shadow-2xl shadow-slate-400/20 flex flex-col h-[320px] border border-slate-700/50 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
@@ -238,7 +239,7 @@ const App: React.FC = () => {
                     <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div></div>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed">
-                   {state.logs.length === 0 && <span className="text-slate-600 italic">>> Waiting for input stream...</span>}
+                   {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Waiting for input stream...</span>}
                    {state.logs.map((log, i) => (
                      <div key={i} className="flex gap-3 animate-fade-in-left">
                        <span className="text-slate-600 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
