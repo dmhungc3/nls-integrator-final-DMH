@@ -40,14 +40,14 @@ export const createIntegrationTextPrompt = (
     Nhiệm vụ: Viết phần BỔ SUNG để chèn vào giáo án môn ${subject} lớp ${grade}.
     Chế độ: ${mode === 'NAI' ? 'NĂNG LỰC AI' : 'NĂNG LỰC SỐ'}. Mô hình: ${selectedModel.name}.
     
-    ⚠️ QUY TẮC CỐT TỬ:
-    1. KHÔNG viết lại kiến thức cũ. CHỈ viết phần công nghệ bổ sung.
-    2. Mỗi ý phải bắt đầu bằng cụm từ: "**👉 ${label}:**".
-    3. Viết ngắn gọn, đi thẳng vào vấn đề: Dùng công cụ gì? Để làm gì?
-
+    ⚠️ QUY TẮC CẤM (BẮT BUỘC TUÂN THỦ):
+    1. CẤM xuất hiện từ "Kiến thức:" trong kết quả. (Vì giáo án cũ đã có).
+    2. CẤM liệt kê lại "Máy chiếu", "Bảng đen" nếu không có mục đích số cụ thể.
+    3. CẤM viết lại nội dung bài học cũ. CHỈ VIẾT HÀNH ĐỘNG CÔNG NGHỆ MỚI.
+    
     NỘI DUNG GIÁO ÁN GỐC: """${text.substring(0, 30000)}"""
 
-    YÊU CẦU ĐẦU RA (ĐỊNH DẠNG BẮT BUỘC):
+    YÊU CẦU ĐẦU RA (CHỈ GỒM CÁC DÒNG SAU):
 
     ===BAT_DAU_MUC_TIEU===
     👉 ${label}: [Năng lực số] Sử dụng [Công cụ] để [Hành động]...
@@ -55,8 +55,9 @@ export const createIntegrationTextPrompt = (
     ===KET_THUC_MUC_TIEU===
 
     ===BAT_DAU_HOC_LIEU===
-    👉 ${label}: Máy tính/Điện thoại kết nối mạng.
-    👉 ${label}: [Tên App/Phần mềm], [Link video/web]...
+    👉 ${label}: [Tên App/Phần mềm] (để mô phỏng/tương tác).
+    👉 ${label}: [Link video/web] (để tra cứu).
+    (Không liệt kê lại thiết bị cơ bản nếu không cần thiết)
     ===KET_THUC_HOC_LIEU===
 
     ===BAT_DAU_HOAT_DONG===

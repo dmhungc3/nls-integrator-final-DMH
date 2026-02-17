@@ -14,9 +14,9 @@ export const injectContentIntoDocx = async (
   let xml = await zipContent.file("word/document.xml")?.async("string");
   if (!xml) throw new Error("File Word bị lỗi (không tìm thấy document.xml)");
 
-  const colorCode = mode === 'NAI' ? "E11D48" : "1D4ED8"; // Đỏ hoặc Xanh
+  const colorCode = mode === 'NAI' ? "E11D48" : "1D4ED8"; // Màu Đỏ hoặc Xanh
 
-  // Hàm chèn nội dung có định dạng đặc biệt
+  // Hàm chèn nội dung có định dạng (In đậm tiêu đề)
   const insertStyledContent = (keywordArr: string[], textContent: string) => {
       let xmlBlock = "";
       const lines = textContent.split('\n');
@@ -25,13 +25,12 @@ export const injectContentIntoDocx = async (
           const cleanLine = line.trim();
           if (!cleanLine) return;
 
-          // Tách phần Tiêu đề (👉 Tích hợp NLS:) và Nội dung để format riêng
-          const parts = cleanLine.split(':');
-          if (parts.length > 1 && cleanLine.includes("👉")) {
-              const prefix = parts[0] + ":"; // Phần tiêu đề (VD: 👉 Tích hợp NLS:)
-              const body = cleanLine.substring(prefix.length); // Phần nội dung
+          // Xử lý dòng có tiêu đề "👉 Tích hợp..."
+          if (cleanLine.includes("👉")) {
+              const parts = cleanLine.split(':');
+              const prefix = parts[0] + ":"; 
+              const body = cleanLine.substring(prefix.length); 
               
-              // Tạo đoạn văn: Tiêu đề in đậm màu, Nội dung bình thường
               xmlBlock += `<w:p>
                   <w:pPr><w:spacing w:before="60" w:after="60"/><w:ind w:left="720"/></w:pPr>
                   <w:r>
@@ -44,7 +43,7 @@ export const injectContentIntoDocx = async (
                   </w:r>
               </w:p>`;
           } else {
-              // Dòng bình thường
+              // Dòng bình thường (nếu AI viết xuống dòng)
               xmlBlock += createParagraphXML(cleanLine, "000000", false, true);
           }
       });
@@ -53,12 +52,14 @@ export const injectContentIntoDocx = async (
       for (const keyword of keywordArr) {
           const regex = new RegExp(`(<w:t>|<w:t [^>]*>)[^<]*${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^<]*</w:t>`, 'i');
           const match = xml!.match(regex);
+          
           if (match && match.index !== undefined) {
               const endOfParaIndex = xml!.indexOf("</w:p>", match.index);
               if (endOfParaIndex !== -1) {
                   const insertPosition = endOfParaIndex + 6;
                   xml = xml!.slice(0, insertPosition) + xmlBlock + xml!.slice(insertPosition);
                   inserted = true;
+                  break; // <--- QUAN TRỌNG: Tìm thấy là dừng ngay, không tìm tiếp từ khóa khác để tránh lặp
               }
           }
       }
@@ -68,6 +69,7 @@ export const injectContentIntoDocx = async (
   // 1. CHÈN MỤC TIÊU
   if (content.objectives_addition) {
     log(`🎯 Bổ sung Năng lực...`);
+    // Chỉ tìm từ khóa chính xác để tránh chèn nhầm
     let inserted = insertStyledContent(["Năng lực", "Yêu cầu cần đạt"], content.objectives_addition);
     if (!inserted) insertStyledContent(["Mục tiêu"], content.objectives_addition);
   }
