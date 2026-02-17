@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight,
-  User, Terminal, Smartphone, Zap, Layers, Cpu
+  Terminal, Smartphone, Zap, Layers, Cpu
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
@@ -78,7 +78,20 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* HEADER CAO CẤP */}
+      {/* ⚠️ PHẦN CSS NHÚNG TRỰC TIẾP ĐỂ KHÔNG CẦN FILE INDEX.CSS */}
+      <style>{`
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-fade-in-left { animation: fadeInLeft 0.3s ease-out forwards; }
+        .animate-blink { animation: blink 1s infinite; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 20px; }
+      `}</style>
+
+      {/* HEADER */}
       <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 h-18 flex items-center justify-between gap-4 py-3">
               <div className="flex items-center gap-3 shrink-0">
@@ -94,7 +107,7 @@ const App: React.FC = () => {
                   </div>
               </div>
 
-              {/* API Key Status - Gọn gàng hơn */}
+              {/* API Key Status */}
               <div className="flex items-center justify-end shrink-0">
                   {isKeySaved ? (
                       <div className="flex items-center gap-2 bg-emerald-50/80 px-4 py-1.5 rounded-full border border-emerald-100 shadow-sm">
@@ -117,7 +130,7 @@ const App: React.FC = () => {
 
       <div className="w-full max-w-7xl px-4 py-8 flex flex-col gap-8">
         
-        {/* STEPPER TINH TẾ */}
+        {/* STEPPER */}
         <div className="flex justify-center">
              <div className="flex items-center gap-4 bg-white px-6 py-2 rounded-full shadow-sm border border-slate-100">
                 <div className={`flex items-center gap-2 ${state.step === 'upload' ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}><span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] border-current">1</span> Tải lên</div>
@@ -231,9 +244,8 @@ const App: React.FC = () => {
             )}
           </div>
           
-          {/* CỘT PHẢI: LOGS & INFO */}
+          {/* CỘT PHẢI: LOGS */}
           <div className="lg:col-span-4 flex flex-col gap-6 h-full">
-             {/* TERMINAL LOOK - Giao diện Log chuyên nghiệp hơn */}
              <div className="bg-[#1e1e2e] rounded-2xl p-5 shadow-2xl shadow-slate-400/20 flex flex-col h-[320px] border border-slate-700/50 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/50">
