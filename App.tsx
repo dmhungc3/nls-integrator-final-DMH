@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight,
-  Smartphone, Zap, Layers, Cpu, Phone, Info
+  Smartphone, Zap, Layers, Cpu, Phone, Info, Clock, CheckCircle2
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
@@ -13,7 +13,7 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v2.1.0"; 
+  const APP_VERSION = "v2.1.2"; // Bản tối ưu tốc độ chèn và logic GDPT 2018
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -56,15 +56,18 @@ const App: React.FC = () => {
     if (!userApiKey.trim()) { alert("Vui lòng nhập API Key!"); return; }
     if (!state.file || !state.subject || !state.grade) { alert("Anh vui lòng chọn đầy đủ thông tin Môn và Lớp!"); return; }
 
-    setState(prev => ({ ...prev, isProcessing: true, logs: [`🚀 Khởi động Core ${APP_VERSION}...`] }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [`🚀 Khởi động Core ${APP_VERSION} (Luồng tối ưu)...`] }));
 
     try {
       const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
       addLog(`⚙️ Chiến lược: ${modelName}`);
-      addLog("Đang xử lý cấu trúc giáo án...");
+      addLog("🔍 Đang đọc cấu trúc file Word...");
       const textContext = await extractTextFromDocx(state.file);
+      
+      addLog("🧠 AI đang thiết kế nội dung tích hợp...");
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
+      
       addLog(`✓ AI đã hoàn thành thiết kế.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
@@ -75,18 +78,25 @@ const App: React.FC = () => {
 
   const handleFinalizeAndDownload = async (finalContent: GeneratedNLSContent) => {
     if (!state.file) return;
-    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "Đang đóng gói file mới..."] }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "⚡ Đang chèn dữ liệu (Batch Injection)..."] }));
+    
     try {
-      const newBlob = await injectContentIntoDocx(state.file, finalContent, mode, addLog);
+      const startTime = performance.now();
+      
+      const newBlob = await injectContentIntoDocx(state.file, finalContent, mode, (m) => addLog(`→ ${m}`));
+      
+      const duration = ((performance.now() - startTime) / 1000).toFixed(1);
+      addLog(`✨ Hoàn tất chèn dữ liệu trong ${duration}s!`);
+
       setState(prev => ({ 
         ...prev, 
         isProcessing: false, 
         step: 'done', 
         result: { fileName: `Tich-hop-${mode}-${state.file?.name}`, blob: newBlob }, 
-        logs: [...prev.logs, "✨ Xuất file thành công!"] 
+        logs: [...prev.logs, "✓ File đã sẵn sàng tải về."] 
       }));
     } catch (error) {
-       addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Đóng gói thất bại"}`);
+       addLog(`❌ Lỗi đóng gói: ${error instanceof Error ? error.message : "Đóng gói thất bại"}`);
        setState(prev => ({ ...prev, isProcessing: false }));
     }
   };
@@ -116,7 +126,7 @@ const App: React.FC = () => {
                   <div className="flex flex-col">
                       <h2 className="font-bold text-slate-800 text-lg leading-tight tracking-tight">NLS Integrator Pro</h2>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{APP_VERSION}</span>
+                        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{APP_VERSION} SPEED</span>
                         <span className="text-[10px] text-slate-400">| GV. Đặng Mạnh Hùng</span>
                       </div>
                   </div>
@@ -201,7 +211,7 @@ const App: React.FC = () => {
                           </div>
                           
                           <div className="space-y-2">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Khối lớp</label>
+                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Khối lớp (THCS & THPT)</label>
                               <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                   <option value="">-- Chọn khối lớp --</option>
                                   <optgroup label="Cấp THPT">
@@ -246,7 +256,7 @@ const App: React.FC = () => {
                               ) : (
                                   <div className="flex flex-col items-center gap-2 group-hover:scale-105 transition-transform duration-300">
                                       <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors"><FileUp className="w-6 h-6" /></div>
-                                      <div><p className="font-bold text-slate-600 text-sm">Nhấn để tải giáo án Word (.docx)</p><p className="text-[10px] text-slate-400 mt-1">Hệ thống giữ nguyên định dạng, MathType và Hình ảnh</p></div>
+                                      <div><p className="font-bold text-slate-600 text-sm">Tải lên giáo án Word (.docx)</p><p className="text-[10px] text-slate-400 mt-1">Hỗ trợ đầy đủ bảng biểu và công thức</p></div>
                                   </div>
                               )}
                           </div>
@@ -262,7 +272,7 @@ const App: React.FC = () => {
                             : 'bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 text-white hover:shadow-indigo-500/40 bg-[length:200%_auto] hover:bg-right transition-all duration-500'
                         }`}
                       >
-                        {state.isProcessing ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang thiết kế nội dung...</>) : (<><Wand2 className="w-5 h-5" /> Kích hoạt AI & Tích hợp ngay</>)}
+                        {state.isProcessing ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang xử lý...</>) : (<><Wand2 className="w-5 h-5" /> Kích hoạt AI & Tích hợp ngay</>)}
                       </button>
                   </div>
               </div>
@@ -274,12 +284,12 @@ const App: React.FC = () => {
             
             {state.step === 'done' && state.result && (
               <div className="bg-white rounded-3xl p-10 shadow-2xl shadow-indigo-100/50 border border-white flex flex-col items-center text-center animate-fade-in-up">
-                 <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-200"><Sparkles className="w-10 h-10" /></div>
-                 <h3 className="text-2xl font-bold text-slate-800">Tuyệt vời! Đã nâng cấp xong.</h3>
-                 <p className="text-slate-500 mt-2 mb-8 max-w-md">Giáo án đã được tích hợp năng lực {mode === 'NAI' ? 'AI' : 'Số'} chuẩn GDPT 2018.</p>
+                 <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-200"><CheckCircle2 className="w-10 h-10" /></div>
+                 <h3 className="text-2xl font-bold text-slate-800">Hoàn tất nâng cấp!</h3>
+                 <p className="text-slate-500 mt-2 mb-8 max-w-md">Giáo án đã được tối ưu hóa với các hoạt động số thông minh cho {state.subject} {state.grade}.</p>
                  <div className="flex gap-4">
                      <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm bài khác</button>
-                     <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-transform hover:-translate-y-1"><Download className="w-4 h-4" /> Tải giáo án (.docx)</button>
+                     <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-transform hover:-translate-y-1"><Download className="w-4 h-4" /> Tải về máy (.docx)</button>
                  </div>
               </div>
             )}
@@ -293,7 +303,7 @@ const App: React.FC = () => {
                     <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div></div>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed">
-                   {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Đang chờ lệnh từ giáo viên...</span>}
+                   {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Đang chờ giáo án...</span>}
                    {state.logs.map((log, i) => (
                      <div key={i} className="flex gap-3 animate-fade-in-left">
                        <span className="text-slate-600 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
@@ -302,6 +312,12 @@ const App: React.FC = () => {
                        </span>
                      </div>
                    ))}
+                   {state.isProcessing && (
+                     <div className="flex items-center gap-2 text-indigo-400 animate-pulse mt-2">
+                       <Clock className="animate-spin w-4 h-4" />
+                       <span>Hệ thống đang xử lý thần tốc...</span>
+                     </div>
+                   )}
                 </div>
              </div>
              
@@ -317,7 +333,7 @@ const App: React.FC = () => {
                       <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-xs font-bold text-indigo-800">Phiên bản: {APP_VERSION}</p>
-                        <p className="text-[10px] text-indigo-600 mt-1 leading-relaxed">Bản quyền phần mềm thuộc về GV. Đặng Mạnh Hùng. Mỗi phiên bản được nâng cấp dựa trên nhu cầu thực tiễn của đồng nghiệp.</p>
+                        <p className="text-[10px] text-indigo-600 mt-1 leading-relaxed">Phần mềm được tối ưu hóa cho giáo viên cấp THCS & THPT trong việc chèn nội dung Word tốc độ cao.</p>
                       </div>
                     </div>
                 </div>
