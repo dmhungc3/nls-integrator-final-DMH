@@ -2,16 +2,21 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GeneratedNLSContent } from "../types";
 
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
+  // QUAN TRỌNG: Cấu hình sử dụng bản v1beta để hỗ trợ Gemini 1.5 Flash
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  
+  // Sửa lại dòng gọi model để tránh lỗi 404
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+  }, { apiVersion: 'v1beta' }); // Thêm tham số v1beta vào đây
 
   const result = await model.generateContent(prompt + `
-    YÊU CẦU QUAN TRỌNG: Trả về kết quả CHỈ LÀ một đối tượng JSON thuần túy, không có ký tự lạ, với cấu trúc:
+    YÊU CẦU: Trả về JSON thuần túy gồm:
     {
-      "objectives_addition": "nội dung chèn mục tiêu",
-      "materials_addition": "nội dung chèn học liệu số",
-      "activities_integration": [{"anchor_text": "câu gốc", "content": "hoạt động số"}],
-      "appendix_table": "bảng ma trận"
+      "objectives_addition": "Năng lực số cụ thể cho bài học",
+      "materials_addition": "Học liệu số cần dùng",
+      "activities_integration": [{"anchor_text": "câu gốc trong bài", "content": "nội dung tích hợp"}],
+      "appendix_table": "Bảng ma trận NLS"
     }
   `);
 
@@ -21,7 +26,7 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   try {
     return JSON.parse(text);
   } catch (e) {
-    console.error("Lỗi parse JSON:", text);
-    throw new Error("AI trả về định dạng không đúng. Hãy thử lại!");
+    console.error("Lỗi parse dữ liệu AI:", text);
+    throw new Error("Dữ liệu AI không hợp lệ. Anh hãy thử lại nhé!");
   }
 };
