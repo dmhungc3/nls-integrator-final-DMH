@@ -4,13 +4,13 @@ import { GeneratedNLSContent } from "../types";
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // Sử dụng cấu hình model ổn định nhất, không dùng v1beta để tránh lỗi 404
+  // Dùng model mặc định để tránh lỗi 404 version
   const model = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
   }); 
 
   const result = await model.generateContent(prompt + `
-    YÊU CẦU: Trả về JSON thuần túy (không kèm Markdown):
+    YÊU CẦU: Trả về JSON thuần túy (không kèm chữ khác):
     {
       "objectives_addition": "nội dung chèn mục tiêu",
       "materials_addition": "nội dung chèn học liệu số",
@@ -20,12 +20,11 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   `);
 
   const response = await result.response;
-  let text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+  const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
   
   try {
     return JSON.parse(text);
   } catch (e) {
-    console.error("Lỗi parse dữ liệu AI:", text);
-    throw new Error("Dữ liệu AI không hợp lệ. Anh hãy nhấn nút thử lại!");
+    throw new Error("AI trả về sai định dạng. Anh hãy nhấn nút thử lại!");
   }
 };
