@@ -20,3 +20,4 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
   return JSON.parse(text);
 };
+ 
