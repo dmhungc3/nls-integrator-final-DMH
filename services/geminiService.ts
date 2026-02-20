@@ -4,23 +4,25 @@ import { GeneratedNLSContent } from "../types";
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // SỬA LỖI: Chuyển hẳn về v1 và gọi đúng model Flash
+  // SỬA LỖI 404: Thêm "-latest" để đảm bảo v1beta nhận diện đúng model
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-  }); 
+    model: "gemini-1.5-flash-latest",
+  }, { apiVersion: 'v1beta' }); 
 
   const result = await model.generateContent(prompt + `
-    YÊU CẦU: Trả về JSON thuần (không kèm chữ khác):
+    YÊU CẦU QUAN TRỌNG: 
+    1. Trả về định dạng JSON thuần túy.
+    2. Không thêm bất kỳ chữ nào ngoài khối JSON.
+    3. Cấu trúc phải chính xác như sau:
     {
-      "objectives_addition": "Năng lực số cụ thể cho bài Địa lý",
-      "materials_addition": "Học liệu số cần dùng",
-      "activities_integration": [{"anchor_text": "câu gốc", "content": "nội dung tích hợp"}],
-      "appendix_table": "Bảng ma trận NLS"
+      "objectives_addition": "nội dung chèn mục tiêu",
+      "materials_addition": "nội dung chèn học liệu số",
+      "activities_integration": [{"anchor_text": "câu gốc trong bài", "content": "nội dung tích hợp"}],
+      "appendix_table": "bảng ma trận NLS"
     }
   `);
 
   const response = await result.response;
-  // Loại bỏ các ký tự Markdown thừa nếu có
   const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
   
   try {
