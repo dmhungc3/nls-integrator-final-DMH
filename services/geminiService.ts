@@ -3,8 +3,7 @@ import { GeneratedNLSContent } from "../types";
 
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  // ÉP SỬ DỤNG PHIÊN BẢN V1 CHÍNH THỨC
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
 
   const result = await model.generateContent(prompt + `
     TRẢ VỀ JSON THUẦN:
