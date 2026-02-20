@@ -4,31 +4,31 @@ import { GeneratedNLSContent } from "../types";
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // SỬA LỖI 404: Thêm "-latest" để đảm bảo v1beta nhận diện đúng model
+  // Bản chạy ổn định nhất cho gói Free/Hobby hiện tại
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash-latest",
-  }, { apiVersion: 'v1beta' }); 
+    model: "gemini-1.5-flash",
+  }); 
 
   const result = await model.generateContent(prompt + `
-    YÊU CẦU QUAN TRỌNG: 
-    1. Trả về định dạng JSON thuần túy.
-    2. Không thêm bất kỳ chữ nào ngoài khối JSON.
-    3. Cấu trúc phải chính xác như sau:
+    YÊU CẦU: Trả về JSON thuần túy, không kèm Markdown.
+    Cấu trúc:
     {
-      "objectives_addition": "nội dung chèn mục tiêu",
-      "materials_addition": "nội dung chèn học liệu số",
-      "activities_integration": [{"anchor_text": "câu gốc trong bài", "content": "nội dung tích hợp"}],
-      "appendix_table": "bảng ma trận NLS"
+      "objectives_addition": "Năng lực số cụ thể",
+      "materials_addition": "Học liệu số",
+      "activities_integration": [{"anchor_text": "câu gốc", "content": "hoạt động số"}],
+      "appendix_table": "Bảng ma trận"
     }
   `);
 
   const response = await result.response;
-  const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+  // Xử lý chuỗi để đảm bảo JSON an toàn
+  let text = response.text();
+  text = text.replace(/```json/g, "").replace(/```/g, "").trim();
   
   try {
     return JSON.parse(text);
   } catch (e) {
-    console.error("Lỗi dữ liệu AI:", text);
-    throw new Error("AI trả về sai định dạng. Anh hãy nhấn nút thử lại nhé!");
+    console.error("Lỗi parse JSON:", text);
+    throw new Error("Dữ liệu AI không đúng định dạng. Anh hãy thử lại!");
   }
 };
