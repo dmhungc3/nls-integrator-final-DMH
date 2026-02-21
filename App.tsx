@@ -1,35 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
-  BookOpen, GraduationCap, Sparkles,
-  Smartphone, Zap, Cpu, Clock, CheckCircle2, ListChecks
+  BookOpen, GraduationCap, Sparkles, ChevronRight,
+  Smartphone, Zap, Layers, Cpu, Phone, Info, Clock, CheckCircle2, ListChecks
 } from 'lucide-react';
-import { AppState, SubjectType, GradeType } from './types';
-import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
+import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
+import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
-// HÀM XÓA DẤU TIẾNG VIỆT ĐỂ NHẬN DIỆN CHÍNH XÁC 100%
-const removeVietnameseTones = (str: string) => {
-  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a"); 
-  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e"); 
-  str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i"); 
-  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o"); 
-  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u"); 
-  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y"); 
-  str = str.replace(/đ/g,"d");
-  str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
-  str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
-  str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
-  str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
-  str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
-  str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
-  str = str.replace(/Đ/g, "D");
-  return str;
-}
-
 const App: React.FC = () => {
-  const APP_VERSION = "v3.3.7-FINAL-AUTO"; 
+  // PHIÊN BẢN V3.3.7 MASTER - CHUYÊN GIA TÍCH HỢP NLS & AI - GV. ĐẶNG MẠNH HÙNG
+  const APP_VERSION = "v3.3.7-MASTER"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -51,29 +33,25 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC NHẬN DIỆN THÔNG MINH (ĐÃ CÓ XÓA DẤU)
+  // LOGIC NHẬN DIỆN THÔNG MINH - LOẠI TRỪ SỐ TIẾT
   const autoDetectInfo = (fileName: string) => {
-    // 1. Chuyển tên file về dạng không dấu (Ví dụ: "ĐỊA 10" -> "dia 10")
-    const name = removeVietnameseTones(fileName).toLowerCase();
-    
+    const name = fileName.toLowerCase();
     let s = '' as SubjectType;
     let g = '' as GradeType;
 
-    // 2. Nhận diện trên chuỗi không dấu (Chính xác tuyệt đối)
-    if (/toan|hinh|dai|giai tich|vecto|xac suat/.test(name)) s = 'Toán' as SubjectType;
-    else if (/van|ngu van|doc hieu|tho|truyen/.test(name)) s = 'Ngữ văn' as SubjectType;
-    else if (/anh|english/.test(name)) s = 'Tiếng Anh' as SubjectType;
-    else if (/dia|dan so|khi hau|ban do/.test(name)) s = 'Địa lý' as SubjectType;
-    else if (/su|lich su|cach mang/.test(name)) s = 'Lịch sử' as SubjectType;
-    else if (/ly|vat ly|dong luc|dien|quang/.test(name)) s = 'Vật lý' as SubjectType;
-    else if (/hoa|chat|phan ung/.test(name)) s = 'Hóa học' as SubjectType;
-    else if (/sinh|te bao|di truyen/.test(name)) s = 'Sinh học' as SubjectType;
-    else if (/tin|lap trinh|pascal|python/.test(name)) s = 'Tin học' as SubjectType;
-    else if (/cn|cong nghe|ky thuat/.test(name)) s = 'Công nghệ' as SubjectType;
-    else if (/gdkt|phap luat|kinh te/.test(name)) s = 'Giáo dục kinh tế và pháp luật' as SubjectType;
+    if (/toan|hinh|dai so|giai tich|ham so|vecto/.test(name)) s = 'Toán';
+    else if (/van|ngu van|doc hieu/.test(name)) s = 'Ngữ văn';
+    else if (/anh|english/.test(name)) s = 'Tiếng Anh';
+    else if (/dia|dan so/.test(name)) s = 'Địa lý';
+    else if (/su|lich su/.test(name)) s = 'Lịch sử';
+    else if (/ly|vat ly/.test(name)) s = 'Vật lý';
+    else if (/hoa/.test(name)) s = 'Hóa học';
+    else if (/sinh/.test(name)) s = 'Sinh học';
+    else if (/tin|lap trinh/.test(name)) s = 'Tin học';
+    else if (/cn|cong nghe/.test(name)) s = 'Công nghệ';
+    else if (/gdkt|phap luat/.test(name)) s = 'Giáo dục kinh tế và pháp luật';
 
-    // 3. Lọc Khối lớp (Bỏ qua từ 'tiet', 'bai')
-    const cleanName = name.replace(/(tiet|bai)\s*\d+/g, '');
+    const cleanName = name.replace(/tiết\s*\d+/g, '');
     const gradeMatch = cleanName.match(/\d+/);
     if (gradeMatch) {
       const num = parseInt(gradeMatch[0]);
@@ -95,9 +73,7 @@ const App: React.FC = () => {
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
       
-      // LOGIC TỰ ĐỘNG SỬA SAI:
-      // Nếu nhận diện được môn mới (s có giá trị), dùng luôn môn mới (ghi đè môn cũ).
-      // Nếu không nhận diện được (s rỗng), mới giữ nguyên môn cũ.
+      // Ưu tiên lựa chọn thủ công nếu hệ thống không tự nhận diện được
       const finalSubject = s || state.subject;
       const finalGrade = g || state.grade;
 
@@ -120,6 +96,8 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey || !state.subject || !state.grade) return;
+
+    // Xóa bỏ các dòng cảnh báo dấu hỏi chấm khi bắt đầu chạy
     setState(prev => ({ 
       ...prev, 
       isProcessing: true, 
@@ -127,7 +105,7 @@ const App: React.FC = () => {
         ...prev.logs.filter(l => !l.includes("❓")),
         `✅ Xác nhận cấu hình: ${state.subject} - ${state.grade}`,
         `⚡ Khởi động Core ${APP_VERSION}...`,
-        `🤖 Đang thiết kế Prompt mẫu cho HS...`
+        `🤖 Kết nối Neural Engine (Gemini AI)...`
       ] 
     }));
 
@@ -136,10 +114,10 @@ const App: React.FC = () => {
       const prompt = createIntegrationTextPrompt(text, state.subject, state.grade, 'NLS', pedagogy);
       const content = await generateCompetencyIntegration(prompt, userApiKey);
       
-      addLog(`✨ Hoàn tất tích hợp NLS & Prompt Engineering.`);
+      addLog(`✨ AI đã thiết kế xong nội dung NLS & AI Literacy.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent: content, step: 'review' }));
     } catch (e) { 
-      addLog(`🔴 Lỗi kết nối AI: ${e instanceof Error ? e.message : "Xung đột"}`); 
+      addLog(`🔴 Lỗi kết nối AI: ${e instanceof Error ? e.message : "Xung đột hệ thống"}`); 
       setState(prev => ({ ...prev, isProcessing: false })); 
     }
   };
@@ -162,6 +140,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100 selection:text-indigo-900">
+      {/* HEADER */}
       <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/60 py-3">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -248,10 +227,11 @@ const App: React.FC = () => {
                   <button onClick={() => setActiveTab('matrix')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'matrix' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><ListChecks className="w-4 h-4" /> 4. Ma trận đánh giá</button>
                 </div>
                 <div className="col-span-8 p-8 max-h-[550px] overflow-y-auto custom-scrollbar bg-white">
-                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans text-slate-700">
+                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans">
+                    {/* HIỂN THỊ MỤC TIÊU NLS & AI */}
                     {activeTab === 'objectives' && (
                       <div className="space-y-3">
-                        {state.generatedContent.objectives_addition?.split('\n').filter(l => l.trim()).map((line, i) => (
+                        {state.generatedContent.objectives_addition.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
                             <span className="shrink-0">{line.toLowerCase().includes('ai') ? '🤖' : '🌐'}</span>
                             <span>Bổ sung: {line.replace(/^[👉\-\•\s]*/, '')}</span>
@@ -259,50 +239,35 @@ const App: React.FC = () => {
                         ))}
                       </div>
                     )}
+                    {/* HIỂN THỊ HỌC LIỆU SỐ */}
                     {activeTab === 'materials' && (
                       <div className="space-y-3">
-                        {state.generatedContent.materials_addition?.split('\n').filter(l => l.trim()).map((line, i) => (
+                        {state.generatedContent.materials_addition.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px]">
                             <span className="shrink-0">📦</span><span>Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</span>
                           </div>
                         ))}
                       </div>
                     )}
+                    {/* HIỂN THỊ MA TRẬN */}
                     {activeTab === 'matrix' && (
                       <div className="space-y-3">
-                        {state.generatedContent.appendix_table?.split('\n').filter(l => l.trim()).map((line, i) => (
+                        {state.generatedContent.appendix_table.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="p-3 bg-emerald-50/50 border-l-4 border-emerald-500 rounded-r-lg text-emerald-700 text-[12px] font-bold">👉 Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</div>
                         ))}
                       </div>
                     )}
+                    {/* HIỂN THỊ HOẠT ĐỘNG TÍCH HỢP */}
                     {activeTab === 'activities' && (
                       <div className="space-y-5">
-                        {state.generatedContent.activities_integration?.map((act, i) => {
-                          const hasPrompt = act.content && act.content.includes('[Câu lệnh mẫu]:');
-                          const contentParts = hasPrompt ? act.content.split('[Câu lệnh mẫu]:') : [act.content, ""];
-                          return (
-                            <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
-                              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-50 pb-1 mb-3 block">Mốc chèn: {act.anchor_text}</span>
-                              <div className="flex flex-col gap-3">
-                                <div className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
-                                  <span className="shrink-0">⚡</span>
-                                  <span>{contentParts[0]?.trim()}</span>
-                                </div>
-                                {hasPrompt && (
-                                  <div className="bg-indigo-50/50 p-3 rounded-lg border-l-4 border-indigo-400">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <Zap className="w-3 h-3 text-indigo-600" />
-                                      <span className="text-[10px] font-bold text-indigo-600 uppercase">Câu lệnh mẫu cho HS:</span>
-                                    </div>
-                                    <p className="text-[12px] text-slate-700 italic font-medium">
-                                      "{contentParts[1]?.trim()}"
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
+                        {state.generatedContent.activities_integration.map((act, i) => (
+                          <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
+                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-50 pb-1 mb-3 block">Mốc chèn: {act.anchor_text}</span>
+                            <div className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
+                              <span className="shrink-0">⚡</span><span>Bổ sung NLS: {act.content.replace(/^[👉\-\•\s]*/, '')}</span>
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
