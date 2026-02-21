@@ -61,11 +61,12 @@ const App: React.FC = () => {
     try {
       const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
       addLog(`⚙️ Chiến lược: ${modelName}`);
-      addLog("🔍 Đang đọc cấu trúc file bài Địa lý...");
+      // SỬA TẠI ĐÂY: Hiển thị tên môn học linh hoạt theo lựa chọn
+      addLog(`🔍 Đang đọc cấu trúc file bài ${state.subject}...`);
       const textContext = await extractTextFromDocx(state.file);
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✓ AI đã hoàn thành thiết kế nội dung.`);
+      addLog(`✓ AI đã hoàn thành thiết thiết kế nội dung.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
       addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Xung đột hệ thống"}`);
@@ -241,7 +242,8 @@ const App: React.FC = () => {
                           <div className="flex flex-col items-center justify-center text-center p-4 z-10">
                               <FileUp className={`w-10 h-10 mb-2 ${state.file ? 'text-indigo-600' : 'text-slate-400'}`} />
                               <span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nhấn để nạp file giáo án (.docx)"}</span>
-                              <p className="text-[10px] text-slate-400 mt-1">Dữ liệu bài Địa lý 19 sẽ được xử lý tại đây</p>
+                              {/* SỬA TẠI ĐÂY: Hiển thị tên môn học linh hoạt */}
+                              <p className="text-[10px] text-slate-400 mt-1">Hệ thống sẵn sàng xử lý file môn {state.subject || "học"} {state.grade}</p>
                           </div>
                           <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
                       </label>
@@ -264,13 +266,13 @@ const App: React.FC = () => {
             
             {state.step === 'done' && state.result && (
               <div className="bg-white rounded-3xl p-10 shadow-2xl shadow-indigo-100/50 border border-white flex flex-col items-center text-center animate-fade-in-up">
-                 <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-200"><CheckCircle2 className="w-10 h-10" /></div>
-                 <h3 className="text-2xl font-bold text-slate-800">Tuyệt vời! Đã hoàn thiện.</h3>
-                 <p className="text-slate-500 mt-2 mb-8 max-w-md">Giáo án đã được tích hợp năng lực số cho {state.subject} {state.grade} chuẩn GDPT 2018.</p>
-                 <div className="flex gap-4">
-                     <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm bài khác</button>
-                     <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-transform hover:-translate-y-1"><Download className="w-4 h-4" /> Tải về máy (.docx)</button>
-                 </div>
+                  <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-200"><CheckCircle2 className="w-10 h-10" /></div>
+                  <h3 className="text-2xl font-bold text-slate-800">Tuyệt vời! Đã hoàn thiện.</h3>
+                  <p className="text-slate-500 mt-2 mb-8 max-w-md">Giáo án đã được tích hợp năng lực số cho {state.subject} {state.grade} chuẩn GDPT 2018.</p>
+                  <div className="flex gap-4">
+                      <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm bài khác</button>
+                      <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-transform hover:-translate-y-1"><Download className="w-4 h-4" /> Tải về máy (.docx)</button>
+                  </div>
               </div>
             )}
           </div>
