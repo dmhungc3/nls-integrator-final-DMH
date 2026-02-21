@@ -7,7 +7,7 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   // SỬ DỤNG GEMINI PRO (PHIÊN BẢN ỔN ĐỊNH NHẤT - CHẠY NGAY KHÔNG CẦN KEY MỚI)
   // Đây là lõi duy nhất không bị lỗi 404 với tài khoản hiện tại của thầy.
   // Tuy nhiên, Prompt bên dưới đã được nâng cấp lên chuẩn V3 Master.
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" }); 
+ const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); 
 
   const result = await model.generateContent(prompt + `
     YÊU CẦU CHUYÊN SÂU VỀ MA TRẬN ĐÁNH GIÁ NLS & AI (PHỤ LỤC):
