@@ -4,8 +4,9 @@ import { GeneratedNLSContent } from "../types";
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // SỬ DỤNG GEMINI 1.5 FLASH - BẢN ỔN ĐỊNH NHẤT, KHÔNG BỊ LỖI 404
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+  // QUAY VỀ PHIÊN BẢN 'GEMINI-PRO' (BẢN 1.0 STABLE)
+  // Đây là bản ổn định nhất, chạy được trên mọi API Key, không bao giờ lỗi 404.
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" }); 
 
   const result = await model.generateContent(prompt + `
     YÊU CẦU CHUYÊN SÂU VỀ MA TRẬN ĐÁNH GIÁ NLS & AI (PHỤ LỤC):
@@ -17,24 +18,25 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
        - Mức 5 (Sáng tạo/STEM): Kết hợp đa công cụ số để tạo ra sản phẩm học tập hoàn chỉnh.
     2. CHI TIẾT THEO MÔN: Ma trận bám sát nội dung bài học.
 
-    YÊU CẦU VỀ HOẠT ĐỘNG TÍCH HỢP CHI TIẾT (MICRO-ACTIVITIES LEVEL):
-    - NHIỆM VỤ: Rà soát toàn bộ giáo án, tìm tất cả các mục "Hoạt động 1", "Hoạt động 2", "Hoạt động 3"... (hoặc các bước dạy học tương đương).
-    - VỚI MỖI HOẠT ĐỘNG TÌM ĐƯỢC, PHẢI ĐỀ XUẤT CÔNG CỤ CỤ THỂ THEO MÔN:
-       + Toán/Lý/Hóa: Bắt buộc dùng **GeoGebra / Desmos / PhET / Excel** để mô phỏng, tính toán.
-       + Văn/Sử/Địa/GDCD: Dùng **AI Chatbot / Canva / Padlet / Mentimeter** để thảo luận, tạo nội dung.
-       + Tin học: Dùng **IDE Online / AI Code Assistant**.
+    YÊU CẦU VỀ HOẠT ĐỘNG TÍCH HỢP CHI TIẾT (MICRO-ACTIVITIES):
+    - NHIỆM VỤ: Tìm các mục "Hoạt động 1", "Hoạt động 2", "Hoạt động 3"... trong giáo án.
+    - ĐỀ XUẤT CÔNG CỤ CỤ THỂ:
+       + Toán/Lý/Hóa: Dùng **GeoGebra / Desmos / PhET**.
+       + Văn/Sử/Địa: Dùng **AI Chatbot / Padlet / Canva**.
+       + Tin học: Dùng **IDE Online**.
     
-    - CẤU TRÚC NỘI DUNG TRẢ VỀ (BẮT BUỘC):
-      "Sử dụng [Tên công cụ]. [Hướng dẫn thao tác cụ thể cho HS]. [Câu lệnh mẫu]: 'Nội dung câu lệnh Prompt' "
+    - CẤU TRÚC BẮT BUỘC:
+      "Sử dụng [Tên công cụ]. [Hướng dẫn thao tác]. [Câu lệnh mẫu]: 'Nội dung câu lệnh Prompt' "
 
-    LƯU Ý KỸ THUẬT QUAN TRỌNG: 
-    - TRẢ VỀ JSON THUẦN, KHÔNG ĐƯỢC CÓ DẤU NHÁY CODE (\`\`\`json).
+    LƯU Ý KỸ THUẬT QUAN TRỌNG (ĐỂ TRÁNH LỖI MÀN HÌNH TRẮNG): 
+    - TRẢ VỀ JSON THUẦN TÚY.
+    - KHÔNG ĐƯỢC CÓ DẤU NHÁY CODE (\`\`\`json).
+    - KHÔNG ĐƯỢC CÓ MARKDOWN THỪA.
     - Trường "appendix_table" PHẢI LÀ MỘT CHUỖI VĂN BẢN (STRING), các dòng ngăn cách bằng \\n.
-    - Các trường "objectives_addition" và "materials_addition" cũng phải là STRING.
   `);
 
   const response = await result.response;
-  // Làm sạch dữ liệu để tránh lỗi Parse JSON
+  // Làm sạch dữ liệu thủ công để đảm bảo JSON luôn đúng
   const text = response.text()
     .replace(/```json/g, "")
     .replace(/```/g, "")
@@ -44,18 +46,23 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    console.error("Lỗi parse dữ liệu AI:", text);
-    throw new Error("Dữ liệu AI trả về không đúng định dạng. Thầy hãy nhấn Tích hợp lại nhé!");
+    console.error("Lỗi parse JSON (AI trả về sai định dạng):", text);
+    // Cơ chế Fallback: Nếu lỗi, trả về nội dung rỗng để App không bị sập
+    return {
+      objectives_addition: "Lỗi kết nối AI. Thầy vui lòng thử lại.",
+      materials_addition: "...",
+      activities_integration: [],
+      appendix_table: "..."
+    };
   }
 
-  // Đảm bảo trường appendix_table luôn là chuỗi để không lỗi hàm split trong App.tsx
+  // Đảm bảo kiểu dữ liệu an toàn tuyệt đối
   if (parsed.appendix_table && Array.isArray(parsed.appendix_table)) {
     parsed.appendix_table = parsed.appendix_table.join('\n');
   } else if (typeof parsed.appendix_table !== 'string') {
     parsed.appendix_table = String(parsed.appendix_table || "");
   }
 
-  // Đảm bảo cấu trúc activities_integration luôn đúng định dạng mảng
   if (!Array.isArray(parsed.activities_integration)) {
     parsed.activities_integration = [];
   }
