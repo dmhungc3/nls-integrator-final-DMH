@@ -1,17 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
-  BookOpen, GraduationCap, Sparkles, ChevronRight,
-  Smartphone, Zap, Layers, Cpu, Phone, Info, Clock, CheckCircle2, ListChecks
+  BookOpen, GraduationCap, Sparkles,
+  Smartphone, Zap, Cpu, Clock, CheckCircle2, ListChecks
 } from 'lucide-react';
-import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
-import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
+import { AppState, SubjectType, GradeType } from './types';
+import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
+// HÀM XÓA DẤU TIẾNG VIỆT ĐỂ NHẬN DIỆN CHÍNH XÁC 100%
+const removeVietnameseTones = (str: string) => {
+  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a"); 
+  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e"); 
+  str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i"); 
+  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o"); 
+  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u"); 
+  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y"); 
+  str = str.replace(/đ/g,"d");
+  str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+  str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+  str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+  str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+  str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+  str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
+  str = str.replace(/Đ/g, "D");
+  return str;
+}
+
 const App: React.FC = () => {
-  // PHIÊN BẢN V3.3.7 FINAL - AUTO CORRECT SUBJECT - GV. ĐẶNG MẠNH HÙNG
-  const APP_VERSION = "v3.3.7-FINAL"; 
+  const APP_VERSION = "v3.3.7-FINAL-AUTO"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -33,27 +51,29 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC NHẬN DIỆN THÔNG MINH (ĐÃ SỬA LỖI TYPE & THÊM TỪ KHÓA)
+  // LOGIC NHẬN DIỆN THÔNG MINH (ĐÃ CÓ XÓA DẤU)
   const autoDetectInfo = (fileName: string) => {
-    const name = fileName.toLowerCase();
+    // 1. Chuyển tên file về dạng không dấu (Ví dụ: "ĐỊA 10" -> "dia 10")
+    const name = removeVietnameseTones(fileName).toLowerCase();
+    
     let s = '' as SubjectType;
     let g = '' as GradeType;
 
-    // Ép kiểu (as SubjectType) để tránh lỗi màn hình trắng
-    if (/toan|hinh|dai so|giai tich|ham so|vecto|xac suat/.test(name)) s = 'Toán' as SubjectType;
+    // 2. Nhận diện trên chuỗi không dấu (Chính xác tuyệt đối)
+    if (/toan|hinh|dai|giai tich|vecto|xac suat/.test(name)) s = 'Toán' as SubjectType;
     else if (/van|ngu van|doc hieu|tho|truyen/.test(name)) s = 'Ngữ văn' as SubjectType;
     else if (/anh|english/.test(name)) s = 'Tiếng Anh' as SubjectType;
     else if (/dia|dan so|khi hau|ban do/.test(name)) s = 'Địa lý' as SubjectType;
-    else if (/su|lich su|cach mang|khang chien/.test(name)) s = 'Lịch sử' as SubjectType;
+    else if (/su|lich su|cach mang/.test(name)) s = 'Lịch sử' as SubjectType;
     else if (/ly|vat ly|dong luc|dien|quang/.test(name)) s = 'Vật lý' as SubjectType;
     else if (/hoa|chat|phan ung/.test(name)) s = 'Hóa học' as SubjectType;
     else if (/sinh|te bao|di truyen/.test(name)) s = 'Sinh học' as SubjectType;
-    else if (/tin|lap trinh|pascal|python|excel/.test(name)) s = 'Tin học' as SubjectType;
+    else if (/tin|lap trinh|pascal|python/.test(name)) s = 'Tin học' as SubjectType;
     else if (/cn|cong nghe|ky thuat/.test(name)) s = 'Công nghệ' as SubjectType;
     else if (/gdkt|phap luat|kinh te/.test(name)) s = 'Giáo dục kinh tế và pháp luật' as SubjectType;
 
-    // Lọc bỏ từ 'Tiết' để không nhầm Tiết 10 thành Lớp 10
-    const cleanName = name.replace(/(tiết|bài|tiet|bai)\s*\d+/g, '');
+    // 3. Lọc Khối lớp (Bỏ qua từ 'tiet', 'bai')
+    const cleanName = name.replace(/(tiet|bai)\s*\d+/g, '');
     const gradeMatch = cleanName.match(/\d+/);
     if (gradeMatch) {
       const num = parseInt(gradeMatch[0]);
@@ -75,8 +95,9 @@ const App: React.FC = () => {
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
       
-      // LOGIC MỚI: ƯU TIÊN FILE (Auto Correct)
-      // Nếu tên file nhận diện được môn (s), dùng s. Nếu không, giữ nguyên môn thầy đang chọn.
+      // LOGIC TỰ ĐỘNG SỬA SAI:
+      // Nếu nhận diện được môn mới (s có giá trị), dùng luôn môn mới (ghi đè môn cũ).
+      // Nếu không nhận diện được (s rỗng), mới giữ nguyên môn cũ.
       const finalSubject = s || state.subject;
       const finalGrade = g || state.grade;
 

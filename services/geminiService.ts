@@ -3,8 +3,9 @@ import { GeneratedNLSContent } from "../types";
 
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  // DÙNG GEMINI 1.5 PRO ĐỂ ĐẢM BẢO CHẠY ĐƯỢC VÀ PHÂN TÍCH SÂU
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); 
+  
+  // SỬ DỤNG GEMINI 1.5 FLASH - BẢN ỔN ĐỊNH NHẤT, KHÔNG BỊ LỖI 404
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
 
   const result = await model.generateContent(prompt + `
     YÊU CẦU CHUYÊN SÂU VỀ MA TRẬN ĐÁNH GIÁ NLS & AI (PHỤ LỤC):
