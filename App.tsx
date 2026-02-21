@@ -13,7 +13,8 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v2.1.4-OFFICIAL";
+  // NÂNG CẤP LÊN PHIÊN BẢN HỖ TRỢ ĐA MÔN
+  const APP_VERSION = "v3.0-TOTAL"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -28,6 +29,32 @@ const App: React.FC = () => {
     const savedKey = localStorage.getItem('gemini_api_key');
     if (savedKey) { setUserApiKey(savedKey); setIsKeySaved(true); }
   }, []);
+
+  // LOGIC TỰ ĐỘNG NHẬN DIỆN MÔN HỌC VÀ KHỐI LỚP
+  const autoDetectInfo = (fileName: string) => {
+    const name = fileName.toLowerCase();
+    let detectedSubject = '' as SubjectType;
+    let detectedGrade = '' as GradeType;
+
+    // Nhận diện môn
+    if (name.includes('toan')) detectedSubject = 'Toán';
+    else if (name.includes('van')) detectedSubject = 'Ngữ văn';
+    else if (name.includes('anh')) detectedSubject = 'Tiếng Anh';
+    else if (name.includes('dia')) detectedSubject = 'Địa lý';
+    else if (name.includes('su')) detectedSubject = 'Lịch sử';
+    else if (name.includes('ly') || name.includes('vat')) detectedSubject = 'Vật lý';
+    else if (name.includes('hoa')) detectedSubject = 'Hóa học';
+    else if (name.includes('sinh')) detectedSubject = 'Sinh học';
+    else if (name.includes('tin')) detectedSubject = 'Tin học';
+    else if (name.includes('cong nghe')) detectedSubject = 'Công nghệ';
+
+    // Nhận diện khối lớp
+    if (name.includes('10')) detectedGrade = 'Lớp 10';
+    else if (name.includes('11')) detectedGrade = 'Lớp 11';
+    else if (name.includes('12')) detectedGrade = 'Lớp 12';
+
+    return { detectedSubject, detectedGrade };
+  };
 
   const saveKeyToLocal = () => {
     if (userApiKey.trim()) { 
@@ -44,7 +71,22 @@ const App: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.name.endsWith('.docx')) {
-      setState(prev => ({ ...prev, file, result: null, generatedContent: null, step: 'upload', logs: [`✓ Đã nạp file: ${file.name}`] }));
+      const { detectedSubject, detectedGrade } = autoDetectInfo(file.name);
+      
+      setState(prev => ({ 
+        ...prev, 
+        file, 
+        subject: detectedSubject || prev.subject,
+        grade: detectedGrade || prev.grade,
+        result: null, 
+        generatedContent: null, 
+        step: 'upload', 
+        logs: [
+          `✓ Đã nạp file: ${file.name}`,
+          detectedSubject ? `✨ Tự động nhận diện môn: ${detectedSubject}` : "📝 Anh vui lòng chọn môn học thủ công",
+          detectedGrade ? `✨ Tự động nhận diện khối: ${detectedGrade}` : ""
+        ].filter(Boolean)
+      }));
     } else { 
       alert("Hệ thống chỉ hỗ trợ file Word (.docx)!"); 
     }
@@ -54,7 +96,7 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey.trim()) { alert("Vui lòng nhập API Key!"); return; }
-    if (!state.file || !state.subject || !state.grade) { alert("Anh vui lòng chọn đầy đủ thông tin Môn và Lớp!"); return; }
+    if (!state.subject || !state.grade) { alert("Anh vui lòng chọn đầy đủ thông tin Môn và Lớp!"); return; }
 
     setState(prev => ({ ...prev, isProcessing: true, logs: [`🚀 Khởi động Core ${APP_VERSION} (Tốc độ cao)...`] }));
 
@@ -62,10 +104,10 @@ const App: React.FC = () => {
       const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
       addLog(`⚙️ Chiến lược: ${modelName}`);
       addLog(`🔍 Đang đọc cấu trúc file bài ${state.subject}...`);
-      const textContext = await extractTextFromDocx(state.file);
+      const textContext = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✓ AI đã hoàn thành thiết thiết kế nội dung.`);
+      addLog(`✓ AI đã hoàn thành thiết kế nội dung môn ${state.subject}.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
       addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Xung đột hệ thống"}`);
@@ -180,25 +222,17 @@ const App: React.FC = () => {
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Môn học (GDPT 2018)</label>
                               <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                                   <option value="">-- Chọn môn học --</option>
-                                  <optgroup label="Môn học Bắt buộc (THPT)">
+                                  <optgroup label="Môn học chính">
                                       <option value="Toán">Toán học</option>
                                       <option value="Ngữ văn">Ngữ văn</option>
-                                      <option value="Lịch sử">Lịch sử</option>
                                       <option value="Tiếng Anh">Tiếng Anh</option>
-                                      <option value="Giáo dục thể chất">Giáo dục thể chất</option>
-                                      <option value="Giáo dục quốc phòng và an ninh">GD Quốc phòng & An ninh</option>
-                                      <option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm, hướng nghiệp</option>
-                                  </optgroup>
-                                  <optgroup label="Môn học Lựa chọn (Tự chọn)">
+                                      <option value="Lịch sử">Lịch sử</option>
                                       <option value="Địa lí">Địa lí</option>
                                       <option value="Vật lí">Vật lí</option>
                                       <option value="Hóa học">Hóa học</option>
                                       <option value="Sinh học">Sinh học</option>
                                       <option value="Tin học">Tin học</option>
                                       <option value="Công nghệ">Công nghệ</option>
-                                      <option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option>
-                                      <option value="Âm nhạc">Âm nhạc</option>
-                                      <option value="Mỹ thuật">Mỹ thuật</option>
                                   </optgroup>
                               </select>
                           </div>
@@ -206,17 +240,9 @@ const App: React.FC = () => {
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Khối lớp</label>
                               <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                   <option value="">-- Chọn khối lớp --</option>
-                                  <optgroup label="Cấp THPT">
-                                      <option value="Lớp 10">Lớp 10</option>
-                                      <option value="Lớp 11">Lớp 11</option>
-                                      <option value="Lớp 12">Lớp 12</option>
-                                  </optgroup>
-                                  <optgroup label="Cấp THCS">
-                                      <option value="Lớp 6">Lớp 6</option>
-                                      <option value="Lớp 7">Lớp 7</option>
-                                      <option value="Lớp 8">Lớp 8</option>
-                                      <option value="Lớp 9">Lớp 9</option>
-                                  </optgroup>
+                                  <option value="Lớp 10">Lớp 10</option>
+                                  <option value="Lớp 11">Lớp 11</option>
+                                  <option value="Lớp 12">Lớp 12</option>
                               </select>
                           </div>
                       </div>
@@ -241,18 +267,18 @@ const App: React.FC = () => {
                           <div className="flex flex-col items-center justify-center text-center p-4 z-10">
                               <FileUp className={`w-10 h-10 mb-2 ${state.file ? 'text-indigo-600' : 'text-slate-400'}`} />
                               <span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nhấn để nạp file giáo án (.docx)"}</span>
-                              <p className="text-[10px] text-slate-400 mt-1">Hệ thống sẵn sàng xử lý file môn {state.subject || "học"}</p>
+                              <p className="text-[10px] text-slate-400 mt-1">Sẵn sàng tích hợp cho {state.subject || "..."} {state.grade || ""}</p>
                           </div>
                           <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
                       </label>
 
                       <button 
-                        disabled={!state.file || state.isProcessing} 
+                        disabled={!state.file || !state.subject || state.isProcessing} 
                         onClick={handleAnalyze} 
                         className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 disabled:bg-slate-200 shadow-lg transition-all"
                       >
                         {state.isProcessing ? <Clock className="animate-spin w-5 h-5" /> : <Wand2 className="w-5 h-5" />}
-                        {state.isProcessing ? "Đang xử lý..." : "Kích hoạt AI & Tích hợp ngay"}
+                        {state.isProcessing ? "Đang thiết kế..." : "Kích hoạt AI & Tích hợp ngay"}
                       </button>
                   </div>
               </div>
@@ -266,7 +292,7 @@ const App: React.FC = () => {
               <div className="bg-white rounded-3xl p-10 shadow-2xl shadow-indigo-100/50 border border-white flex flex-col items-center text-center animate-fade-in-up">
                   <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-200"><CheckCircle2 className="w-10 h-10" /></div>
                   <h3 className="text-2xl font-bold text-slate-800">Tuyệt vời! Đã hoàn thiện.</h3>
-                  <p className="text-slate-500 mt-2 mb-8 max-w-md">Giáo án đã được tích hợp năng lực số cho {state.subject} {state.grade} chuẩn GDPT 2018.</p>
+                  <p className="text-slate-500 mt-2 mb-8 max-w-md">Giáo án môn {state.subject} đã được tích hợp năng lực số chuẩn GDPT 2018.</p>
                   <div className="flex gap-4">
                       <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm bài khác</button>
                       <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-transform hover:-translate-y-1"><Download className="w-4 h-4" /> Tải về máy (.docx)</button>
@@ -290,12 +316,6 @@ const App: React.FC = () => {
                        <span>{log.replace("✓ ", "").replace("🚀 ", "")}</span>
                      </div>
                    ))}
-                   {state.isProcessing && (
-                     <div className="flex items-center gap-2 text-indigo-400 animate-pulse mt-2">
-                       <Clock className="animate-spin w-4 h-4" />
-                       <span>Hệ thống đang chèn dữ liệu...</span>
-                     </div>
-                   )}
                 </div>
              </div>
              
@@ -306,13 +326,6 @@ const App: React.FC = () => {
                       <p className="text-xs font-bold text-indigo-700 mb-1 flex items-center gap-2">Tác giả: Đặng Mạnh Hùng</p>
                       <p className="text-[11px] text-slate-600">Giáo viên Trường THPT Lý Nhân Tông</p>
                       <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-1 font-bold"><Phone className="w-3.5 h-3.5" /> 097 8386 357</p>
-                    </div>
-                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 shadow-sm flex items-start gap-3">
-                      <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-bold text-indigo-800">Phiên bản: {APP_VERSION}</p>
-                        <p className="text-[10px] text-indigo-600 mt-1 leading-relaxed">Phần mềm tối ưu xử lý Word tốc độ cao cho cấp THCS & THPT.</p>
-                      </div>
                     </div>
                 </div>
              </div>
