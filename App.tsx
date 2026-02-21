@@ -10,8 +10,8 @@ import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
 const App: React.FC = () => {
-  // PHIÊN BẢN V3.3.1 - FIX JSX & SMART STUDIO MASTER - GV. ĐẶNG MẠNH HÙNG
-  const APP_VERSION = "v3.3.1-STABLE"; 
+  // PHIÊN BẢN V3.3.6 MASTER - NLS GREEN HIGHLIGHT & FULL GDPT 2018 - GV. ĐẶNG MẠNH HÙNG
+  const APP_VERSION = "v3.3.6-MASTER"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -33,6 +33,7 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
+  // LOGIC NHẬN DIỆN THÔNG MINH - KHÔNG BẮT NHẦM SỐ TIẾT
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let s = '' as SubjectType;
@@ -48,8 +49,10 @@ const App: React.FC = () => {
     else if (/sinh/.test(name)) s = 'Sinh học';
     else if (/tin|lap trinh/.test(name)) s = 'Tin học';
     else if (/cn|cong nghe/.test(name)) s = 'Công nghệ';
+    else if (/gdkt|phap luat/.test(name)) s = 'Giáo dục kinh tế và pháp luật';
 
-    const gradeMatch = name.match(/\d+/);
+    const cleanName = name.replace(/tiết\s*\d+/g, '');
+    const gradeMatch = cleanName.match(/\d+/);
     if (gradeMatch) {
       const num = parseInt(gradeMatch[0]);
       if (num >= 6 && num <= 12) g = `Lớp ${num}` as GradeType;
@@ -71,7 +74,7 @@ const App: React.FC = () => {
       const { s, g } = autoDetectInfo(file.name);
       setState(prev => ({ 
         ...prev, file, subject: s || prev.subject, grade: g || prev.grade, step: 'upload',
-        logs: [`✅ Đã nhận file: ${file.name}`, s ? `⭐ Nhận diện môn: ${s}` : "", g ? `⭐ Nhận diện khối: ${g}` : ""].filter(Boolean)
+        logs: [`✅ Đã nhận: ${file.name}`, s ? `⭐ Môn: ${s}` : "", g ? `⭐ Nhận diện đúng: ${g}` : ""].filter(Boolean)
       }));
     }
   };
@@ -82,7 +85,6 @@ const App: React.FC = () => {
     if (!userApiKey || !state.subject || !state.grade) return;
     setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, `🚀 Khởi động Core ${APP_VERSION}...`] }));
     try {
-      addLog(`🔍 Đang quét cấu trúc bài dạy ${state.subject}...`);
       const text = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(text, state.subject, state.grade, 'NLS', pedagogy);
       const content = await generateCompetencyIntegration(prompt, userApiKey);
@@ -96,7 +98,7 @@ const App: React.FC = () => {
 
   const handleFinalizeAndDownload = async () => {
     if (!state.file || !state.generatedContent) return;
-    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "⚡ Đang chèn NLS vào các đề mục Word..."] }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "⚡ Đang đóng gói dữ liệu..."] }));
     try {
       const newBlob = await injectContentIntoDocx(state.file, state.generatedContent, 'NLS', (m) => addLog(`→ ${m}`));
       setState(prev => ({ 
@@ -112,13 +114,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
+      {/* HEADER */}
       <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/60 py-3">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Sparkles className="w-6 h-6" /></div>
                   <div>
                     <h2 className="font-bold text-slate-800 text-lg leading-tight">NLS Integrator Pro</h2>
-                    <span className="text-[10px] text-slate-500 font-medium uppercase">{APP_VERSION} | GV. Đặng Mạnh Hùng</span>
+                    <span className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{APP_VERSION} | GV. ĐẶNG MẠNH HÙNG</span>
                   </div>
               </div>
               <div className="flex items-center gap-2">
@@ -131,7 +134,7 @@ const App: React.FC = () => {
                   ) : (
                       <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
                         <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="API Key..." className="text-xs px-2 outline-none w-32" />
-                        <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700 transition-colors">Lưu</button>
+                        <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold">Lưu</button>
                       </div>
                   )}
               </div>
@@ -147,11 +150,13 @@ const App: React.FC = () => {
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Môn học (GDPT 2018)</label>
                   <select className="w-full p-3.5 rounded-xl border bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-indigo-500" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                     <option value="">-- Chọn môn học --</option>
-                    <optgroup label="Môn Bắt buộc">
+                    <optgroup label="Môn học Bắt buộc">
                       <option value="Toán">Toán học</option><option value="Ngữ văn">Ngữ văn</option><option value="Tiếng Anh">Tiếng Anh</option><option value="Lịch sử">Lịch sử</option>
+                      <option value="Giáo dục thể chất">Giáo dục thể chất</option><option value="Giáo dục quốc phòng và an ninh">GD Quốc phòng & An ninh</option><option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm, hướng nghiệp</option>
                     </optgroup>
-                    <optgroup label="Môn Tự chọn">
-                      <option value="Vật lý">Vật lý</option><option value="Hóa học">Hóa học</option><option value="Sinh học">Sinh học</option><option value="Địa lý">Địa lý</option><option value="Tin học">Tin học</option>
+                    <optgroup label="Môn học Lựa chọn">
+                      <option value="Vật lý">Vật lý</option><option value="Hóa học">Hóa học</option><option value="Sinh học">Sinh học</option><option value="Địa lý">Địa lý</option><option value="Tin học">Tin học</option><option value="Công nghệ">Công nghệ</option>
+                      <option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option><option value="Âm nhạc">Âm nhạc</option><option value="Mỹ thuật">Mỹ thuật</option>
                     </optgroup>
                   </select>
                 </div>
@@ -164,7 +169,7 @@ const App: React.FC = () => {
                   </select>
                 </div>
               </div>
-              <label className={`relative flex flex-col items-center justify-center w-full h-44 rounded-2xl border-2 border-dashed transition-all cursor-pointer group ${state.file ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'}`}>
+              <label className={`relative flex flex-col items-center justify-center w-full h-44 rounded-2xl border-2 border-dashed transition-all cursor-pointer group ${state.file ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-300 hover:border-indigo-400'}`}>
                 <FileUp className={`w-10 h-10 mb-2 transition-transform group-hover:-translate-y-1 ${state.file ? 'text-indigo-600' : 'text-slate-400'}`} />
                 <span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nạp giáo án môn học (.docx)"}</span>
                 <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
@@ -196,16 +201,40 @@ const App: React.FC = () => {
                   <button onClick={() => setActiveTab('matrix')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'matrix' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><ListChecks className="w-4 h-4" /> 4. Ma trận đánh giá</button>
                 </div>
                 <div className="col-span-8 p-8 max-h-[550px] overflow-y-auto custom-scrollbar bg-white">
-                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full text-[13px] leading-relaxed text-slate-700 whitespace-pre-wrap font-sans">
-                    {activeTab === 'objectives' && state.generatedContent.objectives_addition}
-                    {activeTab === 'materials' && state.generatedContent.materials_addition}
-                    {activeTab === 'matrix' && state.generatedContent.appendix_table}
+                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans">
+                    {activeTab === 'objectives' && (
+                      <div className="space-y-3">
+                        {state.generatedContent.objectives_addition.split('\n').filter(l => l.trim()).map((line, i) => (
+                          <div key={i} className="flex gap-2 text-emerald-600 font-medium text-[13px] leading-relaxed">
+                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^- /g, '')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {activeTab === 'materials' && (
+                      <div className="space-y-3">
+                        {state.generatedContent.materials_addition.split('\n').filter(l => l.trim()).map((line, i) => (
+                          <div key={i} className="flex gap-2 text-emerald-600 font-medium text-[13px]">
+                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^- /g, '')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {activeTab === 'matrix' && (
+                      <div className="space-y-3">
+                        {state.generatedContent.appendix_table.split('\n').filter(l => l.trim()).map((line, i) => (
+                          <div key={i} className="p-3 bg-emerald-50/50 border-l-4 border-emerald-500 rounded-r-lg text-emerald-700 text-[12px] font-semibold">{line}</div>
+                        ))}
+                      </div>
+                    )}
                     {activeTab === 'activities' && (
-                      <div className="space-y-4">
-                        {state.generatedContent.activities_integration.map((act, idx) => (
-                          <div key={idx} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
-                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b pb-1 mb-2 block">Vị trí chèn: {act.anchor_text}</span>
-                            <div className="mt-2 text-slate-700">{act.content}</div>
+                      <div className="space-y-5">
+                        {state.generatedContent.activities_integration.map((act, i) => (
+                          <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
+                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-50 pb-1 mb-3 block">Mốc chèn: {act.anchor_text}</span>
+                            <div className="flex gap-2 text-emerald-600 font-medium text-[13px] leading-relaxed">
+                              <span className="shrink-0">•</span><span>Bổ sung NLS: {act.content}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -220,9 +249,9 @@ const App: React.FC = () => {
             <div className="bg-white rounded-3xl p-10 shadow-2xl text-center animate-fade-in-up border border-emerald-100">
               <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800">Thành công rồi thầy Hùng ơi!</h3>
-              <p className="text-slate-500 mt-2">Giáo án môn {state.subject} đã sẵn sàng với năng lực số 2026.</p>
-              <button onClick={() => { if(state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="mt-8 px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl flex items-center gap-3 mx-auto transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95"><Download className="w-5 h-5" /> Tải giáo án hoàn thiện (.docx)</button>
-              <button onClick={() => setState(prev => ({...prev, step: 'upload', generatedContent: null, result: null}))} className="mt-6 text-sm text-slate-400 hover:text-indigo-600 font-semibold transition-colors">Tích hợp file khác</button>
+              <p className="text-slate-500 mt-2">Giáo án môn {state.subject} {state.grade} đã sẵn sàng.</p>
+              <button onClick={() => { if(state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="mt-8 px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl flex items-center gap-3 mx-auto transition-all hover:bg-indigo-700 hover:scale-105"><Download className="w-5 h-5" /> Tải giáo án (.docx)</button>
+              <button onClick={() => setState(prev => ({...prev, step: 'upload', generatedContent: null, result: null}))} className="mt-6 text-sm text-slate-400 hover:text-indigo-600 font-semibold">Tích hợp bài khác</button>
             </div>
           )}
         </div>
@@ -233,7 +262,7 @@ const App: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
                 <div className="flex items-center gap-2 text-slate-300 text-xs font-bold font-mono uppercase tracking-wider"><Cpu className="w-3.5 h-3.5 text-indigo-400 animate-pulse" /> AI Terminal Status</div>
-                <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div></div>
+                <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div></div>
               </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] text-indigo-100/90 leading-relaxed">
                 {state.logs.length === 0 && <span className="text-slate-600 italic">{" >> "} Chờ lệnh từ thầy Hùng...</span>}
