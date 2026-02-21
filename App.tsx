@@ -13,8 +13,8 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  // PHIÊN BẢN ỔN ĐỊNH CỦA THẦY HÙNG - THPT LÝ NHÂN TÔNG
-  const APP_VERSION = "v3.1.0-STABLE"; 
+  // PHIÊN BẢN V3.2.0 - CHUẨN GDPT 2018 - THẦY HÙNG THPT LÝ NHÂN TÔNG
+  const APP_VERSION = "v3.2.0-FINAL"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -30,7 +30,7 @@ const App: React.FC = () => {
     if (savedKey) { setUserApiKey(savedKey); setIsKeySaved(true); }
   }, []);
 
-  // LOGIC TỰ ĐỘNG NHẬN DIỆN THÔNG MINH
+  // LOGIC TỰ ĐỘNG NHẬN DIỆN THÔNG MINH (Dựa trên tên file)
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let detectedSubject = '' as SubjectType;
@@ -47,8 +47,9 @@ const App: React.FC = () => {
     else if (name.includes('sinh')) detectedSubject = 'Sinh học';
     else if (name.includes('tin')) detectedSubject = 'Tin học';
     else if (name.includes('cong nghe')) detectedSubject = 'Công nghệ';
+    else if (name.includes('gdkt') || name.includes('phap luat')) detectedSubject = 'Giáo dục kinh tế và pháp luật';
 
-    // Nhận diện khối lớp (THCS & THPT)
+    // Nhận diện khối lớp
     if (name.includes('10')) detectedGrade = 'Lớp 10';
     else if (name.includes('11')) detectedGrade = 'Lớp 11';
     else if (name.includes('12')) detectedGrade = 'Lớp 12';
@@ -87,7 +88,7 @@ const App: React.FC = () => {
         step: 'upload', 
         logs: [
           `✓ Đã nạp file: ${file.name}`,
-          detectedSubject ? `✨ Tự nhận diện môn: ${detectedSubject}` : "📝 Anh Hùng vui lòng chọn môn thủ công",
+          detectedSubject ? `✨ Tự nhận diện môn: ${detectedSubject}` : "📝 Thầy Hùng vui lòng chọn môn thủ công",
           detectedGrade ? `✨ Tự nhận diện khối: ${detectedGrade}` : ""
         ].filter(Boolean)
       }));
@@ -100,7 +101,7 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey.trim()) { alert("Vui lòng nhập API Key!"); return; }
-    if (!state.subject || !state.grade) { alert("Anh vui lòng chọn đầy đủ thông tin Môn và Lớp!"); return; }
+    if (!state.subject || !state.grade) { alert("Thầy vui lòng chọn đầy đủ thông tin Môn và Lớp!"); return; }
 
     setState(prev => ({ ...prev, isProcessing: true, logs: [`🚀 Khởi động Core ${APP_VERSION} (Tốc độ cao)...`] }));
 
@@ -111,7 +112,7 @@ const App: React.FC = () => {
       const textContext = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✓ AI đã hoàn thành thiết kế nội dung môn ${state.subject}.`);
+      addLog(`✓ AI đã thiết kế xong nội dung môn ${state.subject}.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
       addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Xung đột hệ thống"}`);
@@ -121,18 +122,18 @@ const App: React.FC = () => {
 
   const handleFinalizeAndDownload = async (finalContent: GeneratedNLSContent) => {
     if (!state.file) return;
-    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "⚡ Đang chèn dữ liệu (Thuật toán nhanh)..."] }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "⚡ Đang chèn NLS vào đúng vị trí giáo án..."] }));
     try {
       const startTime = performance.now();
       const newBlob = await injectContentIntoDocx(state.file, finalContent, mode, (m) => addLog(`→ ${m}`));
       const duration = ((performance.now() - startTime) / 1000).toFixed(1);
-      addLog(`✨ Đã chèn xong trong ${duration}s!`);
+      addLog(`✨ Đã hoàn thiện trong ${duration}s!`);
 
       setState(prev => ({ 
         ...prev, 
         isProcessing: false, 
         step: 'done', 
-        result: { fileName: `Nang-cap-${mode}-${state.file?.name}`, blob: newBlob }, 
+        result: { fileName: `Tich-hop-NLS-${state.file?.name}`, blob: newBlob }, 
         logs: [...prev.logs, "✓ Sẵn sàng tải về."] 
       }));
     } catch (error) {
@@ -166,7 +167,7 @@ const App: React.FC = () => {
                   <div className="flex flex-col">
                       <h2 className="font-bold text-slate-800 text-lg leading-tight tracking-tight">NLS Integrator Pro</h2>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{APP_VERSION} SPEED</span>
+                        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{APP_VERSION}</span>
                         <span className="text-[10px] text-slate-400">| GV. Đặng Mạnh Hùng</span>
                       </div>
                   </div>
@@ -184,7 +185,7 @@ const App: React.FC = () => {
                       </div>
                   ) : (
                       <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập API Key..." className="text-xs px-2 outline-none w-40" />
+                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập Gemini API Key..." className="text-xs px-2 outline-none w-40" />
                         <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700">Lưu</button>
                       </div>
                   )}
@@ -224,34 +225,41 @@ const App: React.FC = () => {
                       <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Môn học (GDPT 2018)</label>
-                              <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
+                              <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-indigo-500" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                                   <option value="">-- Chọn môn học --</option>
-                                  <optgroup label="Môn Bắt buộc">
+                                  <optgroup label="Môn học Bắt buộc">
                                       <option value="Toán">Toán học</option>
                                       <option value="Ngữ văn">Ngữ văn</option>
                                       <option value="Tiếng Anh">Tiếng Anh</option>
                                       <option value="Lịch sử">Lịch sử</option>
+                                      <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                      <option value="Giáo dục quốc phòng và an ninh">GD Quốc phòng & An ninh</option>
+                                      <option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm, hướng nghiệp</option>
+                                      <option value="Nội dung giáo dục của địa phương">Nội dung GD địa phương</option>
                                   </optgroup>
-                                  <optgroup label="Môn Lựa chọn (Tự chọn)">
+                                  <optgroup label="Môn học Lựa chọn (Tự chọn)">
                                       <option value="Vật lý">Vật lý</option>
                                       <option value="Hóa học">Hóa học</option>
                                       <option value="Sinh học">Sinh học</option>
                                       <option value="Địa lý">Địa lý</option>
                                       <option value="Tin học">Tin học</option>
                                       <option value="Công nghệ">Công nghệ</option>
+                                      <option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option>
+                                      <option value="Âm nhạc">Âm nhạc</option>
+                                      <option value="Mỹ thuật">Mỹ thuật</option>
                                   </optgroup>
                               </select>
                           </div>
                           <div className="space-y-2">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Khối lớp</label>
-                              <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
+                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Cấp học / Khối lớp</label>
+                              <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-indigo-500" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                   <option value="">-- Chọn khối lớp --</option>
-                                  <optgroup label="Cấp THPT">
+                                  <optgroup label="Bậc THPT">
                                       <option value="Lớp 10">Lớp 10</option>
                                       <option value="Lớp 11">Lớp 11</option>
                                       <option value="Lớp 12">Lớp 12</option>
                                   </optgroup>
-                                  <optgroup label="Cấp THCS">
+                                  <optgroup label="Bậc THCS">
                                       <option value="Lớp 6">Lớp 6</option>
                                       <option value="Lớp 7">Lớp 7</option>
                                       <option value="Lớp 8">Lớp 8</option>
@@ -322,12 +330,12 @@ const App: React.FC = () => {
                     <div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider font-mono"><Cpu className="w-3.5 h-3.5 text-indigo-400" /> AI Terminal Status</div>
                     <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div></div>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed">
-                   {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Chờ lệnh từ anh Hùng...</span>}
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed text-indigo-100">
+                   {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Chờ lệnh từ thầy Hùng...</span>}
                    {state.logs.map((log, i) => (
-                     <div key={i} className="flex gap-3 animate-fade-in-left text-indigo-100">
+                     <div key={i} className="flex gap-3 animate-fade-in-left">
                        <span className="text-slate-600 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
-                       <span>{log.replace("✓ ", "").replace("🚀 ", "")}</span>
+                       <span>{log.replace("✓ ", "").replace("🚀 ", "").replace("✨ ", "⭐ ")}</span>
                      </div>
                    ))}
                 </div>
