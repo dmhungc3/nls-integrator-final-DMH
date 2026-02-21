@@ -4,56 +4,62 @@ import { GeneratedNLSContent } from "../types";
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // GIỮ NGUYÊN MODEL THEO YÊU CẦU CỦA THẦY
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); 
+  // SỬ DỤNG GEMINI 2.5 FLASH (BẢN STABLE - RA MẮT 6/2025)
+  // Đây là bản ổn định nhất hiện nay, cân bằng hoàn hảo giữa tốc độ và trí tuệ.
+  // Không bị lỗi 404 như bản 3 Preview.
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); 
 
   const result = await model.generateContent(prompt + `
-    YÊU CẦU CHUYÊN SÂU VỀ MA TRẬN ĐÁNH GIÁ NLS & AI (PHỤ LỤC):
-    1. CẤU TRÚC 5 MỨC ĐỘ CHUẨN SƯ PHẠM:
-       - Mức 1 (Nhận biết): Sử dụng công cụ số cơ bản dưới sự hướng dẫn.
-       - Mức 2 (Thông hiểu): Hiểu logic hoạt động của AI và các phần mềm chuyên dụng.
-       - Mức 3 (Vận dụng): Tự thực hiện **Prompt Engineering** để giải quyết các bước trong bài học.
-       - Mức 4 (Phân tích/Đánh giá): Biết phản biện kết quả của AI, nhận diện lỗi sai hoặc ảo giác của AI.
-       - Mức 5 (Sáng tạo/STEM): Kết hợp đa công cụ số để tạo ra sản phẩm học tập hoàn chỉnh.
-    2. CHI TIẾT THEO MÔN: Ma trận bám sát nội dung bài học.
-
-    YÊU CẦU VỀ HOẠT ĐỘNG TÍCH HỢP CHI TIẾT (MICRO-ACTIVITIES LEVEL):
-    - NHIỆM VỤ CỐT LÕI: Rà soát toàn bộ giáo án, tìm tất cả các mục "Hoạt động 1", "Hoạt động 2", "Hoạt động 3"... (hoặc các bước dạy học tương đương).
-    - VỚI MỖI HOẠT ĐỘNG TÌM ĐƯỢC, PHẢI ĐỀ XUẤT CÔNG CỤ CỤ THỂ THEO MÔN:
-       + Toán/Lý/Hóa: Bắt buộc dùng **GeoGebra / Desmos / PhET / Excel** để mô phỏng, tính toán.
-       + Văn/Sử/Địa/GDCD: Dùng **AI Chatbot / Canva / Padlet / Mentimeter** để thảo luận, tạo nội dung.
-       + Tin học: Dùng **IDE Online / AI Code Assistant**.
+    ---------------------------------------------------
+    YÊU CẦU CHUYÊN SÂU: TÍCH HỢP NĂNG LỰC SỐ (NLS) CHI TIẾT THEO TỪNG HOẠT ĐỘNG
     
-    - CẤU TRÚC NỘI DUNG TRẢ VỀ (BẮT BUỘC):
-      "Sử dụng [Tên công cụ]. [Hướng dẫn thao tác cụ thể cho HS]. [Câu lệnh mẫu]: 'Nội dung câu lệnh Prompt' "
+    1. NHIỆM VỤ RÀ SOÁT TOÀN DIỆN:
+       - Đọc kỹ toàn bộ giáo án.
+       - Tìm chính xác các mục: "Hoạt động 1", "Hoạt động 2", "Hoạt động 3", "Hoạt động Khởi động", "Hoạt động Luyện tập"...
+       - KHÔNG ĐƯỢC BỎ SÓT bất kỳ hoạt động nào.
 
-    LƯU Ý KỸ THUẬT QUAN TRỌNG: 
-    - TRẢ VỀ JSON THUẦN TÚY (KHÔNG DÙNG DẤU NHÁY CODE).
-    - Trường "appendix_table" PHẢI LÀ MỘT CHUỖI VĂN BẢN (STRING), các dòng ngăn cách bằng \\n.
+    2. ĐỀ XUẤT CÔNG CỤ CỤ THỂ (THEO MÔN HỌC & ĐẶC THÙ 2026):
+       - Toán/KHTN: Dùng **GeoGebra / Desmos / PhET Simulations**.
+       - Văn/KHXH: Dùng **AI Chatbot (Gemini/ChatGPT) / Canva / Padlet**.
+       - Tin học/Công nghệ: Dùng **IDE Online / Virtual Lab**.
+       - Ngoại ngữ: Dùng **Elsa Speak / Duolingo / AI Roleplay**.
+
+    3. CẤU TRÚC JSON BẮT BUỘC (Strict Format):
+       - "anchor_text": Tên hoạt động gốc trong giáo án (VD: "HOẠT ĐỘNG 1: KHÁM PHÁ...").
+       - "content": Phải có đủ 3 phần:
+         (1) **[Công cụ]**: Tên phần mềm/App.
+         (2) **[Thao tác]**: Hướng dẫn HS/GV làm gì trên máy.
+         (3) **[Câu lệnh mẫu]**: Gợi ý Prompt để HS hỏi AI (nếu cần).
+
+    VÍ DỤ OUTPUT:
+    {
+      "anchor_text": "Hoạt động 2: Hình thành kiến thức",
+      "content": "Sử dụng **GeoGebra 3D**. [Thao tác]: GV yêu cầu HS quét mã QR để mở mô hình không gian, xoay hình để quan sát góc nhị diện. [Câu lệnh mẫu]: 'Giải thích khái niệm góc nhị diện bằng ngôn ngữ đơn giản?'"
+    }
+
+    LƯU Ý KỸ THUẬT: 
+    - TRẢ VỀ JSON THUẦN TÚY (Raw JSON).
+    - KHÔNG dùng Markdown (\`\`\`json).
+    - Trường "appendix_table" là chuỗi văn bản (String), xuống dòng bằng \\n.
   `);
 
   const response = await result.response;
-  // Làm sạch dữ liệu để tránh lỗi Parse JSON
-  const text = response.text()
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+  const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
   
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    console.error("Lỗi parse dữ liệu AI:", text);
-    // Cơ chế Fallback an toàn: Trả về nội dung báo lỗi nhẹ thay vì sập web
+    console.error("Lỗi parse JSON:", text);
     return {
-      objectives_addition: "Hệ thống đang bận hoặc model chưa phản hồi đúng format.",
+      objectives_addition: "Hệ thống đang bận, thầy vui lòng thử lại sau giây lát.",
       materials_addition: "...",
-      activities_integration: [],
+      activities_integration: [{ anchor_text: "Lỗi kết nối", content: "Vui lòng kiểm tra lại đường truyền." }],
       appendix_table: "..."
     };
   }
 
-  // Đảm bảo kiểu dữ liệu an toàn tuyệt đối
+  // Đảm bảo an toàn dữ liệu
   if (parsed.appendix_table && Array.isArray(parsed.appendix_table)) {
     parsed.appendix_table = parsed.appendix_table.join('\n');
   } else if (typeof parsed.appendix_table !== 'string') {
