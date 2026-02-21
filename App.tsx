@@ -10,8 +10,8 @@ import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
 const App: React.FC = () => {
-  // PHIÊN BẢN V3.3.6 MASTER - NLS GREEN HIGHLIGHT & FULL GDPT 2018 - GV. ĐẶNG MẠNH HÙNG
-  const APP_VERSION = "v3.3.6-MASTER"; 
+  // PHIÊN BẢN V3.3.7 MASTER - GREEN HIGHLIGHT & BULLET POINTS - GV. ĐẶNG MẠNH HÙNG
+  const APP_VERSION = "v3.3.7-MASTER"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -33,7 +33,7 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC NHẬN DIỆN THÔNG MINH - KHÔNG BẮT NHẦM SỐ TIẾT
+  // LOGIC NHẬN DIỆN THÔNG MINH - LOẠI TRỪ SỐ TIẾT
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let s = '' as SubjectType;
@@ -74,7 +74,11 @@ const App: React.FC = () => {
       const { s, g } = autoDetectInfo(file.name);
       setState(prev => ({ 
         ...prev, file, subject: s || prev.subject, grade: g || prev.grade, step: 'upload',
-        logs: [`✅ Đã nhận: ${file.name}`, s ? `⭐ Môn: ${s}` : "", g ? `⭐ Nhận diện đúng: ${g}` : ""].filter(Boolean)
+        logs: [
+            `✅ Đã nhận: ${file.name}`, 
+            s ? `⭐ Môn: ${s}` : "❓ Thầy hãy chọn môn", 
+            g ? `⭐ Nhận diện đúng: ${g}` : "❓ Thầy hãy chọn lớp"
+        ].filter(Boolean)
       }));
     }
   };
@@ -113,7 +117,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100 selection:text-indigo-900">
       {/* HEADER */}
       <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/60 py-3">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
@@ -133,8 +137,8 @@ const App: React.FC = () => {
                       </div>
                   ) : (
                       <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="API Key..." className="text-xs px-2 outline-none w-32" />
-                        <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold">Lưu</button>
+                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập API Key..." className="text-xs px-2 outline-none w-32" />
+                        <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700 transition-colors">Lưu</button>
                       </div>
                   )}
               </div>
@@ -169,7 +173,7 @@ const App: React.FC = () => {
                   </select>
                 </div>
               </div>
-              <label className={`relative flex flex-col items-center justify-center w-full h-44 rounded-2xl border-2 border-dashed transition-all cursor-pointer group ${state.file ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-300 hover:border-indigo-400'}`}>
+              <label className={`relative flex flex-col items-center justify-center w-full h-44 rounded-2xl border-2 border-dashed transition-all cursor-pointer group ${state.file ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'}`}>
                 <FileUp className={`w-10 h-10 mb-2 transition-transform group-hover:-translate-y-1 ${state.file ? 'text-indigo-600' : 'text-slate-400'}`} />
                 <span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nạp giáo án môn học (.docx)"}</span>
                 <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
@@ -202,38 +206,42 @@ const App: React.FC = () => {
                 </div>
                 <div className="col-span-8 p-8 max-h-[550px] overflow-y-auto custom-scrollbar bg-white">
                   <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans">
+                    {/* HIỂN THỊ MỤC TIÊU NLS */}
                     {activeTab === 'objectives' && (
                       <div className="space-y-3">
                         {state.generatedContent.objectives_addition.split('\n').filter(l => l.trim()).map((line, i) => (
-                          <div key={i} className="flex gap-2 text-emerald-600 font-medium text-[13px] leading-relaxed">
-                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^- /g, '')}</span>
+                          <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
+                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</span>
                           </div>
                         ))}
                       </div>
                     )}
+                    {/* HIỂN THỊ HỌC LIỆU SỐ */}
                     {activeTab === 'materials' && (
                       <div className="space-y-3">
                         {state.generatedContent.materials_addition.split('\n').filter(l => l.trim()).map((line, i) => (
-                          <div key={i} className="flex gap-2 text-emerald-600 font-medium text-[13px]">
-                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^- /g, '')}</span>
+                          <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px]">
+                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</span>
                           </div>
                         ))}
                       </div>
                     )}
+                    {/* HIỂN THỊ MA TRẬN */}
                     {activeTab === 'matrix' && (
                       <div className="space-y-3">
                         {state.generatedContent.appendix_table.split('\n').filter(l => l.trim()).map((line, i) => (
-                          <div key={i} className="p-3 bg-emerald-50/50 border-l-4 border-emerald-500 rounded-r-lg text-emerald-700 text-[12px] font-semibold">{line}</div>
+                          <div key={i} className="p-3 bg-emerald-50/50 border-l-4 border-emerald-500 rounded-r-lg text-emerald-700 text-[12px] font-bold">👉 Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</div>
                         ))}
                       </div>
                     )}
+                    {/* HIỂN THỊ HOẠT ĐỘNG TÍCH HỢP */}
                     {activeTab === 'activities' && (
                       <div className="space-y-5">
                         {state.generatedContent.activities_integration.map((act, i) => (
                           <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
                             <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-50 pb-1 mb-3 block">Mốc chèn: {act.anchor_text}</span>
-                            <div className="flex gap-2 text-emerald-600 font-medium text-[13px] leading-relaxed">
-                              <span className="shrink-0">•</span><span>Bổ sung NLS: {act.content}</span>
+                            <div className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
+                              <span className="shrink-0">•</span><span>Bổ sung NLS: {act.content.replace(/^[👉\-\•\s]*/, '')}</span>
                             </div>
                           </div>
                         ))}
@@ -250,8 +258,8 @@ const App: React.FC = () => {
               <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800">Thành công rồi thầy Hùng ơi!</h3>
               <p className="text-slate-500 mt-2">Giáo án môn {state.subject} {state.grade} đã sẵn sàng.</p>
-              <button onClick={() => { if(state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="mt-8 px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl flex items-center gap-3 mx-auto transition-all hover:bg-indigo-700 hover:scale-105"><Download className="w-5 h-5" /> Tải giáo án (.docx)</button>
-              <button onClick={() => setState(prev => ({...prev, step: 'upload', generatedContent: null, result: null}))} className="mt-6 text-sm text-slate-400 hover:text-indigo-600 font-semibold">Tích hợp bài khác</button>
+              <button onClick={() => { if(state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="mt-8 px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl flex items-center gap-3 mx-auto transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95"><Download className="w-5 h-5" /> Tải giáo án hoàn thiện (.docx)</button>
+              <button onClick={() => setState(prev => ({...prev, step: 'upload', generatedContent: null, result: null}))} className="mt-6 text-sm text-slate-400 hover:text-indigo-600 font-semibold transition-colors">Tích hợp bài khác</button>
             </div>
           )}
         </div>
@@ -262,7 +270,7 @@ const App: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
                 <div className="flex items-center gap-2 text-slate-300 text-xs font-bold font-mono uppercase tracking-wider"><Cpu className="w-3.5 h-3.5 text-indigo-400 animate-pulse" /> AI Terminal Status</div>
-                <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div></div>
+                <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div></div>
               </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] text-indigo-100/90 leading-relaxed">
                 {state.logs.length === 0 && <span className="text-slate-600 italic">{" >> "} Chờ lệnh từ thầy Hùng...</span>}
