@@ -3,8 +3,8 @@ import { GeneratedNLSContent } from "../types";
 
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  // SỬ DỤNG GEMINI 3 FLASH - MODEL MỚI NHẤT 2026 CHO TỐC ĐỘ VÀ ĐỘ CHÍNH XÁC CAO
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); 
+  // DÙNG GEMINI 1.5 PRO ĐỂ ĐẢM BẢO CHẠY ĐƯỢC VÀ PHÂN TÍCH SÂU
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); 
 
   const result = await model.generateContent(prompt + `
     YÊU CẦU CHUYÊN SÂU VỀ MA TRẬN ĐÁNH GIÁ NLS & AI (PHỤ LỤC):
@@ -16,12 +16,17 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
        - Mức 5 (Sáng tạo/STEM): Kết hợp đa công cụ số để tạo ra sản phẩm học tập hoàn chỉnh.
     2. CHI TIẾT THEO MÔN: Ma trận bám sát nội dung bài học.
 
-    YÊU CẦU VỀ HOẠT ĐỘNG TÍCH HỢP & PROMPT MẪU (CỰC KỲ CỤ THỂ):
-    - Mỗi hoạt động tích hợp PHẢI bao gồm nội dung: "Học sinh dùng điện thoại quét **mã QR**" hoặc "Dùng công cụ số mô phỏng".
-    - QUAN TRỌNG: Phải có mục [Câu lệnh mẫu] dành riêng cho học sinh ở cuối mỗi hoạt động.
-    - Định dạng bắt buộc cho hoạt động: "Nội dung chi tiết... [Câu lệnh mẫu]: 'Nội dung câu lệnh cụ thể HS sẽ nhập vào AI'".
+    YÊU CẦU VỀ HOẠT ĐỘNG TÍCH HỢP CHI TIẾT (MICRO-ACTIVITIES LEVEL):
+    - NHIỆM VỤ: Rà soát toàn bộ giáo án, tìm tất cả các mục "Hoạt động 1", "Hoạt động 2", "Hoạt động 3"... (hoặc các bước dạy học tương đương).
+    - VỚI MỖI HOẠT ĐỘNG TÌM ĐƯỢC, PHẢI ĐỀ XUẤT CÔNG CỤ CỤ THỂ THEO MÔN:
+       + Toán/Lý/Hóa: Bắt buộc dùng **GeoGebra / Desmos / PhET / Excel** để mô phỏng, tính toán.
+       + Văn/Sử/Địa/GDCD: Dùng **AI Chatbot / Canva / Padlet / Mentimeter** để thảo luận, tạo nội dung.
+       + Tin học: Dùng **IDE Online / AI Code Assistant**.
+    
+    - CẤU TRÚC NỘI DUNG TRẢ VỀ (BẮT BUỘC):
+      "Sử dụng [Tên công cụ]. [Hướng dẫn thao tác cụ thể cho HS]. [Câu lệnh mẫu]: 'Nội dung câu lệnh Prompt' "
 
-    LƯU Ý KỸ THUẬT: 
+    LƯU Ý KỸ THUẬT QUAN TRỌNG: 
     - TRẢ VỀ JSON THUẦN, KHÔNG ĐƯỢC CÓ DẤU NHÁY CODE (\`\`\`json).
     - Trường "appendix_table" PHẢI LÀ MỘT CHUỖI VĂN BẢN (STRING), các dòng ngăn cách bằng \\n.
     - Các trường "objectives_addition" và "materials_addition" cũng phải là STRING.

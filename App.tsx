@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
-  BookOpen, GraduationCap, Sparkles,
-  Smartphone, Zap, Cpu, Clock, CheckCircle2, ListChecks
+  BookOpen, GraduationCap, Sparkles, ChevronRight,
+  Smartphone, Zap, Layers, Cpu, Phone, Info, Clock, CheckCircle2, ListChecks
 } from 'lucide-react';
-import { AppState, SubjectType, GradeType } from './types';
-import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
+import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
+import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
 const App: React.FC = () => {
-  // PHIÊN BẢN V3.3.7 FINAL FIX - TYPE SAFE & CRASH GUARD - GV. ĐẶNG MẠNH HÙNG
+  // PHIÊN BẢN V3.3.7 FINAL - AUTO CORRECT SUBJECT - GV. ĐẶNG MẠNH HÙNG
   const APP_VERSION = "v3.3.7-FINAL"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
@@ -33,25 +33,26 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC NHẬN DIỆN THÔNG MINH (ĐÃ SỬA LỖI TYPE)
+  // LOGIC NHẬN DIỆN THÔNG MINH (ĐÃ SỬA LỖI TYPE & THÊM TỪ KHÓA)
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let s = '' as SubjectType;
     let g = '' as GradeType;
 
-    // Sử dụng ép kiểu (as SubjectType) để tránh lỗi TypeScript
-    if (/toan|hinh|dai so|giai tich|ham so|vecto/.test(name)) s = 'Toán' as SubjectType;
-    else if (/van|ngu van|doc hieu/.test(name)) s = 'Ngữ văn' as SubjectType;
+    // Ép kiểu (as SubjectType) để tránh lỗi màn hình trắng
+    if (/toan|hinh|dai so|giai tich|ham so|vecto|xac suat/.test(name)) s = 'Toán' as SubjectType;
+    else if (/van|ngu van|doc hieu|tho|truyen/.test(name)) s = 'Ngữ văn' as SubjectType;
     else if (/anh|english/.test(name)) s = 'Tiếng Anh' as SubjectType;
-    else if (/dia|dan so/.test(name)) s = 'Địa lý' as SubjectType;
-    else if (/su|lich su/.test(name)) s = 'Lịch sử' as SubjectType;
-    else if (/ly|vat ly/.test(name)) s = 'Vật lý' as SubjectType;
-    else if (/hoa/.test(name)) s = 'Hóa học' as SubjectType;
-    else if (/sinh/.test(name)) s = 'Sinh học' as SubjectType;
-    else if (/tin|lap trinh/.test(name)) s = 'Tin học' as SubjectType;
-    else if (/cn|cong nghe/.test(name)) s = 'Công nghệ' as SubjectType;
-    else if (/gdkt|phap luat/.test(name)) s = 'Giáo dục kinh tế và pháp luật' as SubjectType;
+    else if (/dia|dan so|khi hau|ban do/.test(name)) s = 'Địa lý' as SubjectType;
+    else if (/su|lich su|cach mang|khang chien/.test(name)) s = 'Lịch sử' as SubjectType;
+    else if (/ly|vat ly|dong luc|dien|quang/.test(name)) s = 'Vật lý' as SubjectType;
+    else if (/hoa|chat|phan ung/.test(name)) s = 'Hóa học' as SubjectType;
+    else if (/sinh|te bao|di truyen/.test(name)) s = 'Sinh học' as SubjectType;
+    else if (/tin|lap trinh|pascal|python|excel/.test(name)) s = 'Tin học' as SubjectType;
+    else if (/cn|cong nghe|ky thuat/.test(name)) s = 'Công nghệ' as SubjectType;
+    else if (/gdkt|phap luat|kinh te/.test(name)) s = 'Giáo dục kinh tế và pháp luật' as SubjectType;
 
+    // Lọc bỏ từ 'Tiết' để không nhầm Tiết 10 thành Lớp 10
     const cleanName = name.replace(/(tiết|bài|tiet|bai)\s*\d+/g, '');
     const gradeMatch = cleanName.match(/\d+/);
     if (gradeMatch) {
@@ -73,9 +74,11 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
-      // Ưu tiên lựa chọn thủ công
-      const finalSubject = state.subject || s;
-      const finalGrade = state.grade || g;
+      
+      // LOGIC MỚI: ƯU TIÊN FILE (Auto Correct)
+      // Nếu tên file nhận diện được môn (s), dùng s. Nếu không, giữ nguyên môn thầy đang chọn.
+      const finalSubject = s || state.subject;
+      const finalGrade = g || state.grade;
 
       setState(prev => ({ 
         ...prev, 
@@ -96,7 +99,17 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey || !state.subject || !state.grade) return;
-    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs.filter(l => !l.includes("❓")), `✅ Xác nhận cấu hình: ${state.subject} - ${state.grade}`, `⚡ Khởi động Core ${APP_VERSION}...`, `🤖 Đang thiết kế Prompt mẫu cho HS...`] }));
+    setState(prev => ({ 
+      ...prev, 
+      isProcessing: true, 
+      logs: [
+        ...prev.logs.filter(l => !l.includes("❓")),
+        `✅ Xác nhận cấu hình: ${state.subject} - ${state.grade}`,
+        `⚡ Khởi động Core ${APP_VERSION}...`,
+        `🤖 Đang thiết kế Prompt mẫu cho HS...`
+      ] 
+    }));
+
     try {
       const text = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(text, state.subject, state.grade, 'NLS', pedagogy);
@@ -128,7 +141,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100 selection:text-indigo-900">
-      {/* HEADER */}
       <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/60 py-3">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
