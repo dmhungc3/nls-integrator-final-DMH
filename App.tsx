@@ -13,8 +13,8 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  // NÂNG CẤP LÊN PHIÊN BẢN HỖ TRỢ ĐA MÔN
-  const APP_VERSION = "v3.0-TOTAL"; 
+  // PHIÊN BẢN ỔN ĐỊNH CỦA THẦY HÙNG - THPT LÝ NHÂN TÔNG
+  const APP_VERSION = "v3.1.0-STABLE"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -30,13 +30,13 @@ const App: React.FC = () => {
     if (savedKey) { setUserApiKey(savedKey); setIsKeySaved(true); }
   }, []);
 
-  // LOGIC TỰ ĐỘNG NHẬN DIỆN MÔN HỌC VÀ KHỐI LỚP
+  // LOGIC TỰ ĐỘNG NHẬN DIỆN THÔNG MINH
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let detectedSubject = '' as SubjectType;
     let detectedGrade = '' as GradeType;
 
-    // Nhận diện môn
+    // Nhận diện môn học
     if (name.includes('toan')) detectedSubject = 'Toán';
     else if (name.includes('van')) detectedSubject = 'Ngữ văn';
     else if (name.includes('anh')) detectedSubject = 'Tiếng Anh';
@@ -48,10 +48,14 @@ const App: React.FC = () => {
     else if (name.includes('tin')) detectedSubject = 'Tin học';
     else if (name.includes('cong nghe')) detectedSubject = 'Công nghệ';
 
-    // Nhận diện khối lớp
+    // Nhận diện khối lớp (THCS & THPT)
     if (name.includes('10')) detectedGrade = 'Lớp 10';
     else if (name.includes('11')) detectedGrade = 'Lớp 11';
     else if (name.includes('12')) detectedGrade = 'Lớp 12';
+    else if (name.includes('6')) detectedGrade = 'Lớp 6';
+    else if (name.includes('7')) detectedGrade = 'Lớp 7';
+    else if (name.includes('8')) detectedGrade = 'Lớp 8';
+    else if (name.includes('9')) detectedGrade = 'Lớp 9';
 
     return { detectedSubject, detectedGrade };
   };
@@ -83,8 +87,8 @@ const App: React.FC = () => {
         step: 'upload', 
         logs: [
           `✓ Đã nạp file: ${file.name}`,
-          detectedSubject ? `✨ Tự động nhận diện môn: ${detectedSubject}` : "📝 Anh vui lòng chọn môn học thủ công",
-          detectedGrade ? `✨ Tự động nhận diện khối: ${detectedGrade}` : ""
+          detectedSubject ? `✨ Tự nhận diện môn: ${detectedSubject}` : "📝 Anh Hùng vui lòng chọn môn thủ công",
+          detectedGrade ? `✨ Tự nhận diện khối: ${detectedGrade}` : ""
         ].filter(Boolean)
       }));
     } else { 
@@ -180,7 +184,7 @@ const App: React.FC = () => {
                       </div>
                   ) : (
                       <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập Gemini API Key..." className="text-xs px-2 outline-none w-40" />
+                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập API Key..." className="text-xs px-2 outline-none w-40" />
                         <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700">Lưu</button>
                       </div>
                   )}
@@ -222,15 +226,17 @@ const App: React.FC = () => {
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Môn học (GDPT 2018)</label>
                               <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                                   <option value="">-- Chọn môn học --</option>
-                                  <optgroup label="Môn học chính">
+                                  <optgroup label="Môn Bắt buộc">
                                       <option value="Toán">Toán học</option>
                                       <option value="Ngữ văn">Ngữ văn</option>
                                       <option value="Tiếng Anh">Tiếng Anh</option>
                                       <option value="Lịch sử">Lịch sử</option>
-                                      <option value="Địa lí">Địa lí</option>
-                                      <option value="Vật lí">Vật lí</option>
+                                  </optgroup>
+                                  <optgroup label="Môn Lựa chọn (Tự chọn)">
+                                      <option value="Vật lý">Vật lý</option>
                                       <option value="Hóa học">Hóa học</option>
                                       <option value="Sinh học">Sinh học</option>
+                                      <option value="Địa lý">Địa lý</option>
                                       <option value="Tin học">Tin học</option>
                                       <option value="Công nghệ">Công nghệ</option>
                                   </optgroup>
@@ -240,9 +246,17 @@ const App: React.FC = () => {
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Khối lớp</label>
                               <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold appearance-none" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                   <option value="">-- Chọn khối lớp --</option>
-                                  <option value="Lớp 10">Lớp 10</option>
-                                  <option value="Lớp 11">Lớp 11</option>
-                                  <option value="Lớp 12">Lớp 12</option>
+                                  <optgroup label="Cấp THPT">
+                                      <option value="Lớp 10">Lớp 10</option>
+                                      <option value="Lớp 11">Lớp 11</option>
+                                      <option value="Lớp 12">Lớp 12</option>
+                                  </optgroup>
+                                  <optgroup label="Cấp THCS">
+                                      <option value="Lớp 6">Lớp 6</option>
+                                      <option value="Lớp 7">Lớp 7</option>
+                                      <option value="Lớp 8">Lớp 8</option>
+                                      <option value="Lớp 9">Lớp 9</option>
+                                  </optgroup>
                               </select>
                           </div>
                       </div>
