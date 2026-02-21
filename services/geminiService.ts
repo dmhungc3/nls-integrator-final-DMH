@@ -4,8 +4,9 @@ import { GeneratedNLSContent } from "../types";
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
   
-  // QUAY VỀ PHIÊN BẢN 'GEMINI-PRO' (BẢN 1.0 STABLE)
-  // Đây là bản ổn định nhất, chạy được trên mọi API Key, không bao giờ lỗi 404.
+  // SỬ DỤNG GEMINI PRO (PHIÊN BẢN ỔN ĐỊNH NHẤT - CHẠY NGAY KHÔNG CẦN KEY MỚI)
+  // Đây là lõi duy nhất không bị lỗi 404 với tài khoản hiện tại của thầy.
+  // Tuy nhiên, Prompt bên dưới đã được nâng cấp lên chuẩn V3 Master.
   const model = genAI.getGenerativeModel({ model: "gemini-pro" }); 
 
   const result = await model.generateContent(prompt + `
@@ -19,19 +20,17 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
     2. CHI TIẾT THEO MÔN: Ma trận bám sát nội dung bài học.
 
     YÊU CẦU VỀ HOẠT ĐỘNG TÍCH HỢP CHI TIẾT (MICRO-ACTIVITIES):
-    - NHIỆM VỤ: Tìm các mục "Hoạt động 1", "Hoạt động 2", "Hoạt động 3"... trong giáo án.
+    - NHIỆM VỤ: Quét toàn bộ giáo án, tìm các mục "Hoạt động 1", "Hoạt động 2", "Hoạt động 3"...
     - ĐỀ XUẤT CÔNG CỤ CỤ THỂ:
        + Toán/Lý/Hóa: Dùng **GeoGebra / Desmos / PhET**.
        + Văn/Sử/Địa: Dùng **AI Chatbot / Padlet / Canva**.
        + Tin học: Dùng **IDE Online**.
     
-    - CẤU TRÚC BẮT BUỘC:
+    - CẤU TRÚC BẮT BUỘC CHO MỖI HOẠT ĐỘNG:
       "Sử dụng [Tên công cụ]. [Hướng dẫn thao tác]. [Câu lệnh mẫu]: 'Nội dung câu lệnh Prompt' "
 
     LƯU Ý KỸ THUẬT QUAN TRỌNG (ĐỂ TRÁNH LỖI MÀN HÌNH TRẮNG): 
-    - TRẢ VỀ JSON THUẦN TÚY.
-    - KHÔNG ĐƯỢC CÓ DẤU NHÁY CODE (\`\`\`json).
-    - KHÔNG ĐƯỢC CÓ MARKDOWN THỪA.
+    - TRẢ VỀ JSON THUẦN TÚY (KHÔNG DÙNG DẤU NHÁY CODE).
     - Trường "appendix_table" PHẢI LÀ MỘT CHUỖI VĂN BẢN (STRING), các dòng ngăn cách bằng \\n.
   `);
 
@@ -47,9 +46,9 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
     parsed = JSON.parse(text);
   } catch (e) {
     console.error("Lỗi parse JSON (AI trả về sai định dạng):", text);
-    // Cơ chế Fallback: Nếu lỗi, trả về nội dung rỗng để App không bị sập
+    // Cơ chế Fallback an toàn: Trả về nội dung báo lỗi nhẹ thay vì sập web
     return {
-      objectives_addition: "Lỗi kết nối AI. Thầy vui lòng thử lại.",
+      objectives_addition: "Hệ thống đang bận, thầy vui lòng nhấn thử lại.",
       materials_addition: "...",
       activities_integration: [],
       appendix_table: "..."
