@@ -3,11 +3,11 @@ import { GeneratedNLSContent } from "../types";
 
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  // ÉP DÙNG MODEL V1 CHÍNH THỨC (GIỐNG BẢN 14/2)
+  // ÉP DÙNG MODEL V1 CHÍNH THỨC ĐỂ DỨT ĐIỂM LỖI 404
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
 
   const result = await model.generateContent(prompt + `
-    YÊU CẦU TRẢ VỀ JSON THUẦN (KHÔNG KÈM MARKDOWN):
+    TRẢ VỀ JSON THUẦN (KHÔNG KÈM MARKDOWN):
     {
       "objectives_addition": "nội dung mục tiêu",
       "materials_addition": "nội dung học liệu",

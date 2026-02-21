@@ -13,7 +13,7 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v2.1.2"; 
+  const APP_VERSION = "v2.1.3-FIX"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -61,7 +61,6 @@ const App: React.FC = () => {
     try {
       const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
       addLog(`⚙️ Chiến lược: ${modelName}`);
-      // SỬA TẠI ĐÂY: Hiển thị tên môn học linh hoạt theo lựa chọn
       addLog(`🔍 Đang đọc cấu trúc file bài ${state.subject}...`);
       const textContext = await extractTextFromDocx(state.file);
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
@@ -242,8 +241,7 @@ const App: React.FC = () => {
                           <div className="flex flex-col items-center justify-center text-center p-4 z-10">
                               <FileUp className={`w-10 h-10 mb-2 ${state.file ? 'text-indigo-600' : 'text-slate-400'}`} />
                               <span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nhấn để nạp file giáo án (.docx)"}</span>
-                              {/* SỬA TẠI ĐÂY: Hiển thị tên môn học linh hoạt */}
-                              <p className="text-[10px] text-slate-400 mt-1">Hệ thống sẵn sàng xử lý file môn {state.subject || "học"} {state.grade}</p>
+                              <p className="text-[10px] text-slate-400 mt-1">Hệ thống sẵn sàng xử lý file môn {state.subject || "học"}</p>
                           </div>
                           <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
                       </label>
