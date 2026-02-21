@@ -33,6 +33,7 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
+  // LOGIC NHẬN DIỆN THÔNG MINH - ƯU TIÊN LOẠI TRỪ SỐ TIẾT
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let s = '' as SubjectType;
@@ -71,6 +72,7 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
+      
       const finalSubject = state.subject || s;
       const finalGrade = state.grade || g;
 
@@ -135,6 +137,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100 selection:text-indigo-900">
+      {/* HEADER */}
       <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/60 py-3">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -221,7 +224,7 @@ const App: React.FC = () => {
                   <button onClick={() => setActiveTab('matrix')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'matrix' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><ListChecks className="w-4 h-4" /> 4. Ma trận đánh giá</button>
                 </div>
                 <div className="col-span-8 p-8 max-h-[550px] overflow-y-auto custom-scrollbar bg-white">
-                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans">
+                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans text-slate-700">
                     {activeTab === 'objectives' && (
                       <div className="space-y-3">
                         {state.generatedContent.objectives_addition.split('\n').filter(l => l.trim()).map((line, i) => (
@@ -250,28 +253,32 @@ const App: React.FC = () => {
                     )}
                     {activeTab === 'activities' && (
                       <div className="space-y-5">
-                        {state.generatedContent.activities_integration.map((act, i) => (
-                          <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
-                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-50 pb-1 mb-3 block">Mốc chèn: {act.anchor_text}</span>
-                            <div className="flex flex-col gap-3">
-                              <div className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
-                                <span className="shrink-0">⚡</span>
-                                <span>{act.content.split('[Câu lệnh mẫu]:')[0]}</span>
-                              </div>
-                              {act.content.includes('[Câu lệnh mẫu]:') && (
-                                <div className="bg-indigo-50/50 p-3 rounded-lg border-l-4 border-indigo-400">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Zap className="w-3 h-3 text-indigo-600" />
-                                    <span className="text-[10px] font-bold text-indigo-600 uppercase">Câu lệnh mẫu cho HS:</span>
-                                  </div>
-                                  <p className="text-[12px] text-slate-700 italic font-medium">
-                                    "{act.content.split('[Câu lệnh mẫu]:')[1].trim()}"
-                                  </p>
+                        {state.generatedContent.activities_integration.map((act, i) => {
+                          const hasPrompt = act.content.includes('[Câu lệnh mẫu]:');
+                          const contentParts = hasPrompt ? act.content.split('[Câu lệnh mẫu]:') : [act.content, ""];
+                          return (
+                            <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
+                              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-50 pb-1 mb-3 block">Mốc chèn: {act.anchor_text}</span>
+                              <div className="flex flex-col gap-3">
+                                <div className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
+                                  <span className="shrink-0">⚡</span>
+                                  <span>{contentParts[0].trim()}</span>
                                 </div>
-                              )}
+                                {hasPrompt && (
+                                  <div className="bg-indigo-50/50 p-3 rounded-lg border-l-4 border-indigo-400">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Zap className="w-3 h-3 text-indigo-600" />
+                                      <span className="text-[10px] font-bold text-indigo-600 uppercase">Câu lệnh mẫu cho HS:</span>
+                                    </div>
+                                    <p className="text-[12px] text-slate-700 italic font-medium">
+                                      "{contentParts[1].trim()}"
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -304,7 +311,7 @@ const App: React.FC = () => {
                 {state.logs.map((log, i) => (
                   <div key={i} className="flex gap-3 animate-fade-in-left border-l border-indigo-500/30 pl-3">
                     <span className="text-slate-500 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
-                    <span className="break-words font-medium">{log.replace("✓ ", "✅ ").replace("🚀 ", "⚡ ").replace("✨ ", "⭐ ")}</span>
+                    <span className="break-words font-medium">{log.replace("✅ ", "✅ ").replace("⚡ ", "⚡ ").replace("⭐ ", "⭐ ")}</span>
                   </div>
                 ))}
               </div>

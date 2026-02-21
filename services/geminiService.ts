@@ -17,28 +17,41 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
     2. CHI TIẾT THEO MÔN: Ma trận bám sát nội dung bài học.
 
     YÊU CẦU VỀ HOẠT ĐỘNG TÍCH HỢP & PROMPT MẪU (CỰC KỲ CỤ THỂ):
-    - Mỗi hoạt động PHẢI bao gồm nội dung: "Học sinh dùng điện thoại quét **mã QR**", "Dùng **GeoGebra** để mô phỏng".
-    - ĐẶC BIỆT: Phải có mục [Câu lệnh mẫu] dành riêng cho học sinh.
-    - Ví dụ format: "Nội dung hoạt động... [Câu lệnh mẫu]: 'Hãy đóng vai chuyên gia, giải thích cho em về...'"
+    - Mỗi hoạt động tích hợp PHẢI bao gồm nội dung: "Học sinh dùng điện thoại quét **mã QR**" hoặc "Dùng công cụ số mô phỏng".
+    - QUAN TRỌNG: Phải có mục [Câu lệnh mẫu] dành riêng cho học sinh ở cuối mỗi hoạt động.
+    - Định dạng bắt buộc cho hoạt động: "Nội dung chi tiết... [Câu lệnh mẫu]: 'Nội dung câu lệnh cụ thể HS sẽ nhập vào AI'".
 
-    LƯU Ý KỸ THUẬT: TRẢ VỀ JSON THUẦN. Trường appendix_table là chuỗi văn bản, các dòng ngăn cách bằng \\n.
+    LƯU Ý KỸ THUẬT: 
+    - TRẢ VỀ JSON THUẦN, KHÔNG ĐƯỢC CÓ DẤU NHÁY CODE (\`\`\`json).
+    - Trường "appendix_table" PHẢI LÀ MỘT CHUỖI VĂN BẢN (STRING), các dòng ngăn cách bằng \\n.
+    - Các trường "objectives_addition" và "materials_addition" cũng phải là STRING.
   `);
 
   const response = await result.response;
-  const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+  // Làm sạch dữ liệu để tránh lỗi Parse JSON
+  const text = response.text()
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
   
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    throw new Error("Dữ liệu AI gặp sự cố. Thầy hãy thử lại nhé!");
+    console.error("Lỗi parse dữ liệu AI:", text);
+    throw new Error("Dữ liệu AI trả về không đúng định dạng. Thầy hãy nhấn Tích hợp lại nhé!");
   }
 
-  // Đảm bảo dữ liệu bảng luôn là chuỗi văn bản để không lỗi hàm split trong App.tsx
+  // Đảm bảo trường appendix_table luôn là chuỗi để không lỗi hàm split trong App.tsx
   if (parsed.appendix_table && Array.isArray(parsed.appendix_table)) {
     parsed.appendix_table = parsed.appendix_table.join('\n');
   } else if (typeof parsed.appendix_table !== 'string') {
     parsed.appendix_table = String(parsed.appendix_table || "");
+  }
+
+  // Đảm bảo cấu trúc activities_integration luôn đúng định dạng mảng
+  if (!Array.isArray(parsed.activities_integration)) {
+    parsed.activities_integration = [];
   }
   
   return parsed;
