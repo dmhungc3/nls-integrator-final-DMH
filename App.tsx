@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
-  BookOpen, GraduationCap, Sparkles, ChevronRight,
-  Smartphone, Zap, Layers, Cpu, Phone, Info, Clock, CheckCircle2, ListChecks
+  BookOpen, GraduationCap, Sparkles,
+  Smartphone, Zap, Cpu, Clock, CheckCircle2, ListChecks
 } from 'lucide-react';
-import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
-import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
+import { AppState, SubjectType, GradeType } from './types';
+import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
 const App: React.FC = () => {
-  // PHIÊN BẢN V3.3.7 MASTER - PROMPT ENGINEERING READY - GV. ĐẶNG MẠNH HÙNG
-  const APP_VERSION = "v3.3.7-MASTER"; 
+  // PHIÊN BẢN V3.3.7 FINAL FIX - TYPE SAFE & CRASH GUARD - GV. ĐẶNG MẠNH HÙNG
+  const APP_VERSION = "v3.3.7-FINAL"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -33,23 +33,24 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC NHẬN DIỆN THÔNG MINH - ƯU TIÊN LOẠI TRỪ SỐ TIẾT
+  // LOGIC NHẬN DIỆN THÔNG MINH (ĐÃ SỬA LỖI TYPE)
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let s = '' as SubjectType;
     let g = '' as GradeType;
 
-    if (/toan|hinh|dai so|giai tich|ham so|vecto/.test(name)) s = 'Toán';
-    else if (/van|ngu van|doc hieu/.test(name)) s = 'Ngữ văn';
-    else if (/anh|english/.test(name)) s = 'Tiếng Anh';
-    else if (/dia|dan so/.test(name)) s = 'Địa lý';
-    else if (/su|lich su/.test(name)) s = 'Lịch sử';
-    else if (/ly|vat ly/.test(name)) s = 'Vật lý';
-    else if (/hoa/.test(name)) s = 'Hóa học';
-    else if (/sinh/.test(name)) s = 'Sinh học';
-    else if (/tin|lap trinh/.test(name)) s = 'Tin học';
-    else if (/cn|cong nghe/.test(name)) s = 'Công nghệ';
-    else if (/gdkt|phap luat/.test(name)) s = 'Giáo dục kinh tế và pháp luật';
+    // Sử dụng ép kiểu (as SubjectType) để tránh lỗi TypeScript
+    if (/toan|hinh|dai so|giai tich|ham so|vecto/.test(name)) s = 'Toán' as SubjectType;
+    else if (/van|ngu van|doc hieu/.test(name)) s = 'Ngữ văn' as SubjectType;
+    else if (/anh|english/.test(name)) s = 'Tiếng Anh' as SubjectType;
+    else if (/dia|dan so/.test(name)) s = 'Địa lý' as SubjectType;
+    else if (/su|lich su/.test(name)) s = 'Lịch sử' as SubjectType;
+    else if (/ly|vat ly/.test(name)) s = 'Vật lý' as SubjectType;
+    else if (/hoa/.test(name)) s = 'Hóa học' as SubjectType;
+    else if (/sinh/.test(name)) s = 'Sinh học' as SubjectType;
+    else if (/tin|lap trinh/.test(name)) s = 'Tin học' as SubjectType;
+    else if (/cn|cong nghe/.test(name)) s = 'Công nghệ' as SubjectType;
+    else if (/gdkt|phap luat/.test(name)) s = 'Giáo dục kinh tế và pháp luật' as SubjectType;
 
     const cleanName = name.replace(/(tiết|bài|tiet|bai)\s*\d+/g, '');
     const gradeMatch = cleanName.match(/\d+/);
@@ -72,7 +73,7 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
-      
+      // Ưu tiên lựa chọn thủ công
       const finalSubject = state.subject || s;
       const finalGrade = state.grade || g;
 
@@ -95,17 +96,7 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey || !state.subject || !state.grade) return;
-    setState(prev => ({ 
-      ...prev, 
-      isProcessing: true, 
-      logs: [
-        ...prev.logs.filter(l => !l.includes("❓")),
-        `✅ Xác nhận cấu hình: ${state.subject} - ${state.grade}`,
-        `⚡ Khởi động Core ${APP_VERSION}...`,
-        `🤖 Đang thiết kế Prompt mẫu cho HS...`
-      ] 
-    }));
-
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs.filter(l => !l.includes("❓")), `✅ Xác nhận cấu hình: ${state.subject} - ${state.grade}`, `⚡ Khởi động Core ${APP_VERSION}...`, `🤖 Đang thiết kế Prompt mẫu cho HS...`] }));
     try {
       const text = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(text, state.subject, state.grade, 'NLS', pedagogy);
@@ -227,7 +218,7 @@ const App: React.FC = () => {
                   <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans text-slate-700">
                     {activeTab === 'objectives' && (
                       <div className="space-y-3">
-                        {state.generatedContent.objectives_addition.split('\n').filter(l => l.trim()).map((line, i) => (
+                        {state.generatedContent.objectives_addition?.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
                             <span className="shrink-0">{line.toLowerCase().includes('ai') ? '🤖' : '🌐'}</span>
                             <span>Bổ sung: {line.replace(/^[👉\-\•\s]*/, '')}</span>
@@ -237,7 +228,7 @@ const App: React.FC = () => {
                     )}
                     {activeTab === 'materials' && (
                       <div className="space-y-3">
-                        {state.generatedContent.materials_addition.split('\n').filter(l => l.trim()).map((line, i) => (
+                        {state.generatedContent.materials_addition?.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px]">
                             <span className="shrink-0">📦</span><span>Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</span>
                           </div>
@@ -246,15 +237,15 @@ const App: React.FC = () => {
                     )}
                     {activeTab === 'matrix' && (
                       <div className="space-y-3">
-                        {state.generatedContent.appendix_table.split('\n').filter(l => l.trim()).map((line, i) => (
+                        {state.generatedContent.appendix_table?.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="p-3 bg-emerald-50/50 border-l-4 border-emerald-500 rounded-r-lg text-emerald-700 text-[12px] font-bold">👉 Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</div>
                         ))}
                       </div>
                     )}
                     {activeTab === 'activities' && (
                       <div className="space-y-5">
-                        {state.generatedContent.activities_integration.map((act, i) => {
-                          const hasPrompt = act.content.includes('[Câu lệnh mẫu]:');
+                        {state.generatedContent.activities_integration?.map((act, i) => {
+                          const hasPrompt = act.content && act.content.includes('[Câu lệnh mẫu]:');
                           const contentParts = hasPrompt ? act.content.split('[Câu lệnh mẫu]:') : [act.content, ""];
                           return (
                             <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
@@ -262,7 +253,7 @@ const App: React.FC = () => {
                               <div className="flex flex-col gap-3">
                                 <div className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
                                   <span className="shrink-0">⚡</span>
-                                  <span>{contentParts[0].trim()}</span>
+                                  <span>{contentParts[0]?.trim()}</span>
                                 </div>
                                 {hasPrompt && (
                                   <div className="bg-indigo-50/50 p-3 rounded-lg border-l-4 border-indigo-400">
@@ -271,7 +262,7 @@ const App: React.FC = () => {
                                       <span className="text-[10px] font-bold text-indigo-600 uppercase">Câu lệnh mẫu cho HS:</span>
                                     </div>
                                     <p className="text-[12px] text-slate-700 italic font-medium">
-                                      "{contentParts[1].trim()}"
+                                      "{contentParts[1]?.trim()}"
                                     </p>
                                   </div>
                                 )}
@@ -311,7 +302,7 @@ const App: React.FC = () => {
                 {state.logs.map((log, i) => (
                   <div key={i} className="flex gap-3 animate-fade-in-left border-l border-indigo-500/30 pl-3">
                     <span className="text-slate-500 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
-                    <span className="break-words font-medium">{log.replace("✅ ", "✅ ").replace("⚡ ", "⚡ ").replace("⭐ ", "⭐ ")}</span>
+                    <span className="break-words font-medium">{log.replace("✓ ", "✅ ").replace("🚀 ", "⚡ ").replace("✨ ", "⭐ ")}</span>
                   </div>
                 ))}
               </div>
