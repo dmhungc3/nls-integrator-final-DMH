@@ -10,7 +10,7 @@ import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
 const App: React.FC = () => {
-  // PHIÊN BẢN V3.3.7 MASTER - GREEN HIGHLIGHT & BULLET POINTS - GV. ĐẶNG MẠNH HÙNG
+  // PHIÊN BẢN V3.3.7 MASTER - CHUYÊN GIA TÍCH HỢP NLS & AI - GV. ĐẶNG MẠNH HÙNG
   const APP_VERSION = "v3.3.7-MASTER"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
@@ -64,7 +64,7 @@ const App: React.FC = () => {
     if (userApiKey.trim()) { 
       localStorage.setItem('gemini_api_key', userApiKey); 
       setIsKeySaved(true); 
-      addLog("✓ Đã lưu API Key."); 
+      addLog("✅ Đã lưu API Key."); 
     }
   };
 
@@ -72,12 +72,21 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
+      
+      // Ưu tiên lựa chọn thủ công nếu hệ thống không tự nhận diện được
+      const finalSubject = s || state.subject;
+      const finalGrade = g || state.grade;
+
       setState(prev => ({ 
-        ...prev, file, subject: s || prev.subject, grade: g || prev.grade, step: 'upload',
+        ...prev, 
+        file, 
+        subject: finalSubject, 
+        grade: finalGrade, 
+        step: 'upload',
         logs: [
             `✅ Đã nhận: ${file.name}`, 
-            s ? `⭐ Môn: ${s}` : "❓ Thầy hãy chọn môn", 
-            g ? `⭐ Nhận diện đúng: ${g}` : "❓ Thầy hãy chọn lớp"
+            finalSubject ? `✅ Môn học: ${finalSubject}` : "❓ Thầy hãy chọn môn", 
+            finalGrade ? `✅ Khối lớp: ${finalGrade}` : "❓ Thầy hãy chọn lớp"
         ].filter(Boolean)
       }));
     }
@@ -87,15 +96,28 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey || !state.subject || !state.grade) return;
-    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, `🚀 Khởi động Core ${APP_VERSION}...`] }));
+
+    // Xóa bỏ các dòng cảnh báo dấu hỏi chấm khi bắt đầu chạy
+    setState(prev => ({ 
+      ...prev, 
+      isProcessing: true, 
+      logs: [
+        ...prev.logs.filter(l => !l.includes("❓")),
+        `✅ Xác nhận cấu hình: ${state.subject} - ${state.grade}`,
+        `⚡ Khởi động Core ${APP_VERSION}...`,
+        `🤖 Kết nối Neural Engine (Gemini AI)...`
+      ] 
+    }));
+
     try {
       const text = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(text, state.subject, state.grade, 'NLS', pedagogy);
       const content = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✅ AI đã thiết kế xong nội dung tích hợp.`);
+      
+      addLog(`✨ AI đã thiết kế xong nội dung NLS & AI Literacy.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent: content, step: 'review' }));
     } catch (e) { 
-      addLog(`🔴 Lỗi: ${e instanceof Error ? e.message : "Xung đột"}`); 
+      addLog(`🔴 Lỗi kết nối AI: ${e instanceof Error ? e.message : "Xung đột hệ thống"}`); 
       setState(prev => ({ ...prev, isProcessing: false })); 
     }
   };
@@ -178,9 +200,9 @@ const App: React.FC = () => {
                 <span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nạp giáo án môn học (.docx)"}</span>
                 <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
               </label>
-              <button disabled={!state.file || !state.subject || state.isProcessing} onClick={handleAnalyze} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 disabled:bg-slate-200 transition-all flex items-center justify-center gap-2">
+              <button disabled={!state.file || !state.subject || !state.grade || state.isProcessing} onClick={handleAnalyze} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 disabled:bg-slate-200 transition-all flex items-center justify-center gap-2">
                 {state.isProcessing ? <Clock className="animate-spin w-5 h-5" /> : <Wand2 className="w-5 h-5" />}
-                {state.isProcessing ? "Đang thiết kế..." : "🚀 Kích hoạt AI & Tích hợp ngay"}
+                {state.isProcessing ? "Đang thiết kế NLS & AI..." : "🚀 Kích hoạt AI & Tích hợp ngay"}
               </button>
             </div>
           )}
@@ -199,19 +221,20 @@ const App: React.FC = () => {
               
               <div className="grid grid-cols-12 min-h-[500px]">
                 <div className="col-span-4 border-r bg-slate-50/50 p-4 space-y-2">
-                  <button onClick={() => setActiveTab('objectives')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'objectives' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><BookOpen className="w-4 h-4" /> 1. Mục tiêu NLS</button>
+                  <button onClick={() => setActiveTab('objectives')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'objectives' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><BookOpen className="w-4 h-4" /> 1. Mục tiêu NLS & AI</button>
                   <button onClick={() => setActiveTab('materials')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'materials' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><Smartphone className="w-4 h-4" /> 2. Học liệu số</button>
                   <button onClick={() => setActiveTab('activities')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'activities' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><Zap className="w-4 h-4" /> 3. Hoạt động tích hợp</button>
                   <button onClick={() => setActiveTab('matrix')} className={`w-full p-3 rounded-xl text-left font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'matrix' ? 'bg-white border border-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-white'}`}><ListChecks className="w-4 h-4" /> 4. Ma trận đánh giá</button>
                 </div>
                 <div className="col-span-8 p-8 max-h-[550px] overflow-y-auto custom-scrollbar bg-white">
                   <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-full font-sans">
-                    {/* HIỂN THỊ MỤC TIÊU NLS */}
+                    {/* HIỂN THỊ MỤC TIÊU NLS & AI */}
                     {activeTab === 'objectives' && (
                       <div className="space-y-3">
                         {state.generatedContent.objectives_addition.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
-                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</span>
+                            <span className="shrink-0">{line.toLowerCase().includes('ai') ? '🤖' : '🌐'}</span>
+                            <span>Bổ sung: {line.replace(/^[👉\-\•\s]*/, '')}</span>
                           </div>
                         ))}
                       </div>
@@ -221,7 +244,7 @@ const App: React.FC = () => {
                       <div className="space-y-3">
                         {state.generatedContent.materials_addition.split('\n').filter(l => l.trim()).map((line, i) => (
                           <div key={i} className="flex gap-2 text-emerald-600 font-semibold text-[13px]">
-                            <span className="shrink-0">•</span><span>Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</span>
+                            <span className="shrink-0">📦</span><span>Bổ sung NLS: {line.replace(/^[👉\-\•\s]*/, '')}</span>
                           </div>
                         ))}
                       </div>
@@ -241,7 +264,7 @@ const App: React.FC = () => {
                           <div key={i} className="bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
                             <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-50 pb-1 mb-3 block">Mốc chèn: {act.anchor_text}</span>
                             <div className="flex gap-2 text-emerald-600 font-semibold text-[13px] leading-relaxed">
-                              <span className="shrink-0">•</span><span>Bổ sung NLS: {act.content.replace(/^[👉\-\•\s]*/, '')}</span>
+                              <span className="shrink-0">⚡</span><span>Bổ sung NLS: {act.content.replace(/^[👉\-\•\s]*/, '')}</span>
                             </div>
                           </div>
                         ))}
@@ -257,7 +280,7 @@ const App: React.FC = () => {
             <div className="bg-white rounded-3xl p-10 shadow-2xl text-center animate-fade-in-up border border-emerald-100">
               <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800">Thành công rồi thầy Hùng ơi!</h3>
-              <p className="text-slate-500 mt-2">Giáo án môn {state.subject} {state.grade} đã sẵn sàng.</p>
+              <p className="text-slate-500 mt-2">Giáo án môn {state.subject} {state.grade} đã tích hợp NLS & AI sẵn sàng.</p>
               <button onClick={() => { if(state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="mt-8 px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl flex items-center gap-3 mx-auto transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95"><Download className="w-5 h-5" /> Tải giáo án hoàn thiện (.docx)</button>
               <button onClick={() => setState(prev => ({...prev, step: 'upload', generatedContent: null, result: null}))} className="mt-6 text-sm text-slate-400 hover:text-indigo-600 font-semibold transition-colors">Tích hợp bài khác</button>
             </div>
