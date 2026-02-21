@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight,
@@ -13,8 +13,8 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  // PHIÊN BẢN V3.2.0 - CHUẨN GDPT 2018 - THẦY HÙNG THPT LÝ NHÂN TÔNG
-  const APP_VERSION = "v3.2.0-FINAL"; 
+  // PHIÊN BẢN V3.2.5 - TỐI ƯU NHẬN DẠNG & STICKY UI - THẦY HÙNG THPT LÝ NHÂN TÔNG
+  const APP_VERSION = "v3.2.5-FINAL"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -24,39 +24,49 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<IntegrationMode>('NLS');
   const [userApiKey, setUserApiKey] = useState('');
   const [isKeySaved, setIsKeySaved] = useState(false);
+  
+  // Ref để tự động cuộn Terminal
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key');
     if (savedKey) { setUserApiKey(savedKey); setIsKeySaved(true); }
   }, []);
 
-  // LOGIC TỰ ĐỘNG NHẬN DIỆN THÔNG MINH (Dựa trên tên file)
+  // Tự động cuộn xuống dòng mới nhất trong Terminal
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [state.logs]);
+
+  // LOGIC NHẬN DẠNG THÔNG MINH (BẮT CẢ VIẾT TẮT, KHÔNG DẤU)
   const autoDetectInfo = (fileName: string) => {
     const name = fileName.toLowerCase();
     let detectedSubject = '' as SubjectType;
     let detectedGrade = '' as GradeType;
 
-    // Nhận diện môn học
-    if (name.includes('toan')) detectedSubject = 'Toán';
-    else if (name.includes('van')) detectedSubject = 'Ngữ văn';
-    else if (name.includes('anh')) detectedSubject = 'Tiếng Anh';
-    else if (name.includes('dia')) detectedSubject = 'Địa lý';
-    else if (name.includes('su')) detectedSubject = 'Lịch sử';
-    else if (name.includes('ly') || name.includes('vat')) detectedSubject = 'Vật lý';
-    else if (name.includes('hoa')) detectedSubject = 'Hóa học';
-    else if (name.includes('sinh')) detectedSubject = 'Sinh học';
-    else if (name.includes('tin')) detectedSubject = 'Tin học';
-    else if (name.includes('cong nghe')) detectedSubject = 'Công nghệ';
-    else if (name.includes('gdkt') || name.includes('phap luat')) detectedSubject = 'Giáo dục kinh tế và pháp luật';
+    // Nhận diện môn học chuẩn GDPT 2018
+    if (/toan/.test(name)) detectedSubject = 'Toán';
+    else if (/van|ngu van/.test(name)) detectedSubject = 'Ngữ văn';
+    else if (/anh|english/.test(name)) detectedSubject = 'Tiếng Anh';
+    else if (/dia/.test(name)) detectedSubject = 'Địa lý';
+    else if (/su/.test(name)) detectedSubject = 'Lịch sử';
+    else if (/ly|vat ly/.test(name)) detectedSubject = 'Vật lý';
+    else if (/hoa/.test(name)) detectedSubject = 'Hóa học';
+    else if (/sinh/.test(name)) detectedSubject = 'Sinh học';
+    else if (/tin/.test(name)) detectedSubject = 'Tin học';
+    else if (/cn|cong nghe/.test(name)) detectedSubject = 'Công nghệ';
+    else if (/gdkt|phap luat/.test(name)) detectedSubject = 'Giáo dục kinh tế và pháp luật';
 
-    // Nhận diện khối lớp
-    if (name.includes('10')) detectedGrade = 'Lớp 10';
-    else if (name.includes('11')) detectedGrade = 'Lớp 11';
-    else if (name.includes('12')) detectedGrade = 'Lớp 12';
-    else if (name.includes('6')) detectedGrade = 'Lớp 6';
-    else if (name.includes('7')) detectedGrade = 'Lớp 7';
-    else if (name.includes('8')) detectedGrade = 'Lớp 8';
-    else if (name.includes('9')) detectedGrade = 'Lớp 9';
+    // Nhận diện khối lớp (THCS & THPT)
+    const gradeMatch = name.match(/\d+/);
+    if (gradeMatch) {
+      const num = parseInt(gradeMatch[0]);
+      if (num >= 6 && num <= 12) {
+        detectedGrade = `Lớp ${num}` as GradeType;
+      }
+    }
 
     return { detectedSubject, detectedGrade };
   };
@@ -87,9 +97,9 @@ const App: React.FC = () => {
         generatedContent: null, 
         step: 'upload', 
         logs: [
-          `✓ Đã nạp file: ${file.name}`,
-          detectedSubject ? `✨ Tự nhận diện môn: ${detectedSubject}` : "📝 Thầy Hùng vui lòng chọn môn thủ công",
-          detectedGrade ? `✨ Tự nhận diện khối: ${detectedGrade}` : ""
+          `✅ Đã nạp file: ${file.name}`,
+          detectedSubject ? `⭐ Tự động nhận diện môn: ${detectedSubject}` : "📝 Thầy Hùng vui lòng chọn môn thủ công",
+          detectedGrade ? `⭐ Tự động nhận diện khối: ${detectedGrade}` : ""
         ].filter(Boolean)
       }));
     } else { 
@@ -103,7 +113,7 @@ const App: React.FC = () => {
     if (!userApiKey.trim()) { alert("Vui lòng nhập API Key!"); return; }
     if (!state.subject || !state.grade) { alert("Thầy vui lòng chọn đầy đủ thông tin Môn và Lớp!"); return; }
 
-    setState(prev => ({ ...prev, isProcessing: true, logs: [`🚀 Khởi động Core ${APP_VERSION} (Tốc độ cao)...`] }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, `⚡ Khởi động Core ${APP_VERSION} (Tốc độ cao)...`] }));
 
     try {
       const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
@@ -112,10 +122,10 @@ const App: React.FC = () => {
       const textContext = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✓ AI đã thiết kế xong nội dung môn ${state.subject}.`);
+      addLog(`✅ AI đã thiết kế xong nội dung môn ${state.subject}.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
-      addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Xung đột hệ thống"}`);
+      addLog(`🔴 Lỗi: ${error instanceof Error ? error.message : "Xung đột hệ thống"}`);
       setState(prev => ({ ...prev, isProcessing: false }));
     }
   };
@@ -127,17 +137,17 @@ const App: React.FC = () => {
       const startTime = performance.now();
       const newBlob = await injectContentIntoDocx(state.file, finalContent, mode, (m) => addLog(`→ ${m}`));
       const duration = ((performance.now() - startTime) / 1000).toFixed(1);
-      addLog(`✨ Đã hoàn thiện trong ${duration}s!`);
+      addLog(`⭐ Đã hoàn thiện trong ${duration}s!`);
 
       setState(prev => ({ 
         ...prev, 
         isProcessing: false, 
         step: 'done', 
         result: { fileName: `Tich-hop-NLS-${state.file?.name}`, blob: newBlob }, 
-        logs: [...prev.logs, "✓ Sẵn sàng tải về."] 
+        logs: [...prev.logs, "✅ Sẵn sàng tải về."] 
       }));
     } catch (error) {
-       addLog(`❌ Lỗi đóng gói: ${error instanceof Error ? error.message : "Đóng gói thất bại"}`);
+       addLog(`🔴 Lỗi đóng gói: ${error instanceof Error ? error.message : "Đóng gói thất bại"}`);
        setState(prev => ({ ...prev, isProcessing: false }));
     }
   };
@@ -324,32 +334,41 @@ const App: React.FC = () => {
           </div>
           
           <div className="lg:col-span-4 flex flex-col gap-6 h-full">
-             <div className="bg-[#1e1e2e] rounded-2xl p-5 shadow-2xl h-[380px] flex flex-col border border-slate-700 relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
-                    <div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider font-mono"><Cpu className="w-3.5 h-3.5 text-indigo-400" /> AI Terminal Status</div>
-                    <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div></div>
-                </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed text-indigo-100">
-                   {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Chờ lệnh từ thầy Hùng...</span>}
-                   {state.logs.map((log, i) => (
-                     <div key={i} className="flex gap-3 animate-fade-in-left">
-                       <span className="text-slate-600 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
-                       <span>{log.replace("✓ ", "").replace("🚀 ", "").replace("✨ ", "⭐ ")}</span>
-                     </div>
-                   ))}
-                </div>
-             </div>
-             
-             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-slate-200/60 flex-1">
-                <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wide"><GraduationCap className="w-4 h-4 text-indigo-500" /> Thông tin Tác giả</h4>
-                <div className="space-y-4">
-                    <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
-                      <p className="text-xs font-bold text-indigo-700 mb-1 flex items-center gap-2">Tác giả: Đặng Mạnh Hùng</p>
-                      <p className="text-[11px] text-slate-600">Giáo viên Trường THPT Lý Nhân Tông</p>
-                      <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-1 font-bold"><Phone className="w-3.5 h-3.5" /> 097 8386 357</p>
-                    </div>
-                </div>
+             {/* BẢNG AI TERMINAL - THIẾT KẾ STICKY & TỰ CUỘN */}
+             <div className="sticky top-24 transition-all duration-300">
+               <div className="bg-[#1e1e2e] rounded-2xl p-5 shadow-2xl h-[450px] flex flex-col border border-slate-700 relative overflow-hidden group ring-1 ring-white/10">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
+                      <div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider font-mono"><Cpu className="w-3.5 h-3.5 text-indigo-400 animate-pulse" /> AI Terminal Status</div>
+                      <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div></div>
+                  </div>
+                  <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed text-indigo-100">
+                     {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Chờ lệnh từ thầy Hùng...</span>}
+                     {state.logs.map((log, i) => (
+                       <div key={i} className="flex gap-3 animate-fade-in-left border-l border-indigo-500/30 pl-3 ml-1">
+                         <span className="text-slate-600 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
+                         <span className="break-words">{log.replace("✓ ", "✅ ").replace("🚀 ", "⚡ ").replace("✨ ", "⭐ ").replace("❌ ", "🔴 ")}</span>
+                       </div>
+                     ))}
+                     {state.isProcessing && (
+                       <div className="flex items-center gap-2 text-indigo-400 animate-pulse mt-2 pl-3">
+                         <Clock className="animate-spin w-3.5 h-3.5" />
+                         <span>AI đang chèn dữ liệu vào giáo án...</span>
+                       </div>
+                     )}
+                  </div>
+               </div>
+               
+               <div className="mt-6 bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-slate-200/60">
+                  <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wide"><GraduationCap className="w-4 h-4 text-indigo-500" /> Thông tin Tác giả</h4>
+                  <div className="space-y-4">
+                      <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
+                        <p className="text-xs font-bold text-indigo-700 mb-1 flex items-center gap-2">Tác giả: Đặng Mạnh Hùng</p>
+                        <p className="text-[11px] text-slate-600">Giáo viên Trường THPT Lý Nhân Tông</p>
+                        <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-1 font-bold"><Phone className="w-3.5 h-3.5" /> 097 8386 357</p>
+                      </div>
+                  </div>
+               </div>
              </div>
           </div>
         </div>

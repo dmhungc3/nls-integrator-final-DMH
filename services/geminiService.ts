@@ -8,26 +8,29 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
 
   const result = await model.generateContent(prompt + `
     YÊU CẦU NÂNG CAO VỀ XU THẾ NĂNG LỰC SỐ (NLS) 2026:
-    1. TÍCH HỢP AI: Sử dụng AI Generator (Gemini, ChatGPT, GeoGebra AI) để học sinh đối chiếu kết quả.
-    2. TÍNH THỰC TIỄN (STEM): Gắn liền với các dự án thực tế (phân tích dữ liệu, mô hình 3D).
-    3. TƯ DUY PHÊ PHÁN: Đánh giá độ tin cậy của thông tin số và đạo đức AI.
-    
-    YÊU CẦU KỸ THUẬT:
-    - TRẢ VỀ JSON THUẦN (KHÔNG KÈM MARKDOWN).
-    - Trường "appendix_table" BẮT BUỘC phải là một chuỗi văn bản (String), các tiêu chí ngăn cách bằng dấu xuống dòng. KHÔNG trả về mảng.
+    1. TÍCH HỢP AI CHUYÊN SÂU: Gợi ý sử dụng AI Generator (Gemini, ChatGPT, GeoGebra AI) để học sinh đối chiếu kết quả hoặc tối ưu hóa bài toán.
+    2. TÍNH THỰC TIỄN & STEM: Gắn liền với các dự án thực tế (ví dụ: dùng cảm biến dữ liệu, mô phỏng 3D quĩ đạo Parabol).
+    3. TƯ DUY PHÊ PHÁN SỐ: Học sinh phải biết đánh giá độ tin cậy của thông tin số và đạo đức khi sử dụng AI.
+    4. TRÌNH BÀY: Tự động IN ĐẬM (Dùng dấu **) các từ khóa về công cụ số và năng lực số quan trọng.
 
+    YÊU CẦU KỸ THUẬT BẮT BUỘC:
+    - TRẢ VỀ JSON THUẦN (KHÔNG KÈM MARKDOWN).
+    - Trường "appendix_table" PHẢI LÀ CHUỖI VĂN BẢN (STRING). Các tiêu chí cách nhau bằng dấu xuống dòng (\\n). 
+    - TUYỆT ĐỐI KHÔNG TRẢ VỀ MẢNG [] HOẶC ĐỐI TƯỢNG {} CHO TRƯỜNG "appendix_table".
+
+    MẪU ĐỊNH DẠNG:
     {
-      "objectives_addition": "mục tiêu NLS hướng tới việc làm chủ AI",
-      "materials_addition": "học liệu số gồm các nền tảng AI và phần mềm mô phỏng",
-      "activities_integration": [{"anchor_text": "câu mốc trong giáo án", "content": "hoạt động học tập có ứng dụng AI"}],
-      "appendix_table": "Tiêu chí 1: Nội dung\\nTiêu chí 2: Nội dung"
+      "objectives_addition": "Học sinh làm chủ **Công cụ AI** để...",
+      "materials_addition": "Sử dụng phần mềm **GeoGebra**, **Gemini AI**...",
+      "activities_integration": [{"anchor_text": "câu mốc trong giáo án", "content": "Sử dụng **AI Generator** để mô phỏng..."}],
+      "appendix_table": "Tiêu chí 1: Sử dụng thành thạo **GeoGebra**\\nTiêu chí 2: Biết truy vấn **AI**"
     }
   `);
 
   const response = await result.response;
   const text = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
   
-  // LOGIC SỬA LỖI split is not a function
+  // LOGIC SỬA LỖI split is not a function - GIỮ NGUYÊN VÀ CỦNG CỐ
   const parsed = JSON.parse(text);
   if (parsed.appendix_table && Array.isArray(parsed.appendix_table)) {
     parsed.appendix_table = parsed.appendix_table.join('\n');
