@@ -8,10 +8,10 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   try {
     const result = await model.generateContent(prompt + `
       YÊU CẦU: Đóng vai chuyên gia GDPT 2018. Trả về JSON:
-      1. objectives_addition: Liệt kê 3 năng lực số đặc thù (Sử dụng phần mềm gì? Khai thác nguồn nào?).
-      2. activities_integration: Tìm hoạt động trong bài, chèn cách dùng công nghệ (GeoGebra, Quizizz, Padlet...).
-      3. materials_addition: Thiết bị số cần dùng.
-      4. appendix_table: Tiêu chí đánh giá học sinh.
+      1. objectives_addition: Liệt kê cụ thể 2-3 năng lực số đặc thù (VD: Sử dụng GeoGebra để vẽ đồ thị, dùng Chatbot để tìm ý tưởng...).
+      2. activities_integration: Tìm các hoạt động chính trong bài, chèn cách dùng công nghệ vào đó.
+      3. materials_addition: Liệt kê thiết bị/phần mềm số.
+      4. appendix_table: Tiêu chí đánh giá kỹ năng số của học sinh.
     `);
     const parsed = JSON.parse(result.response.text().trim().match(/\{[\s\S]*\}/)?.[0] || "{}");
     return {

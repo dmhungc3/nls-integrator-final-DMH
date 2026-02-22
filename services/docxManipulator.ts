@@ -19,6 +19,7 @@ export const injectContentIntoDocx = async (
   // Hàm mã hóa ký tự đặc biệt để tránh hỏng file (Quan trọng)
   const escapeXml = (str: string) => str.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','\'':'&apos;','"':'&quot;'}[c] || c));
 
+  // Tạo đoạn văn XML chuẩn
   const createPara = (text: string, color: string = "2E7D32") => `
     <w:p>
       <w:pPr><w:jc w:val="left"/><w:spacing w:before="60" w:after="60"/></w:pPr>
@@ -26,18 +27,17 @@ export const injectContentIntoDocx = async (
       <w:r><w:rPr><w:i/><w:color w:val="${color}"/><w:sz w:val="24"/></w:rPr><w:t>${escapeXml(text)}</w:t></w:r>
     </w:p>`;
 
-  // Kỹ thuật chèn an toàn: Đóng thẻ cũ, chèn mới, mở thẻ tiếp
+  // Kỹ thuật chèn an toàn: Cắt đuôi -> Chèn -> Nối lại
   const safeInsert = (xml: string, key: string, val: string) => {
     const regex = new RegExp(key, 'i');
     const match = xml.match(regex);
     if (match) {
-        // Tìm thấy từ khóa -> đóng thẻ text hiện tại -> chèn đoạn mới -> mở lại thẻ text cho phần sau
         return xml.replace(regex, `${match[0]}</w:t></w:r></w:p>${createPara(val)}<w:p><w:r><w:t>`);
     }
     return xml;
   };
 
-  // 1. Chèn vào Mục tiêu/Năng lực
+  // 1. Chèn vào Mục tiêu
   if (xmlContent.includes("Năng lực")) {
      xmlContent = safeInsert(xmlContent, "Năng lực", content.objectives_addition);
   } else {
@@ -54,8 +54,8 @@ export const injectContentIntoDocx = async (
     });
   }
 
-  // 4. Chèn Phụ lục
-  const appendix = `<w:p><w:r><w:br w:type="page"/></w:r></w:p><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t>PHỤ LỤC ĐÁNH GIÁ NLS</w:t></w:r></w:p>${createPara(content.appendix_table)}`;
+  // 4. Chèn Phụ lục (cuối file)
+  const appendix = `<w:p><w:r><w:br w:type="page"/></w:r></w:p><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t>PHỤ LỤC ĐÁNH GIÁ NĂNG LỰC SỐ</w:t></w:r></w:p>${createPara(content.appendix_table)}`;
   if(xmlContent.includes("</w:body>")) {
       xmlContent = xmlContent.replace("</w:body>", `${appendix}</w:body>`);
   }
