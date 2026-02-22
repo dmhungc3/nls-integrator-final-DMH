@@ -9,7 +9,7 @@ import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
-// HÀM XÓA DẤU TIẾNG VIỆT (ĐỂ AUTO-DETECT CHUẨN)
+// HÀM XÓA DẤU TIẾNG VIỆT (QUAN TRỌNG ĐỂ AUTO-DETECT CHUẨN)
 const removeVietnameseTones = (str: string) => {
   str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a"); 
   str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e"); 
@@ -22,7 +22,7 @@ const removeVietnameseTones = (str: string) => {
 }
 
 const App: React.FC = () => {
-  const APP_VERSION = "v3.3.7-FINAL-NLS-VIEW"; 
+  const APP_VERSION = "v3.3.8-FULL-GDPT2018"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -45,7 +45,7 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC AUTO-DETECT THÔNG MINH
+  // LOGIC AUTO-DETECT THÔNG MINH (CẬP NHẬT THÊM TỪ KHÓA MỚI)
   const autoDetectInfo = (fileName: string) => {
     const name = removeVietnameseTones(fileName.toLowerCase());
     let s = '' as SubjectType;
@@ -62,6 +62,8 @@ const App: React.FC = () => {
     else if (/tin|lap trinh/.test(name)) s = 'Tin học' as SubjectType;
     else if (/cn|cong nghe/.test(name)) s = 'Công nghệ' as SubjectType;
     else if (/gdkt|phap luat|kinh te/.test(name)) s = 'Giáo dục kinh tế và pháp luật' as SubjectType;
+    else if (/am nhac|hat/.test(name)) s = 'Âm nhạc' as SubjectType;
+    else if (/my thuat|ve/.test(name)) s = 'Mỹ thuật' as SubjectType;
 
     const cleanName = name.replace(/(tiet|bai)\s*\d+/g, '');
     const gradeMatch = cleanName.match(/\d+/);
@@ -84,6 +86,7 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
+      // Ưu tiên file tự nhận diện
       const finalSubject = s || state.subject;
       const finalGrade = g || state.grade;
 
@@ -117,10 +120,7 @@ const App: React.FC = () => {
       const content = await generateCompetencyIntegration(prompt, userApiKey);
       
       addLog(`✨ Hoàn tất! Đang hiển thị kết quả.`);
-      
-      // QUAN TRỌNG: TỰ ĐỘNG CHUYỂN SANG TAB HOẠT ĐỘNG (NLS) ĐỂ THẦY THẤY NGAY
       setActiveTab('activities'); 
-      
       setState(prev => ({ ...prev, isProcessing: false, generatedContent: content, step: 'review' }));
     } catch (e) { 
       addLog(`🔴 Lỗi: ${e instanceof Error ? e.message : "Xung đột"}`); 
@@ -161,14 +161,37 @@ const App: React.FC = () => {
           {state.step === 'upload' && (
             <div className="bg-white rounded-3xl shadow-xl border p-8 space-y-8 animate-fade-in-up">
               <div className="grid grid-cols-2 gap-6">
-                <select className="p-3.5 rounded-xl border bg-slate-50 font-bold" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
-                  <option value="">-- Chọn môn --</option>
-                  <optgroup label="Bắt buộc"><option value="Toán">Toán</option><option value="Ngữ văn">Ngữ văn</option><option value="Tiếng Anh">Tiếng Anh</option></optgroup>
-                  <optgroup label="Lựa chọn"><option value="Vật lý">Vật lý</option><option value="Hóa học">Hóa học</option><option value="Sinh học">Sinh học</option><option value="Địa lý">Địa lý</option><option value="Tin học">Tin học</option><option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option></optgroup>
-                </select>
-                <select className="p-3.5 rounded-xl border bg-slate-50 font-bold" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
-                  <option value="">-- Chọn lớp --</option><option value="Lớp 10">Lớp 10</option><option value="Lớp 11">Lớp 11</option><option value="Lớp 12">Lớp 12</option>
-                </select>
+                
+                {/* SELECT MÔN HỌC - CẬP NHẬT MỚI */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Môn học (GDPT 2018)</label>
+                    <select className="w-full p-3.5 rounded-xl border bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-indigo-500" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
+                      <option value="">-- Chọn môn học --</option>
+                      <optgroup label="Môn học Bắt buộc">
+                        <option value="Toán">Toán học</option><option value="Ngữ văn">Ngữ văn</option><option value="Tiếng Anh">Tiếng Anh</option><option value="Lịch sử">Lịch sử</option>
+                        <option value="Giáo dục thể chất">Giáo dục thể chất</option><option value="Giáo dục quốc phòng và an ninh">GD Quốc phòng & An ninh</option><option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm, hướng nghiệp</option>
+                      </optgroup>
+                      <optgroup label="Môn học Lựa chọn">
+                        <option value="Vật lý">Vật lý</option><option value="Hóa học">Hóa học</option><option value="Sinh học">Sinh học</option><option value="Địa lý">Địa lý</option><option value="Tin học">Tin học</option><option value="Công nghệ">Công nghệ</option>
+                        <option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option><option value="Âm nhạc">Âm nhạc</option><option value="Mỹ thuật">Mỹ thuật</option>
+                      </optgroup>
+                    </select>
+                </div>
+
+                {/* SELECT KHỐI LỚP - CẬP NHẬT MỚI */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Khối lớp</label>
+                    <select className="w-full p-3.5 rounded-xl border bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-indigo-500" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
+                      <option value="">-- Chọn khối lớp --</option>
+                      <optgroup label="Cấp THPT">
+                        <option value="Lớp 10">Lớp 10</option><option value="Lớp 11">Lớp 11</option><option value="Lớp 12">Lớp 12</option>
+                      </optgroup>
+                      <optgroup label="Cấp THCS">
+                        <option value="Lớp 6">Lớp 6</option><option value="Lớp 7">Lớp 7</option><option value="Lớp 8">Lớp 8</option><option value="Lớp 9">Lớp 9</option>
+                      </optgroup>
+                    </select>
+                </div>
+
               </div>
               <label className="flex flex-col items-center justify-center w-full h-44 rounded-2xl border-2 border-dashed border-slate-300 cursor-pointer hover:bg-slate-50">
                 <FileUp className="text-slate-400 mb-2" /><span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nạp giáo án (.docx)"}</span>
