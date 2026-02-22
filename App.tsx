@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
-  BookOpen, GraduationCap, Sparkles,
-  Smartphone, Zap, Cpu, Clock, CheckCircle2, ListChecks
+  BookOpen, GraduationCap, Sparkles, ChevronRight,
+  Smartphone, Zap, Layers, Cpu, Phone, Info, Clock, CheckCircle2, ListChecks
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
+// HÀM XÓA DẤU TIẾNG VIỆT (ĐỂ AUTO-DETECT CHUẨN)
 const removeVietnameseTones = (str: string) => {
   str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a"); 
   str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e"); 
@@ -21,7 +22,7 @@ const removeVietnameseTones = (str: string) => {
 }
 
 const App: React.FC = () => {
-  const APP_VERSION = "v3.3.9-WORD-STYLE"; 
+  const APP_VERSION = "v3.3.9-STABLE-FIX"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -29,6 +30,7 @@ const App: React.FC = () => {
     generatedContent: null, result: null
   });
   
+  // TỰ ĐỘNG CHUYỂN TAB KHI CÓ KẾT QUẢ
   const [activeTab, setActiveTab] = useState<'objectives' | 'materials' | 'activities' | 'matrix'>('objectives');
   const [userApiKey, setUserApiKey] = useState('');
   const [isKeySaved, setIsKeySaved] = useState(false);
@@ -43,10 +45,12 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
+  // LOGIC TỰ ĐỘNG NHẬN DIỆN MÔN HỌC & KHỐI LỚP
   const autoDetectInfo = (fileName: string) => {
     const name = removeVietnameseTones(fileName.toLowerCase());
     let s = '' as SubjectType;
     let g = '' as GradeType;
+
     if (/toan|hinh|dai|giai tich|vecto/.test(name)) s = 'Toán' as SubjectType;
     else if (/van|ngu van|doc hieu/.test(name)) s = 'Ngữ văn' as SubjectType;
     else if (/anh|english/.test(name)) s = 'Tiếng Anh' as SubjectType;
@@ -58,6 +62,9 @@ const App: React.FC = () => {
     else if (/tin|lap trinh/.test(name)) s = 'Tin học' as SubjectType;
     else if (/cn|cong nghe/.test(name)) s = 'Công nghệ' as SubjectType;
     else if (/gdkt|phap luat|kinh te/.test(name)) s = 'Giáo dục kinh tế và pháp luật' as SubjectType;
+    else if (/am nhac|hat/.test(name)) s = 'Âm nhạc' as SubjectType;
+    else if (/my thuat|ve/.test(name)) s = 'Mỹ thuật' as SubjectType;
+
     const cleanName = name.replace(/(tiet|bai)\s*\d+/g, '');
     const gradeMatch = cleanName.match(/\d+/);
     if (gradeMatch) {
@@ -90,14 +97,16 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey || !state.subject || !state.grade) return;
-    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs.filter(l => !l.includes("❓")), `⚡ Đang thiết kế NLS giống mẫu...`] }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs.filter(l => !l.includes("❓")), `✅ Cấu hình: ${state.subject} - ${state.grade}`, `⚡ Khởi động Core ${APP_VERSION}...`, `🤖 Đang thiết kế NLS chi tiết...`] }));
 
     try {
       const text = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(text, state.subject, state.grade, 'NLS', pedagogy);
       const content = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✨ Đã tạo nội dung chuẩn mẫu Word!`);
-      setActiveTab('activities'); 
+      
+      addLog(`✨ Hoàn tất! Đang hiển thị kết quả.`);
+      setActiveTab('activities'); // Tự động chuyển tab để thấy ngay NLS
+      
       setState(prev => ({ ...prev, isProcessing: false, generatedContent: content, step: 'review' }));
     } catch (e) { 
       addLog(`🔴 Lỗi: ${e instanceof Error ? e.message : "Xung đột"}`); 
@@ -110,21 +119,9 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "⚡ Đang xử lý file Word..."] }));
     try {
       const newBlob = await injectContentIntoDocx(state.file, state.generatedContent, 'NLS', (m) => addLog(`→ ${m}`));
-      setState(prev => ({ ...prev, isProcessing: false, step: 'done', result: { fileName: `NLS-Tich-Hop-${state.file?.name}`, blob: newBlob }, logs: [...prev.logs, "✅ Thành công! Đang tải xuống..."] }));
-      
-      // Tự động tải xuống sau 1s
-      setTimeout(() => {
-        const url = URL.createObjectURL(newBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `NLS-Tich-Hop-${state.file?.name}`;
-        a.click();
-      }, 1000);
-
+      setState(prev => ({ ...prev, isProcessing: false, step: 'done', result: { fileName: `Tich-hop-NLS-${state.file?.name}`, blob: newBlob }, logs: [...prev.logs, "✅ Sẵn sàng tải về."] }));
     } catch (error) { 
-      addLog("🔴 Lỗi: Không thể sửa file Word. Hãy đảm bảo file không bị hỏng."); 
-      console.error(error);
-      setState(prev => ({ ...prev, isProcessing: false })); 
+      addLog("🔴 Lỗi đóng gói file."); setState(prev => ({ ...prev, isProcessing: false })); 
     }
   };
 
@@ -145,6 +142,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="w-full max-w-7xl px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* CỘT TRÁI: ĐIỀU KHIỂN CHÍNH */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {state.step === 'upload' && (
             <div className="bg-white rounded-3xl shadow-xl border p-8 space-y-8 animate-fade-in-up">
@@ -179,26 +177,48 @@ const App: React.FC = () => {
           {state.step === 'review' && state.generatedContent && (
             <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
               <div className="p-4 border-b flex justify-between bg-slate-50">
-                <h3 className="font-bold text-indigo-900">Kết quả (Giống mẫu Word)</h3>
-                <button onClick={handleFinalizeAndDownload} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">Tải về ngay</button>
+                <h3 className="font-bold text-indigo-900">Kết quả tích hợp (Đã phân tích)</h3>
+                <button onClick={handleFinalizeAndDownload} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">Tải về</button>
               </div>
+              
+              {/* THANH MENU TAB */}
               <div className="grid grid-cols-4 border-b text-xs font-bold text-slate-500">
-                <button onClick={() => setActiveTab('activities')} className={`py-3 ${activeTab === 'activities' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>⚡ 3. Hoạt động</button>
+                <button onClick={() => setActiveTab('activities')} className={`py-3 ${activeTab === 'activities' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>⚡ 3. Hoạt động (NLS)</button>
                 <button onClick={() => setActiveTab('objectives')} className={`py-3 ${activeTab === 'objectives' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📖 1. Mục tiêu</button>
                 <button onClick={() => setActiveTab('materials')} className={`py-3 ${activeTab === 'materials' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📦 2. Học liệu</button>
                 <button onClick={() => setActiveTab('matrix')} className={`py-3 ${activeTab === 'matrix' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📊 4. Ma trận</button>
               </div>
+
+              {/* NỘI DUNG HIỂN THỊ */}
               <div className="p-6 max-h-[500px] overflow-y-auto bg-slate-50">
                 {activeTab === 'activities' ? (
                   <div className="space-y-4">
-                    {state.generatedContent.activities_integration?.map((act, i) => (
-                      <div key={i} className="p-4 bg-white rounded-xl border border-indigo-100 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-2">
-                          <span className="text-[11px] font-bold text-indigo-700 uppercase">{act.anchor_text || `Hoạt động ${i+1}`}</span>
-                        </div>
-                        <p className="text-sm text-slate-700 font-medium leading-relaxed">{act.content}</p>
+                    {state.generatedContent.activities_integration?.length > 0 ? (
+                      state.generatedContent.activities_integration.map((act, i) => {
+                        const hasPrompt = act.content && act.content.includes('[Câu lệnh mẫu]:');
+                        const contentParts = hasPrompt ? act.content.split('[Câu lệnh mẫu]:') : [act.content, ""];
+                        return (
+                          <div key={i} className="p-4 bg-white rounded-xl border border-indigo-100 shadow-sm">
+                            <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-2">
+                              <div className="bg-indigo-100 p-1 rounded text-indigo-600"><Zap size={14} /></div>
+                              <span className="text-[11px] font-bold text-indigo-700 uppercase">{act.anchor_text || `Hoạt động ${i+1}`}</span>
+                            </div>
+                            <p className="text-sm text-slate-700 font-medium leading-relaxed">{contentParts[0]?.trim()}</p>
+                            {hasPrompt && (
+                              <div className="mt-3 p-3 bg-slate-100 border-l-4 border-indigo-500 rounded-r-lg">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Prompt gợi ý cho HS:</span>
+                                <p className="text-xs italic text-indigo-900 font-semibold">"{contentParts[1]?.trim()}"</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center p-10 text-slate-400">
+                        <p className="mb-2">⚠️ AI đang đề xuất hoạt động...</p>
+                        <p className="text-xs">Nếu lâu không thấy, thầy vui lòng bấm Tải về để xem kết quả trong file Word.</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className="bg-white p-4 rounded-xl border text-sm text-slate-700 whitespace-pre-wrap">
@@ -214,12 +234,13 @@ const App: React.FC = () => {
           {state.step === 'done' && (
             <div className="bg-white rounded-3xl p-10 shadow-2xl text-center border border-emerald-100">
               <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" /><h3 className="text-2xl font-bold">Thành công!</h3>
-              <p className="text-slate-500 mt-2">File Word đã được tải xuống máy.</p>
+              <p className="text-slate-500 mt-2">Đã tải giáo án xuống máy của thầy.</p>
               <button onClick={() => window.location.reload()} className="mt-6 px-6 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-bold text-slate-600">Làm bài khác</button>
             </div>
           )}
         </div>
 
+        {/* CỘT PHẢI: TÁC GIẢ & TERMINAL */}
         <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="sticky top-24">
             <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm border mb-4">
