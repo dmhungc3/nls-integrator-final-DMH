@@ -3,7 +3,7 @@ import {
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight,
   Smartphone, Zap, Layers, Cpu, Phone, Info, Clock, CheckCircle2, ListChecks,
-  MonitorPlay, FileText
+  MonitorPlay, FileText, RefreshCw
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
@@ -23,7 +23,7 @@ const removeVietnameseTones = (str: string) => {
 }
 
 const App: React.FC = () => {
-  const APP_VERSION = "v3.5.0-PRO-MAX"; 
+  const APP_VERSION = "v3.6.5-AUTO-DOWNLOAD"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -108,7 +108,7 @@ const App: React.FC = () => {
       
       addLog(`✨ Hoàn tất! Đang hiển thị kết quả.`);
       
-      // MẶC ĐỊNH MỞ TAB MỤC TIÊU (SỐ 1)
+      // MẶC ĐỊNH MỞ TAB MỤC TIÊU
       setActiveTab('objectives'); 
       
       setState(prev => ({ ...prev, isProcessing: false, generatedContent: content, step: 'review' }));
@@ -123,7 +123,26 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "⚡ Đang xử lý file Word..."] }));
     try {
       const newBlob = await injectContentIntoDocx(state.file, state.generatedContent, 'NLS', (m) => addLog(`→ ${m}`));
-      setState(prev => ({ ...prev, isProcessing: false, step: 'done', result: { fileName: `Tich-hop-NLS-${state.file?.name}`, blob: newBlob }, logs: [...prev.logs, "✅ Sẵn sàng tải về."] }));
+      
+      // --- TỰ ĐỘNG TẢI XUỐNG ---
+      const fileName = `NLS-${state.file.name}`;
+      const url = URL.createObjectURL(newBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cập nhật trạng thái
+      setState(prev => ({ 
+        ...prev, 
+        isProcessing: false, 
+        step: 'done', 
+        result: { fileName, blob: newBlob }, // Lưu blob để tải lại nếu cần
+        logs: [...prev.logs, "✅ Đã tải xuống thành công!"] 
+      }));
+
     } catch (error) { 
       addLog("🔴 Lỗi đóng gói file."); setState(prev => ({ ...prev, isProcessing: false })); 
     }
@@ -158,7 +177,7 @@ const App: React.FC = () => {
 
       <div className="w-full max-w-7xl px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* --- CỘT TRÁI: ĐIỀU KHIỂN & KẾT QUẢ (8/12) --- */}
+        {/* --- CỘT TRÁI: ĐIỀU KHIỂN & KẾT QUẢ --- */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {state.step === 'upload' && (
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 space-y-8 animate-fade-in-up">
@@ -219,7 +238,7 @@ const App: React.FC = () => {
                 </button>
               </div>
               
-              {/* THANH MENU SẮP XẾP CHUẨN 1-2-3-4 */}
+              {/* THANH MENU */}
               <div className="grid grid-cols-4 border-b text-xs font-bold text-slate-500 bg-white sticky top-0 z-10">
                 {[
                   {id: 'objectives', icon: BookOpen, label: '1. Mục tiêu'},
@@ -237,7 +256,7 @@ const App: React.FC = () => {
               <div className="p-6 h-[500px] overflow-y-auto bg-slate-50 custom-scrollbar">
                 {activeTab === 'activities' ? (
                   <div className="space-y-4">
-                    {state.generatedContent.activities_integration?.length > 0 ? (
+                    {(state.generatedContent.activities_integration && state.generatedContent.activities_integration.length > 0) ? (
                       state.generatedContent.activities_integration.map((act, i) => {
                         const hasPrompt = act.content && act.content.includes('[Câu lệnh mẫu]:');
                         const contentParts = hasPrompt ? act.content.split('[Câu lệnh mẫu]:') : [act.content, ""];
@@ -260,7 +279,8 @@ const App: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-slate-400">
                         <Info size={32} className="mb-2 opacity-50"/>
-                        <p>Đang tải dữ liệu hoạt động...</p>
+                        <p>Không tìm thấy hoạt động cụ thể nào.</p>
+                        <p className="text-xs">Tuy nhiên, Mục tiêu & Học liệu NLS đã được tích hợp vào file Word.</p>
                       </div>
                     )}
                   </div>
@@ -277,13 +297,25 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {state.step === 'done' && (
+          {state.step === 'done' && state.result && (
             <div className="bg-white rounded-3xl p-10 shadow-2xl text-center border border-emerald-100 animate-fade-in-up">
               <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="w-10 h-10 text-emerald-600" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-800">Tuyệt vời! Đã hoàn tất.</h3>
-              <p className="text-slate-500 mt-2 mb-8">Giáo án đã được tích hợp NLS chuẩn mẫu Word và tải xuống máy của thầy.</p>
+              <h3 className="text-2xl font-bold text-slate-800">Thành công!</h3>
+              <p className="text-slate-500 mt-2 mb-8">File đã được tải xuống máy (Kiểm tra thư mục Downloads).</p>
+              
+              {/* NÚT TẢI LẠI THỦ CÔNG */}
+              <button 
+                onClick={() => {
+                  const url = URL.createObjectURL(state.result!.blob);
+                  const a = document.createElement('a'); a.href = url; a.download = state.result!.fileName; a.click();
+                }} 
+                className="mx-auto mb-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
+              >
+                <Download size={14} /> Tải lại file (Nếu chưa thấy)
+              </button>
+
               <button onClick={() => window.location.reload()} className="px-8 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-600 transition-colors">
                 Làm bài khác
               </button>
@@ -291,11 +323,11 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* --- CỘT PHẢI: THÔNG TIN & TERMINAL (4/12) --- */}
+        {/* --- CỘT PHẢI: THÔNG TIN & TERMINAL --- */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           <div className="sticky top-24 space-y-6">
             
-            {/* THẺ TÁC GIẢ (ĐẸP HƠN) */}
+            {/* THẺ TÁC GIẢ */}
             <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg border border-white/50 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
               <h4 className="font-bold text-[10px] text-slate-400 uppercase mb-4 flex items-center gap-2 tracking-widest"><GraduationCap size={14} /> Tác giả & Bản quyền</h4>
@@ -309,7 +341,7 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* TERMINAL AI (HACKER STYLE) */}
+            {/* TERMINAL AI */}
             <div className="bg-[#1e1e2e] rounded-2xl p-5 shadow-2xl h-[400px] flex flex-col border border-slate-700 font-mono text-[11px] relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-indigo-500 to-purple-500"></div>
               <div className="flex justify-between border-b border-slate-700 pb-3 mb-3 text-slate-400 font-bold uppercase tracking-wider">
