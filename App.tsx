@@ -9,7 +9,7 @@ import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
-// HÀM XÓA DẤU TIẾNG VIỆT (ĐỂ AUTO-DETECT CHUẨN)
+// HÀM XÓA DẤU TIẾNG VIỆT
 const removeVietnameseTones = (str: string) => {
   str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a"); 
   str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e"); 
@@ -22,7 +22,7 @@ const removeVietnameseTones = (str: string) => {
 }
 
 const App: React.FC = () => {
-  const APP_VERSION = "v3.3.9-STABLE-FIX"; 
+  const APP_VERSION = "v3.4.0-ORDER-FIXED"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -30,7 +30,7 @@ const App: React.FC = () => {
     generatedContent: null, result: null
   });
   
-  // TỰ ĐỘNG CHUYỂN TAB KHI CÓ KẾT QUẢ
+  // MẶC ĐỊNH LẦN NÀY SẼ VÀO TAB MỤC TIÊU TRƯỚC (THEO ĐÚNG THỨ TỰ 1)
   const [activeTab, setActiveTab] = useState<'objectives' | 'materials' | 'activities' | 'matrix'>('objectives');
   const [userApiKey, setUserApiKey] = useState('');
   const [isKeySaved, setIsKeySaved] = useState(false);
@@ -45,12 +45,11 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC TỰ ĐỘNG NHẬN DIỆN MÔN HỌC & KHỐI LỚP
+  // LOGIC AUTO-DETECT
   const autoDetectInfo = (fileName: string) => {
     const name = removeVietnameseTones(fileName.toLowerCase());
     let s = '' as SubjectType;
     let g = '' as GradeType;
-
     if (/toan|hinh|dai|giai tich|vecto/.test(name)) s = 'Toán' as SubjectType;
     else if (/van|ngu van|doc hieu/.test(name)) s = 'Ngữ văn' as SubjectType;
     else if (/anh|english/.test(name)) s = 'Tiếng Anh' as SubjectType;
@@ -105,7 +104,9 @@ const App: React.FC = () => {
       const content = await generateCompetencyIntegration(prompt, userApiKey);
       
       addLog(`✨ Hoàn tất! Đang hiển thị kết quả.`);
-      setActiveTab('activities'); // Tự động chuyển tab để thấy ngay NLS
+      
+      // CHUYỂN VỀ TAB 1 (MỤC TIÊU) CHO ĐÚNG QUY TRÌNH
+      setActiveTab('objectives'); 
       
       setState(prev => ({ ...prev, isProcessing: false, generatedContent: content, step: 'review' }));
     } catch (e) { 
@@ -142,7 +143,6 @@ const App: React.FC = () => {
       </div>
 
       <div className="w-full max-w-7xl px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* CỘT TRÁI: ĐIỀU KHIỂN CHÍNH */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {state.step === 'upload' && (
             <div className="bg-white rounded-3xl shadow-xl border p-8 space-y-8 animate-fade-in-up">
@@ -177,15 +177,15 @@ const App: React.FC = () => {
           {state.step === 'review' && state.generatedContent && (
             <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
               <div className="p-4 border-b flex justify-between bg-slate-50">
-                <h3 className="font-bold text-indigo-900">Kết quả tích hợp (Đã phân tích)</h3>
-                <button onClick={handleFinalizeAndDownload} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">Tải về</button>
+                <h3 className="font-bold text-indigo-900">Kết quả tích hợp</h3>
+                <button onClick={handleFinalizeAndDownload} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">Tải về ngay</button>
               </div>
               
-              {/* THANH MENU TAB */}
+              {/* THANH MENU ĐÃ SẮP XẾP LẠI THEO THỨ TỰ 1-2-3-4 */}
               <div className="grid grid-cols-4 border-b text-xs font-bold text-slate-500">
-                <button onClick={() => setActiveTab('activities')} className={`py-3 ${activeTab === 'activities' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>⚡ 3. Hoạt động (NLS)</button>
                 <button onClick={() => setActiveTab('objectives')} className={`py-3 ${activeTab === 'objectives' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📖 1. Mục tiêu</button>
                 <button onClick={() => setActiveTab('materials')} className={`py-3 ${activeTab === 'materials' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📦 2. Học liệu</button>
+                <button onClick={() => setActiveTab('activities')} className={`py-3 ${activeTab === 'activities' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>⚡ 3. Hoạt động</button>
                 <button onClick={() => setActiveTab('matrix')} className={`py-3 ${activeTab === 'matrix' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📊 4. Ma trận</button>
               </div>
 
@@ -240,7 +240,6 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* CỘT PHẢI: TÁC GIẢ & TERMINAL */}
         <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="sticky top-24">
             <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm border mb-4">
