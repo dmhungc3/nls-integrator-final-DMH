@@ -11,14 +11,23 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   try {
     const result = await model.generateContent(prompt + `
       ---------------------------------------------------
-      HÃY ĐÓNG VAI CHUYÊN GIA GIÁO DỤC 4.0 TẠI VIỆT NAM.
-      NHIỆM VỤ: Tích hợp NLS vào giáo án bám sát GDPT 2018.
+      NHIỆM VỤ: Chuyên gia GDPT 2018 - Tích hợp Năng lực số (NLS).
       
-      YÊU CẦU CỨNG:
-      1. Nội dung NLS phải bắt đầu bằng: "👉 Tích hợp NLS:"
-      2. Môn Toán phải dùng GeoGebra/Desmos. Môn Lý dùng PhET. Môn Văn dùng AI/Canva.
-      3. ĐẦU RA LÀ JSON THUẦN TÚY (Raw JSON).
-      4. KHÔNG ĐƯỢC ĐỂ TRỐNG activities_integration.
+      YÊU CẦU CỤ THỂ CHO TỪNG PHẦN (JSON OUTPUT ONLY):
+
+      1. "objectives_addition" (QUAN TRỌNG - CHÈN VÀO PHẦN 2. NĂNG LỰC):
+         - Hãy liệt kê cụ thể 2-3 năng lực số đặc thù cho môn học này.
+         - Cấu trúc bắt buộc:
+           "+ Năng lực sử dụng [Tên phần mềm/Thiết bị] để [Mục đích cụ thể trong bài].
+            + Năng lực khai thác học liệu số trên [Nguồn] để [Mục đích].
+            + Năng lực hợp tác trên không gian mạng qua [Công cụ]."
+
+      2. "activities_integration" (CHÈN VÀO HOẠT ĐỘNG):
+         - Tìm các hoạt động trong bài, chèn cách dùng công nghệ vào đó.
+         - Ví dụ: "GV yêu cầu HS dùng Padlet để thảo luận...", "HS dùng GeoGebra vẽ đồ thị..."
+
+      3. "materials_addition": Liệt kê phần mềm, thiết bị số cụ thể (Máy chiếu, PM trắc nghiệm...).
+      4. "appendix_table": Tiêu chí đánh giá kỹ năng công nghệ của HS.
     `);
 
     const response = await result.response;
@@ -28,26 +37,22 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
 
     const parsed = JSON.parse(text);
 
-    // KIỂM TRA DỮ LIỆU ĐỂ CHỐNG TRẮNG TRANG
     return {
-      objectives_addition: parsed.objectives_addition || "👉 Tích hợp NLS: Phát triển năng lực khai thác và sử dụng các công cụ công nghệ thông tin trong học tập.",
-      materials_addition: parsed.materials_addition || "👉 Tích hợp NLS: Sử dụng các phần mềm chuyên dụng và nền tảng học liệu số trực tuyến.",
-      appendix_table: parsed.appendix_table || "👉 Tích hợp NLS: Tiêu chí 1: Sử dụng thành thạo phần mềm; Tiêu chí 2: Khai thác học liệu số an toàn.",
+      objectives_addition: parsed.objectives_addition || "👉 [TÍCH HỢP NLS]: Phát triển năng lực sử dụng công nghệ đặc thù.",
+      materials_addition: parsed.materials_addition || "👉 [TÍCH HỢP NLS]: Máy tính, máy chiếu, phần mềm dạy học.",
+      appendix_table: parsed.appendix_table || "Tiêu chí đánh giá NLS.",
       activities_integration: (parsed.activities_integration && parsed.activities_integration.length > 0) 
         ? parsed.activities_integration 
-        : [
-            { anchor_text: "Hoạt động chung", content: "👉 Tích hợp NLS: Giáo viên sử dụng video minh họa trực quan và tổ chức thảo luận trên bảng trắng số." },
-            { anchor_text: "Củng cố kiến thức", content: "👉 Tích hợp NLS: Học sinh thực hiện bài kiểm tra nhanh trên Quizizz để nhận phản hồi tức thì." }
-          ]
+        : [{ anchor_text: "Hoạt động chung", content: "👉 [TÍCH HỢP NLS]: Sử dụng công cụ số hỗ trợ giảng dạy." }]
     };
   } catch (error) {
     console.error("Lỗi AI:", error);
-    // Fallback an toàn tuyệt đối
+    // Fallback an toàn
     return {
-      objectives_addition: "👉 Tích hợp NLS: Ứng dụng công nghệ số vào bài học.",
-      materials_addition: "👉 Tích hợp NLS: Máy tính và internet.",
-      activities_integration: [{ anchor_text: "Hoạt động chung", content: "👉 Tích hợp NLS: Sử dụng các công cụ học tập tương tác." }],
-      appendix_table: "👉 Tích hợp NLS: Đánh giá kỹ năng số."
+      objectives_addition: "👉 [TÍCH HỢP NLS]: Ứng dụng CNTT trong giải quyết vấn đề.",
+      materials_addition: "👉 [TÍCH HỢP NLS]: Học liệu số đa phương tiện.",
+      activities_integration: [{ anchor_text: "Hoạt động", content: "👉 [TÍCH HỢP NLS]: GV sử dụng bài giảng điện tử." }],
+      appendix_table: "Đánh giá kỹ năng sử dụng phần mềm."
     };
   }
 };

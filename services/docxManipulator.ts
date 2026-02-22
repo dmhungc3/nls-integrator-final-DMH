@@ -7,17 +7,18 @@ export const injectContentIntoDocx = async (
   type: 'NLS',
   logCallback: (msg: string) => void
 ): Promise<Blob> => {
-  logCallback("⏳ Đang phân tích cấu trúc XML...");
+  logCallback("⏳ Đang xử lý cấu trúc file Word an toàn...");
   const arrayBuffer = await originalFile.arrayBuffer();
   const zip = new PizZip(arrayBuffer);
   
   const docFile = zip.file("word/document.xml");
+  // KIỂM TRA CHẶT CHẼ ĐỂ TRÁNH LỖI 'UNDEFINED'
   if (!docFile) throw new Error("File Word bị lỗi cấu trúc (Không tìm thấy document.xml).");
   
   let xmlContent = docFile.asText();
   if (!xmlContent) throw new Error("Không đọc được nội dung XML.");
 
-  // 1. Hàm mã hóa ký tự đặc biệt (Tránh lỗi XML do ký tự lạ)
+  // 1. Hàm mã hóa ký tự đặc biệt (QUAN TRỌNG: Tránh lỗi Corrupted File)
   const escapeXml = (unsafe: string) => unsafe.replace(/[<>&'"]/g, (c) => {
     switch (c) {
       case '<': return '&lt;';
@@ -29,8 +30,8 @@ export const injectContentIntoDocx = async (
     }
   });
 
-  // 2. Tạo đoạn văn NLS chuẩn (Màu xanh, in đậm)
-  const createNLSXml = (text: string) => {
+  // 2. Tạo đoạn văn NLS chuẩn (Màu xanh, in đậm, căn chỉnh)
+  const createParaXML = (text: string, isBold: boolean = false, color: string = "2E7D32") => {
     const safeText = escapeXml(text);
     return `
       <w:p>
@@ -40,42 +41,43 @@ export const injectContentIntoDocx = async (
           <w:t>👉 [TÍCH HỢP NLS]: </w:t>
         </w:r>
         <w:r>
-          <w:rPr><w:i/><w:color w:val="2E7D32"/><w:sz w:val="24"/></w:rPr>
+          <w:rPr>${isBold ? '<w:b/>' : ''}<w:color w:val="${color}"/><w:sz w:val="24"/></w:rPr>
           <w:t>${safeText}</w:t>
         </w:r>
       </w:p>
     `;
   };
 
-  // 3. Kỹ thuật "Cắt - Chèn - Nối" (Fix lỗi file hỏng)
-  // Thay vì chèn bừa, ta đóng thẻ cũ lại, chèn NLS, rồi mở thẻ mới
+  // 3. Kỹ thuật "Cắt - Chèn - Nối" (An toàn cho Word)
+  // Thay vì chèn bừa, ta đóng thẻ cũ lại, chèn NLS, rồi mở thẻ mới để không vỡ cấu trúc
   const safeInsert = (originalXml: string, keyword: string, newContent: string) => {
-    // Tìm vị trí từ khóa
-    const index = originalXml.indexOf(keyword);
-    if (index === -1) return originalXml;
-
-    // Thay thế: KEYWORD -> KEYWORD + Đóng thẻ + Đoạn NLS + Mở thẻ giả
-    // </w:t></w:r></w:p> : Kết thúc đoạn văn hiện tại
-    // createNLSXml(...) : Chèn đoạn văn NLS
-    // <w:p><w:r><w:t>    : Mở đoạn văn mới để chứa phần văn bản phía sau (tránh lỗi)
+    // Tìm vị trí từ khóa (Không phân biệt hoa thường)
+    const regex = new RegExp(keyword, 'i');
+    const match = originalXml.match(regex);
     
-    const injection = `${keyword}</w:t></w:r></w:p>${createNLSXml(newContent)}<w:p><w:r><w:t>`;
-    return originalXml.replace(keyword, injection);
+    if (!match) return originalXml;
+
+    // Chèn vào: Từ khóa -> Từ khóa + Đóng thẻ + Đoạn NLS + Mở thẻ giả
+    const keywordFound = match[0];
+    const injection = `${keywordFound}</w:t></w:r></w:p>${createParaXML(newContent)}<w:p><w:r><w:t>`;
+    return originalXml.replace(regex, injection);
   };
 
   // --- THỰC HIỆN CHÈN ---
   
-  // Mục tiêu
+  // Mục tiêu (Ưu tiên tìm mục 2. Năng lực trước)
   if (content.objectives_addition) {
-    xmlContent = safeInsert(xmlContent, "MỤC TIÊU", content.objectives_addition);
-    // Dự phòng nếu giáo án dùng "I. MỤC TIÊU" hoặc "1. Kiến thức"
-    if (!xmlContent.includes("👉")) xmlContent = safeInsert(xmlContent, "Kiến thức", content.objectives_addition);
+    if (xmlContent.includes("Năng lực")) {
+       xmlContent = safeInsert(xmlContent, "Năng lực", content.objectives_addition);
+    } else {
+       xmlContent = safeInsert(xmlContent, "MỤC TIÊU", content.objectives_addition);
+    }
   }
 
   // Thiết bị
   if (content.materials_addition) {
     xmlContent = safeInsert(xmlContent, "THIẾT BỊ", content.materials_addition);
-    if (!xmlContent.includes("👉 [TÍCH HỢP NLS]: " + escapeXml(content.materials_addition))) {
+    if (!xmlContent.includes("👉")) { // Nếu chưa chèn được thì thử từ khóa khác
        xmlContent = safeInsert(xmlContent, "HỌC LIỆU", content.materials_addition);
     }
   }
@@ -94,7 +96,7 @@ export const injectContentIntoDocx = async (
   const appendixXml = `
     <w:p><w:r><w:br w:type="page"/></w:r></w:p>
     <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t>PHỤ LỤC: ĐÁNH GIÁ NĂNG LỰC SỐ</w:t></w:r></w:p>
-    ${createNLSXml(content.appendix_table)}
+    ${createParaXML(content.appendix_table)}
   `;
   
   if (xmlContent.includes("</w:body>")) {
