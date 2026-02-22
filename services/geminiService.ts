@@ -3,45 +3,42 @@ import { GeneratedNLSContent } from "../types";
 
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  
-  // SỬ DỤNG GEMINI 2.5 FLASH (BẢN STABLE)
+  // Dùng model ổn định nhất
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); 
 
   const result = await model.generateContent(prompt + `
     ---------------------------------------------------
-    YÊU CẦU CHUYÊN SÂU: TÍCH HỢP NĂNG LỰC SỐ (NLS) CHI TIẾT
+    YÊU CẦU ĐẶC BIỆT: THIẾT KẾ NLS GIỐNG HỆT MẪU (WORD STYLE)
     
-    1. NHIỆM VỤ RÀ SOÁT & ĐỀ XUẤT (QUAN TRỌNG):
-       - Rà soát giáo án tìm các mục "Hoạt động...".
-       - LƯU Ý ĐẶC BIỆT: Nếu giáo án viết tắt hoặc không phân chia rõ hoạt động, bạn KHÔNG ĐƯỢC TRẢ VỀ DANH SÁCH RỖNG.
-       - Thay vào đó, hãy TỰ ĐỘNG ĐỀ XUẤT 3 hoạt động tiêu chuẩn dựa trên nội dung bài:
-         + Hoạt động 1: Khởi động (Dùng Video/Game/Quizizz).
-         + Hoạt động 2: Hình thành kiến thức (Dùng GeoGebra/AI/Phần mềm).
-         + Hoạt động 3: Luyện tập/Vận dụng (Dùng Padlet/Canva).
+    1. QUY ĐỊNH VỀ CÚ PHÁP (BẮT BUỘC):
+       - Mọi nội dung đề xuất Năng Lực Số (NLS) đều phải bắt đầu bằng cụm từ: "👉 Tích hợp NLS:"
+       - Văn phong phải trang trọng, chuẩn sư phạm Việt Nam (như file mẫu).
 
-    2. ĐỀ XUẤT CÔNG CỤ CỤ THỂ (THEO MÔN HỌC & ĐẶC THÙ 2026):
-       - Toán/KHTN: Dùng **GeoGebra / Desmos / PhET Simulations**.
-       - Văn/KHXH: Dùng **AI Chatbot (Gemini/ChatGPT) / Canva / Padlet**.
-       - Tin học/Công nghệ: Dùng **IDE Online / Virtual Lab**.
-       - Ngoại ngữ: Dùng **Elsa Speak / Duolingo / AI Roleplay**.
+    2. CẤU TRÚC JSON TRẢ VỀ (Ứng với 4 phần trong giáo án):
+       
+       A. PHẦN MỤC TIÊU (objectives_addition):
+          - Đề xuất 2-3 gạch đầu dòng về năng lực số.
+          - Ví dụ: "👉 Tích hợp NLS: Sử dụng phần mềm GeoGebra để trực quan hóa..."
+       
+       B. PHẦN THIẾT BỊ & HỌC LIỆU (materials_addition):
+          - Đề xuất công cụ cụ thể.
+          - Ví dụ: "👉 Tích hợp NLS: Bộ câu hỏi trắc nghiệm trên Quizizz/Kahoot."
+       
+       C. PHẦN HOẠT ĐỘNG (activities_integration):
+          - Rà soát từng hoạt động (1, 2, 3...) trong bài.
+          - Với mỗi hoạt động, đề xuất cách dùng công nghệ tương ứng.
+          - Định dạng: "👉 Tích hợp NLS: GV yêu cầu HS dùng điện thoại quét mã QR..."
+       
+       D. PHẦN PHỤ LỤC (appendix_table):
+          - Các tiêu chí đánh giá.
+          - Ví dụ: "👉 Tích hợp NLS: Tiêu chí 1: Thao tác thành thạo..."
 
-    3. CẤU TRÚC JSON BẮT BUỘC (Strict Format):
-       - "anchor_text": Tên hoạt động gốc (hoặc ghi "Hoạt động đề xuất" nếu AI tự tạo).
-       - "content": Phải có đủ 3 phần:
-         (1) **[Công cụ]**: Tên phần mềm/App.
-         (2) **[Thao tác]**: Hướng dẫn HS/GV làm gì trên máy.
-         (3) **[Câu lệnh mẫu]**: Gợi ý Prompt để HS hỏi AI (nếu cần).
-
-    VÍ DỤ OUTPUT:
-    {
-      "anchor_text": "Hoạt động 2: Hình thành kiến thức",
-      "content": "Sử dụng **GeoGebra 3D**. [Thao tác]: GV yêu cầu HS quét mã QR để mở mô hình không gian, xoay hình để quan sát góc nhị diện. [Câu lệnh mẫu]: 'Giải thích khái niệm góc nhị diện bằng ngôn ngữ đơn giản?'"
-    }
+    3. YÊU CẦU XỬ LÝ KHI KHÔNG TÌM THẤY HOẠT ĐỘNG:
+       - Nếu giáo án sơ sài, hãy TỰ ĐỘNG ĐỀ XUẤT 3 hoạt động (Khởi động, Hình thành kiến thức, Luyện tập) và gắn NLS vào đó.
 
     LƯU Ý KỸ THUẬT: 
-    - TRẢ VỀ JSON THUẦN TÚY (Raw JSON).
+    - TRẢ VỀ JSON THUẦN (Raw JSON).
     - KHÔNG dùng Markdown (\`\`\`json).
-    - Trường "appendix_table" là chuỗi văn bản (String), xuống dòng bằng \\n.
   `);
 
   const response = await result.response;
@@ -52,25 +49,15 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
     parsed = JSON.parse(text);
   } catch (e) {
     console.error("Lỗi parse JSON:", text);
-    // FALLBACK: Trả về dữ liệu mẫu nếu AI bị lỗi để app không bị treo
     return {
-      objectives_addition: "Hệ thống đang bận, thầy vui lòng thử lại sau giây lát.",
-      materials_addition: "Máy tính, Máy chiếu, Mạng Internet.",
-      activities_integration: [
-        { 
-            anchor_text: "Hoạt động Khởi động (AI Tự động tạo)", 
-            content: "Sử dụng **Quizizz**. [Thao tác]: GV tổ chức trò chơi trắc nghiệm nhanh để kiểm tra bài cũ. [Câu lệnh mẫu]: 'Tạo 5 câu hỏi trắc nghiệm vui về chủ đề này'" 
-        },
-        { 
-            anchor_text: "Hoạt động Hình thành kiến thức (AI Tự động tạo)", 
-            content: "Sử dụng **Phần mềm Bộ môn/AI**. [Thao tác]: GV minh họa trực quan các khái niệm khó. HS quan sát và nhận xét." 
-        }
-      ],
+      objectives_addition: "👉 Tích hợp NLS: Hệ thống đang bận, vui lòng thử lại.",
+      materials_addition: "👉 Tích hợp NLS: Máy tính, máy chiếu.",
+      activities_integration: [],
       appendix_table: "..."
     };
   }
 
-  // Đảm bảo an toàn dữ liệu
+  // Chuẩn hóa dữ liệu
   if (parsed.appendix_table && Array.isArray(parsed.appendix_table)) {
     parsed.appendix_table = parsed.appendix_table.join('\n');
   } else if (typeof parsed.appendix_table !== 'string') {
