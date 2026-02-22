@@ -20,14 +20,14 @@ export const injectContentIntoDocx = async (
 
   // 1. Hàm mã hóa ký tự đặc biệt (QUAN TRỌNG: Tránh lỗi Corrupted File)
   const escapeXml = (unsafe: string) => unsafe.replace(/[<>&'"]/g, (c) => {
-    switch (c) {
-      case '<': return '&lt;';
-      case '>': return '&gt;';
-      case '&': return '&amp;';
-      case '\'': return '&apos;';
-      case '"': return '&quot;';
-      default: return c;
-    }
+    const map: Record<string, string> = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '&': '&amp;',
+      '\'': '&apos;',
+      '"': '&quot;'
+    };
+    return map[c];
   });
 
   // 2. Tạo đoạn văn NLS chuẩn (Màu xanh, in đậm, căn chỉnh)
@@ -49,7 +49,6 @@ export const injectContentIntoDocx = async (
   };
 
   // 3. Kỹ thuật "Cắt - Chèn - Nối" (An toàn cho Word)
-  // Thay vì chèn bừa, ta đóng thẻ cũ lại, chèn NLS, rồi mở thẻ mới để không vỡ cấu trúc
   const safeInsert = (originalXml: string, keyword: string, newContent: string) => {
     // Tìm vị trí từ khóa (Không phân biệt hoa thường)
     const regex = new RegExp(keyword, 'i');
@@ -59,6 +58,7 @@ export const injectContentIntoDocx = async (
 
     // Chèn vào: Từ khóa -> Từ khóa + Đóng thẻ + Đoạn NLS + Mở thẻ giả
     const keywordFound = match[0];
+    // Đóng thẻ văn bản cũ </w:t></w:r></w:p> rồi chèn đoạn mới
     const injection = `${keywordFound}</w:t></w:r></w:p>${createParaXML(newContent)}<w:p><w:r><w:t>`;
     return originalXml.replace(regex, injection);
   };

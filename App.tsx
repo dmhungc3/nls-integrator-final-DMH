@@ -161,7 +161,7 @@ const App: React.FC = () => {
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100"><h4 className="text-xs font-black text-slate-400 uppercase mb-4 flex gap-2"><GraduationCap size={16}/> Tác giả</h4><div className="flex items-center gap-3"><div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold">MH</div><div><p className="font-bold text-slate-800">Đặng Mạnh Hùng</p><p className="text-[10px] text-slate-500 font-bold uppercase">THPT Lý Nhân Tông</p></div></div></div>
           <div className="bg-slate-900 p-5 rounded-3xl shadow-xl h-[300px] flex flex-col font-mono text-xs border border-slate-800 text-slate-400">
-            <div className="flex items-center gap-2 border-b border-slate-700 pb-3 mb-3 font-bold text-indigo-400 uppercase"><Cpu size={14} className="animate-pulse"/> System Logs</div>
+            <div className="flex items-center gap-2 border-b border-slate-700 pb-3 mb-3 font-bold text-indigo-400 uppercase"><Cpu size={14} className="animate-pulse"/> Logs</div>
             <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2">{state.logs.map((l, i) => <div key={i} className="border-l-2 border-slate-700 pl-2">[{new Date().toLocaleTimeString()}] {l}</div>)}</div>
           </div>
         </div>
