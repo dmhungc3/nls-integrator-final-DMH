@@ -9,7 +9,7 @@ import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 
-// HÀM XÓA DẤU TIẾNG VIỆT (QUAN TRỌNG ĐỂ AUTO-DETECT CHUẨN)
+// HÀM XÓA DẤU TIẾNG VIỆT
 const removeVietnameseTones = (str: string) => {
   str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a"); 
   str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e"); 
@@ -22,7 +22,7 @@ const removeVietnameseTones = (str: string) => {
 }
 
 const App: React.FC = () => {
-  const APP_VERSION = "v3.3.8-FULL-GDPT2018"; 
+  const APP_VERSION = "v3.3.9-STABLE-FIX"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -30,7 +30,6 @@ const App: React.FC = () => {
     generatedContent: null, result: null
   });
   
-  // MẶC ĐỊNH SẼ CHUYỂN SANG TAB 'activities' KHI CHẠY XONG
   const [activeTab, setActiveTab] = useState<'objectives' | 'materials' | 'activities' | 'matrix'>('objectives');
   const [userApiKey, setUserApiKey] = useState('');
   const [isKeySaved, setIsKeySaved] = useState(false);
@@ -45,12 +44,10 @@ const App: React.FC = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [state.logs]);
 
-  // LOGIC AUTO-DETECT THÔNG MINH (CẬP NHẬT THÊM TỪ KHÓA MỚI)
   const autoDetectInfo = (fileName: string) => {
     const name = removeVietnameseTones(fileName.toLowerCase());
     let s = '' as SubjectType;
     let g = '' as GradeType;
-
     if (/toan|hinh|dai|giai tich|vecto/.test(name)) s = 'Toán' as SubjectType;
     else if (/van|ngu van|doc hieu/.test(name)) s = 'Ngữ văn' as SubjectType;
     else if (/anh|english/.test(name)) s = 'Tiếng Anh' as SubjectType;
@@ -76,9 +73,7 @@ const App: React.FC = () => {
 
   const saveKeyToLocal = () => {
     if (userApiKey.trim()) { 
-      localStorage.setItem('gemini_api_key', userApiKey); 
-      setIsKeySaved(true); 
-      addLog("✅ Đã lưu API Key."); 
+      localStorage.setItem('gemini_api_key', userApiKey); setIsKeySaved(true); addLog("✅ Đã lưu API Key."); 
     }
   };
 
@@ -86,21 +81,11 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file?.name.endsWith('.docx')) {
       const { s, g } = autoDetectInfo(file.name);
-      // Ưu tiên file tự nhận diện
       const finalSubject = s || state.subject;
       const finalGrade = g || state.grade;
-
       setState(prev => ({ 
-        ...prev, 
-        file, 
-        subject: finalSubject, 
-        grade: finalGrade, 
-        step: 'upload',
-        logs: [
-            `✅ Đã nhận: ${file.name}`, 
-            finalSubject ? `✅ Môn: ${finalSubject}` : "❓ Thầy hãy chọn môn", 
-            finalGrade ? `✅ Lớp: ${finalGrade}` : "❓ Thầy hãy chọn lớp"
-        ].filter(Boolean)
+        ...prev, file, subject: finalSubject, grade: finalGrade, step: 'upload',
+        logs: [`✅ Đã nhận: ${file.name}`, finalSubject ? `✅ Môn: ${finalSubject}` : "❓ Thầy hãy chọn môn", finalGrade ? `✅ Lớp: ${finalGrade}` : "❓ Thầy hãy chọn lớp"].filter(Boolean)
       }));
     }
   };
@@ -109,16 +94,12 @@ const App: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!userApiKey || !state.subject || !state.grade) return;
-    setState(prev => ({ 
-      ...prev, isProcessing: true, 
-      logs: [...prev.logs.filter(l => !l.includes("❓")), `✅ Cấu hình: ${state.subject} - ${state.grade}`, `⚡ Khởi động Core ${APP_VERSION}...`, `🤖 Đang thiết kế NLS chi tiết...`] 
-    }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs.filter(l => !l.includes("❓")), `✅ Cấu hình: ${state.subject} - ${state.grade}`, `⚡ Khởi động Core ${APP_VERSION}...`, `🤖 Đang thiết kế NLS chi tiết...`] }));
 
     try {
       const text = await extractTextFromDocx(state.file!);
       const prompt = createIntegrationTextPrompt(text, state.subject, state.grade, 'NLS', pedagogy);
       const content = await generateCompetencyIntegration(prompt, userApiKey);
-      
       addLog(`✨ Hoàn tất! Đang hiển thị kết quả.`);
       setActiveTab('activities'); 
       setState(prev => ({ ...prev, isProcessing: false, generatedContent: content, step: 'review' }));
@@ -135,14 +116,12 @@ const App: React.FC = () => {
       const newBlob = await injectContentIntoDocx(state.file, state.generatedContent, 'NLS', (m) => addLog(`→ ${m}`));
       setState(prev => ({ ...prev, isProcessing: false, step: 'done', result: { fileName: `Tich-hop-NLS-${state.file?.name}`, blob: newBlob }, logs: [...prev.logs, "✅ Sẵn sàng tải về."] }));
     } catch (error) { 
-      addLog("🔴 Lỗi đóng gói file."); 
-      setState(prev => ({ ...prev, isProcessing: false })); 
+      addLog("🔴 Lỗi đóng gói file."); setState(prev => ({ ...prev, isProcessing: false })); 
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
-      {/* HEADER */}
       <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b py-3 px-4">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
               <div className="flex items-center gap-3">
@@ -161,37 +140,22 @@ const App: React.FC = () => {
           {state.step === 'upload' && (
             <div className="bg-white rounded-3xl shadow-xl border p-8 space-y-8 animate-fade-in-up">
               <div className="grid grid-cols-2 gap-6">
-                
-                {/* SELECT MÔN HỌC - CẬP NHẬT MỚI */}
                 <div className="space-y-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Môn học (GDPT 2018)</label>
                     <select className="w-full p-3.5 rounded-xl border bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-indigo-500" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                       <option value="">-- Chọn môn học --</option>
-                      <optgroup label="Môn học Bắt buộc">
-                        <option value="Toán">Toán học</option><option value="Ngữ văn">Ngữ văn</option><option value="Tiếng Anh">Tiếng Anh</option><option value="Lịch sử">Lịch sử</option>
-                        <option value="Giáo dục thể chất">Giáo dục thể chất</option><option value="Giáo dục quốc phòng và an ninh">GD Quốc phòng & An ninh</option><option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm, hướng nghiệp</option>
-                      </optgroup>
-                      <optgroup label="Môn học Lựa chọn">
-                        <option value="Vật lý">Vật lý</option><option value="Hóa học">Hóa học</option><option value="Sinh học">Sinh học</option><option value="Địa lý">Địa lý</option><option value="Tin học">Tin học</option><option value="Công nghệ">Công nghệ</option>
-                        <option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option><option value="Âm nhạc">Âm nhạc</option><option value="Mỹ thuật">Mỹ thuật</option>
-                      </optgroup>
+                      <optgroup label="Môn học Bắt buộc"><option value="Toán">Toán học</option><option value="Ngữ văn">Ngữ văn</option><option value="Tiếng Anh">Tiếng Anh</option><option value="Lịch sử">Lịch sử</option><option value="Giáo dục thể chất">Giáo dục thể chất</option><option value="Giáo dục quốc phòng và an ninh">GD Quốc phòng & An ninh</option><option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm, hướng nghiệp</option></optgroup>
+                      <optgroup label="Môn học Lựa chọn"><option value="Vật lý">Vật lý</option><option value="Hóa học">Hóa học</option><option value="Sinh học">Sinh học</option><option value="Địa lý">Địa lý</option><option value="Tin học">Tin học</option><option value="Công nghệ">Công nghệ</option><option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option><option value="Âm nhạc">Âm nhạc</option><option value="Mỹ thuật">Mỹ thuật</option></optgroup>
                     </select>
                 </div>
-
-                {/* SELECT KHỐI LỚP - CẬP NHẬT MỚI */}
                 <div className="space-y-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Khối lớp</label>
                     <select className="w-full p-3.5 rounded-xl border bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-indigo-500" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                       <option value="">-- Chọn khối lớp --</option>
-                      <optgroup label="Cấp THPT">
-                        <option value="Lớp 10">Lớp 10</option><option value="Lớp 11">Lớp 11</option><option value="Lớp 12">Lớp 12</option>
-                      </optgroup>
-                      <optgroup label="Cấp THCS">
-                        <option value="Lớp 6">Lớp 6</option><option value="Lớp 7">Lớp 7</option><option value="Lớp 8">Lớp 8</option><option value="Lớp 9">Lớp 9</option>
-                      </optgroup>
+                      <optgroup label="Cấp THPT"><option value="Lớp 10">Lớp 10</option><option value="Lớp 11">Lớp 11</option><option value="Lớp 12">Lớp 12</option></optgroup>
+                      <optgroup label="Cấp THCS"><option value="Lớp 6">Lớp 6</option><option value="Lớp 7">Lớp 7</option><option value="Lớp 8">Lớp 8</option><option value="Lớp 9">Lớp 9</option></optgroup>
                     </select>
                 </div>
-
               </div>
               <label className="flex flex-col items-center justify-center w-full h-44 rounded-2xl border-2 border-dashed border-slate-300 cursor-pointer hover:bg-slate-50">
                 <FileUp className="text-slate-400 mb-2" /><span className="text-sm font-bold text-slate-600">{state.file ? state.file.name : "Nạp giáo án (.docx)"}</span>
@@ -209,16 +173,12 @@ const App: React.FC = () => {
                 <h3 className="font-bold text-indigo-900">Kết quả tích hợp (Đã phân tích)</h3>
                 <button onClick={handleFinalizeAndDownload} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">Tải về</button>
               </div>
-              
-              {/* THANH MENU TAB */}
               <div className="grid grid-cols-4 border-b text-xs font-bold text-slate-500">
                 <button onClick={() => setActiveTab('activities')} className={`py-3 ${activeTab === 'activities' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>⚡ 3. Hoạt động (NLS)</button>
                 <button onClick={() => setActiveTab('objectives')} className={`py-3 ${activeTab === 'objectives' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📖 1. Mục tiêu</button>
                 <button onClick={() => setActiveTab('materials')} className={`py-3 ${activeTab === 'materials' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📦 2. Học liệu</button>
                 <button onClick={() => setActiveTab('matrix')} className={`py-3 ${activeTab === 'matrix' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : ''}`}>📊 4. Ma trận</button>
               </div>
-
-              {/* NỘI DUNG HIỂN THỊ */}
               <div className="p-6 max-h-[500px] overflow-y-auto bg-slate-50">
                 {activeTab === 'activities' ? (
                   <div className="space-y-4">
@@ -243,7 +203,11 @@ const App: React.FC = () => {
                         );
                       })
                     ) : (
-                      <div className="text-center p-10 text-slate-400">Đang tải dữ liệu hoạt động...</div>
+                      // THÔNG BÁO THÔNG MINH KHI KHÔNG CÓ DỮ LIỆU
+                      <div className="text-center p-10 text-slate-400">
+                        <p className="mb-2">⚠️ AI không tìm thấy tên "Hoạt động" cụ thể trong bài này.</p>
+                        <p className="text-xs">Tuy nhiên, thầy vẫn có thể Tải về để xem phần Mục tiêu & Học liệu đã được tích hợp.</p>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -268,7 +232,6 @@ const App: React.FC = () => {
 
         <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="sticky top-24">
-            {/* THÔNG TIN TÁC GIẢ - ĐƯA LÊN TRÊN */}
             <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm border mb-4">
               <h4 className="font-bold text-[10px] text-slate-400 uppercase mb-3 flex items-center gap-2"><GraduationCap className="w-3" /> Tác giả</h4>
               <div className="flex items-center gap-3">
@@ -276,8 +239,6 @@ const App: React.FC = () => {
                 <div><p className="text-xs font-bold text-slate-800">Đặng Mạnh Hùng</p><p className="text-[10px] text-slate-500 italic">GV THPT Lý Nhân Tông</p><p className="text-[10px] font-bold text-slate-500">097 8386 357</p></div>
               </div>
             </div>
-
-            {/* TERMINAL */}
             <div className="bg-[#1e1e2e] rounded-2xl p-4 shadow-2xl h-[380px] flex flex-col border border-slate-700 font-mono text-[11px]">
               <div className="flex justify-between border-b border-slate-700 pb-2 mb-2 text-slate-400 font-bold uppercase"><span className="flex items-center gap-2"><Cpu className="w-3" /> Terminal Status</span></div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 text-indigo-100/90">
