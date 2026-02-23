@@ -3,7 +3,7 @@ import { GeneratedNLSContent } from "../types";
 
 export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   const result = await model.generateContent(prompt);
   const data = JSON.parse((await result.response).text().replace(/```json|```/g, "").trim());
 
