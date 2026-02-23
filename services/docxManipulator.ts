@@ -32,11 +32,12 @@ export const injectContentIntoDocx = async (
 
         const title = mode === 'NLS' ? "PHIẾU TÍCH HỢP NĂNG LỰC SỐ (NLS)" : "PHIẾU TÍCH HỢP TRÍ TUỆ NHÂN TẠO (AI)";
 
-        // 2. Tạo nội dung XML mới (Trang phụ lục)
+        // 2. Tạo nội dung XML (Đã bỏ bớt Border phức tạp để giảm thiểu lỗi hiển thị)
+        // Thêm xml:space="preserve" để tránh lỗi khi chuỗi bị rỗng
         const newContentXml = `
         <w:p><w:r><w:br w:type="page"/></w:r></w:p>
         <w:p>
-            <w:pPr><w:jc w:val="center"/><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="auto"/></w:pBdr></w:pPr>
+            <w:pPr><w:jc w:val="center"/></w:pPr>
             <w:r>
                 <w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="2E74B5"/></w:rPr>
                 <w:t>${title}</w:t>
@@ -44,21 +45,21 @@ export const injectContentIntoDocx = async (
         </w:p>
         
         <w:p><w:r><w:rPr><w:b/><w:sz w:val="24"/><w:color w:val="C00000"/></w:rPr><w:t>I. BỔ SUNG MỤC TIÊU</w:t></w:r></w:p>
-        ${safeObjectives.split('\n').map(line => `
-            <w:p><w:r><w:t>${escapeXml(line)}</w:t></w:r></w:p>
+        ${safeObjectives.split('\n').filter(line => line.trim() !== "").map(line => `
+            <w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>
         `).join('')}
         
         <w:p><w:r><w:rPr><w:b/><w:sz w:val="24"/><w:color w:val="C00000"/></w:rPr><w:t>II. BỔ SUNG HỌC LIỆU & THIẾT BỊ</w:t></w:r></w:p>
-        ${safeMaterials.split('\n').map(line => `
-            <w:p><w:r><w:t>${escapeXml(line)}</w:t></w:r></w:p>
+        ${safeMaterials.split('\n').filter(line => line.trim() !== "").map(line => `
+            <w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>
         `).join('')}
 
         <w:p><w:r><w:rPr><w:b/><w:sz w:val="24"/><w:color w:val="C00000"/></w:rPr><w:t>III. CHI TIẾT HOẠT ĐỘNG TÍCH HỢP</w:t></w:r></w:p>
-        ${activitiesText.split('\n').map(line => `
+        ${activitiesText.split('\n').filter(line => line.trim() !== "").map(line => `
             <w:p>
                 <w:r>
                     <w:rPr>${line.startsWith('★') ? '<w:b/><w:color w:val="000000"/>' : ''}</w:rPr>
-                    <w:t>${escapeXml(line)}</w:t>
+                    <w:t xml:space="preserve">${escapeXml(line)}</w:t>
                 </w:r>
             </w:p>
         `).join('')}
@@ -67,20 +68,28 @@ export const injectContentIntoDocx = async (
         const originalXml = zip.file("word/document.xml")?.asText();
         if (!originalXml) throw new Error("File Word lỗi cấu trúc");
 
-        // --- 3. THUẬT TOÁN CHÈN AN TOÀN (QUAN TRỌNG NHẤT) ---
-        // Tìm vị trí thẻ <w:sectPr> cuối cùng (định dạng trang)
-        // Phải chèn nội dung vào TRƯỚC thẻ này thì file mới không bị lỗi.
+        // --- 3. THUẬT TOÁN CHÈN AN TOÀN TUYỆT ĐỐI (REGEX) ---
+        // Tìm thẻ <w:sectPr> nằm ở cuối cùng của body
+        // Regex giải thích: Tìm <w:sectPr (có thể có thuộc tính) /> sau đó đến </w:body>
         
         let finalXml = "";
-        const lastSectPrIndex = originalXml.lastIndexOf("<w:sectPr");
+        const sectPrRegex = /(<w:sectPr(?:[\s\S]*?)>)(?:[\s\S]*?)(<\/w:body>)/i;
         
-        if (lastSectPrIndex !== -1) {
-            // Cách 1: Chèn vào giữa nội dung và thẻ định dạng cuối cùng
-            const part1 = originalXml.substring(0, lastSectPrIndex);
-            const part2 = originalXml.substring(lastSectPrIndex);
-            finalXml = part1 + newContentXml + part2;
+        // Kiểm tra xem file có Section Properties ở cuối không
+        // Lưu ý: Chúng ta dùng lastIndexOf để tìm vị trí thủ công cho an toàn thay vì replace regex trực tiếp
+        // để tránh thay thế nhầm các sectPr ở giữa văn bản.
+        
+        const lastSectPrIndex = originalXml.lastIndexOf("<w:sectPr");
+        const bodyEndIndex = originalXml.lastIndexOf("</w:body>");
+        
+        // Logic: Nếu tìm thấy sectPr và nó nằm gần cuối file (sau nó không còn nội dung gì đáng kể ngoài thẻ đóng)
+        if (lastSectPrIndex !== -1 && lastSectPrIndex < bodyEndIndex) {
+             const part1 = originalXml.substring(0, lastSectPrIndex);
+             const part2 = originalXml.substring(lastSectPrIndex);
+             // Chèn vào GIỮA nội dung và Section Properties
+             finalXml = part1 + newContentXml + part2;
         } else {
-            // Cách 2: (Dự phòng) Chèn trước thẻ đóng body nếu không tìm thấy sectPr
+            // Trường hợp file không có sectPr (hiếm) hoặc cấu trúc lạ: Chèn trước thẻ đóng body
             finalXml = originalXml.replace('</w:body>', `${newContentXml}</w:body>`);
         }
 
