@@ -29,7 +29,7 @@ const SUBJECT_STRATEGIES: Record<string, string> = {
 
 // 2. MÔ HÌNH SƯ PHẠM
 export const PEDAGOGY_MODELS: Record<string, { name: string; desc: string }> = {
-  "DEFAULT": { name: "Linh hoạt (Context-Based)", desc: "Tự động điều chỉnh theo đặc thù môn học và nội dung bài dạy." },
+  "DEFAULT": { name: "Phân hóa theo Tiết (Session-Based)", desc: "Tự động phân chia nội dung NLS phù hợp cho từng tiết học riêng biệt." },
   "5E": { name: "Mô hình 5E (STEM)", desc: "Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá (Phù hợp KHTN)." },
   "PBL": { name: "Dạy học Dự án", desc: "Giải quyết vấn đề thực tiễn (Phù hợp KHXH & Công nghệ)." }
 };
@@ -57,27 +57,38 @@ export const createIntegrationTextPrompt = (text: string, subject: string, grade
   const specificStrategy = SUBJECT_STRATEGIES[subject] || "Tập trung vào việc sử dụng công cụ số để giải quyết vấn đề, tra cứu thông tin và cộng tác trực tuyến.";
 
   return `
-  Đóng vai Chuyên gia Giáo dục số và Chuyên gia bộ môn ${subject}.
+  Đóng vai Chuyên gia Sư phạm số và Giáo viên bộ môn ${subject}.
   
   BỐI CẢNH: Bạn đang hỗ trợ giáo viên lớp ${grade} chuyển đổi số giáo án theo định hướng GDPT 2018.
-  
-  CHIẾN LƯỢC CỐT LÕI CHO MÔN ${subject.toUpperCase()}:
-  "${specificStrategy}"
+  CHIẾN LƯỢC MÔN HỌC: "${specificStrategy}"
 
-  NHIỆM VỤ ĐẶC BIỆT: XÁC ĐỊNH SỐ TIẾT VÀ PHÂN CHIA NLS.
-  1. Hãy đọc xem giáo án này dạy trong mấy tiết (Ví dụ: Tiết 1, Tiết 2...).
-  2. Tạo nội dung tích hợp vào mục "NĂNG LỰC" nhưng phân tách rõ ràng cho từng tiết.
+  NHIỆM VỤ: PHÂN TÍCH VÀ TÍCH HỢP NĂNG LỰC SỐ (NLS) THEO TỪNG TIẾT DẠY.
   
-  MẪU ĐẦU RA MONG MUỐN:
-  "👉 ${label} (Chung): [Năng lực xuyên suốt cả bài...]"
-  "👉 ${label} (Tiết 1): [Dùng công cụ X để khám phá kiến thức...]"
-  "👉 ${label} (Tiết 2): [Dùng công cụ Y để luyện tập/làm bài tập...]"
+  Bước 1: Phân tích cấu trúc giáo án.
+  - Xác định giáo án gồm mấy tiết (Tiết 1, Tiết 2...).
+  - Tìm phần "Năng lực" (hoặc "Phẩm chất năng lực") CỦA TỪNG TIẾT.
+  - Tìm các "Hoạt động" cụ thể trong từng tiết.
 
-  YÊU CẦU ĐẦU RA (JSON CHUẨN - KHÔNG MARKDOWN):
+  Bước 2: Viết nội dung tích hợp (JSON).
+  
+  1. PHẦN NĂNG LỰC (objectives_addition):
+     - Viết nội dung NLS riêng cho từng tiết.
+     - Định dạng bắt buộc: "👉 ${label} (Tiết X): [Năng lực số cụ thể ứng với nội dung tiết đó]"
+     - Ví dụ: Tiết 1 dùng phần mềm mô phỏng thì ghi năng lực mô phỏng; Tiết 2 làm bài tập thì ghi năng lực sử dụng công cụ kiểm tra đánh giá.
+
+  2. PHẦN HOẠT ĐỘNG (activities_enhancement):
+     - Chọn 1-2 hoạt động tiêu biểu NHẤT của MỖI tiết để tích hợp.
+     - Trích dẫn CHÍNH XÁC tên hoạt động (ví dụ: "Hoạt động 1: Khởi động", "Hoạt động 2.1...").
+     - Viết nội dung tích hợp: GV dùng công cụ gì? HS làm gì trên thiết bị số?
+
+  YÊU CẦU ĐẦU RA (JSON CHUẨN - KHÔNG MARKDOWN, KHÔNG GIẢI THÍCH):
   {
-    "objectives_addition": "👉 ${label} (Tiết 1): [Nội dung...]\\n👉 ${label} (Tiết 2): [Nội dung...]",
-    "materials_addition": "", 
-    "activities_enhancement": []
+    "objectives_addition": "👉 ${label} (Tiết 1): [Nội dung NLS tiết 1]\\n👉 ${label} (Tiết 2): [Nội dung NLS tiết 2]",
+    "materials_addition": "👉 ${label}: [Danh sách thiết bị/phần mềm hỗ trợ chung]",
+    "activities_enhancement": [
+      { "activity_name": "[Tên chính xác hoạt động A ở Tiết 1]", "enhanced_content": "👉 ${label}: [Cách dùng công nghệ trong hoạt động A]" },
+      { "activity_name": "[Tên chính xác hoạt động B ở Tiết 2]", "enhanced_content": "👉 ${label}: [Cách dùng công nghệ trong hoạt động B]" }
+    ]
   }
 
   NỘI DUNG GIÁO ÁN GỐC:

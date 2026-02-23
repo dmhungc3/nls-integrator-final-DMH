@@ -15,101 +15,129 @@ export const injectContentIntoDocx = async (
         if (!binaryString) throw new Error("Lỗi đọc file");
 
         const zip = new PizZip(binaryString as ArrayBuffer);
-        
-        // 1. Kiểm tra file tồn tại
         const docFile = zip.file("word/document.xml");
-        if (!docFile) throw new Error("File Word không hợp lệ (thiếu document.xml)");
+        if (!docFile) throw new Error("File Word không hợp lệ");
         
         let docXml = docFile.asText();
         const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
 
-        // 2. Hàm tạo khối XML (Nâng cấp để giữ thông tin "Tiết 1", "Tiết 2")
+        // Hàm tạo khối XML
         const createXmlBlock = (text: string) => {
           if (!text) return "";
           return text.split('\n').filter(l => l.trim()).map(line => {
-            // Tách tiêu đề (màu xanh) và nội dung (màu đen)
-            // Nếu dòng có dạng "👉 Tích hợp NLS (Tiết 1): Nội dung..." thì tách ở dấu : đầu tiên
-            const match = line.match(/^(👉.*?):\s*(.*)$/);
-            
-            let prefix = `👉 ${label}`; // Mặc định
-            let body = line.replace(/👉.*?:/g, '').trim();
-
-            if (match) {
-                prefix = match[1]; // Lấy phần "👉 ... (Tiết 1)"
-                body = match[2];   // Lấy phần nội dung phía sau
-            }
+            const cleanLine = line.replace(/👉.*?:/g, '').trim();
+            // Lấy prefix (ví dụ: 👉 Tích hợp NLS (Tiết 1): )
+            const prefixMatch = line.match(/^(👉.*?):/);
+            const prefix = prefixMatch ? prefixMatch[1] : `👉 ${label}`;
 
             return `<w:p>
                       <w:pPr><w:ind w:left="360"/></w:pPr>
                       <w:r><w:rPr><w:b/><w:color w:val="2E74B5"/></w:rPr><w:t>${escapeXml(prefix)}: </w:t></w:r>
-                      <w:r><w:t xml:space="preserve">${escapeXml(body)}</w:t></w:r>
+                      <w:r><w:t xml:space="preserve">${escapeXml(cleanLine)}</w:t></w:r>
                     </w:p>`;
           }).join('');
         };
 
-        // 3. Thuật toán chèn an toàn (Insert After Paragraph)
-        const insertSafe = (fullXml: string, keyword: string, newContent: string): string => {
-            if (!newContent) return fullXml;
-            
-            // Tìm vị trí từ khóa (không phân biệt hoa thường)
-            const lowerXml = fullXml.toLowerCase();
-            const lowerKeyword = keyword.toLowerCase();
-            const keywordPos = lowerXml.indexOf(lowerKeyword);
-            
-            if (keywordPos === -1) return fullXml;
+        // --- THUẬT TOÁN CHÈN PHÂN PHỐI (DISTRIBUTED INSERT) ---
+        
+        // 1. Tách nội dung mục tiêu thành mảng các dòng (tương ứng các tiết)
+        const objectiveLines = content.objectives_addition.split('\n').filter(line => line.trim().length > 0);
 
-            // Tìm thẻ đóng </w:p> gần nhất sau từ khóa
-            const closingTag = "</w:p>";
-            const insertIndex = fullXml.indexOf(closingTag, keywordPos);
-            
-            if (insertIndex === -1) return fullXml;
-
-            // Chèn vào ngay sau đoạn văn chứa từ khóa
-            const splitPoint = insertIndex + closingTag.length;
-            return fullXml.substring(0, splitPoint) + newContent + fullXml.substring(splitPoint);
+        // 2. Tìm tất cả vị trí của các từ khóa Mục tiêu/Năng lực trong file Word
+        // Ưu tiên tìm "Phát triển năng lực" trước, nếu không có thì tìm "2. Năng lực", "Mục tiêu"
+        const keywords = ["Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu"];
+        
+        // Hàm tìm tất cả vị trí của một từ khóa
+        const findAllIndices = (xml: string, keyword: string) => {
+            const regex = new RegExp(keyword.replace(/\./g, "\\."), "gi");
+            let match;
+            const indices = [];
+            while ((match = regex.exec(xml)) !== null) {
+                indices.push(match.index);
+            }
+            return indices;
         };
 
-        // 4. CHIẾN LƯỢC TÌM VỊ TRÍ CHÈN THÔNG MINH
-        // Danh sách ưu tiên các từ khóa mục tiêu
-        const priorityKeywords = [
-            "2. Phát triển năng lực", // Ưu tiên số 1 (Giáo án mới)
-            "2. Năng lực",            // Phổ biến
-            "II. MỤC TIÊU",           // Truyền thống
-            "II. Mục tiêu",
-            "Năng lực cần đạt"
-        ];
-
-        let inserted = false;
+        let targetIndices: number[] = [];
         
-        // Duyệt qua danh sách, thấy từ khóa nào thì chèn vào đó và dừng lại
-        for (const key of priorityKeywords) {
-            if (docXml.toLowerCase().includes(key.toLowerCase())) {
-                docXml = insertSafe(docXml, key, createXmlBlock(content.objectives_addition));
-                inserted = true;
-                break; // Đã chèn xong
+        // Thử từng từ khóa, cái nào ra nhiều kết quả nhất (>= số tiết) thì chọn
+        for (const key of keywords) {
+            const found = findAllIndices(docXml, key);
+            if (found.length > 0) {
+                // Nếu tìm thấy số lượng vị trí khớp với số lượng dòng nội dung AI đưa ra
+                if (found.length >= objectiveLines.length) {
+                    targetIndices = found;
+                    break; 
+                }
+                // Nếu chưa tìm thấy đủ, cứ tạm lưu lại, ưu tiên từ khóa dài ("Phát triển năng lực")
+                if (targetIndices.length === 0) targetIndices = found; 
             }
         }
 
-        // Nếu giáo án quá lạ, không tìm thấy từ khóa nào -> Chèn tạm vào sau chữ "BÀI"
-        if (!inserted) {
-             docXml = insertSafe(docXml, "BÀI", createXmlBlock(content.objectives_addition));
+        // 3. Tiến hành chèn (Chèn từ dưới lên trên để không làm lệch chỉ số index)
+        // Logic: Dòng nội dung thứ i chèn vào vị trí tìm thấy thứ i
+        // Nếu AI trả về 2 dòng (Tiết 1, Tiết 2) mà Word có 2 mục Năng lực -> Khớp hoàn hảo.
+        
+        // Copy chuỗi XML để thao tác
+        let newXml = docXml;
+        
+        // Đảo ngược mảng để chèn từ cuối file lên đầu file
+        const reverseIndices = [...targetIndices].reverse(); 
+        
+        if (targetIndices.length > 0) {
+             // Duyệt qua các vị trí tìm thấy
+             reverseIndices.forEach((index, reverseI) => {
+                 // Tính chỉ số thực trong mảng xuôi: i = (length - 1) - reverseI
+                 const realIndex = targetIndices.length - 1 - reverseI;
+                 
+                 // Nếu có nội dung tương ứng cho tiết này (ưu tiên map theo thứ tự)
+                 // Ví dụ: file có 2 mục năng lực. AI có 2 dòng.
+                 // realIndex 0 -> Dòng 0. realIndex 1 -> Dòng 1.
+                 if (realIndex < objectiveLines.length) {
+                     const contentToInsert = objectiveLines[realIndex];
+                     
+                     // Tìm thẻ đóng </w:p> gần nhất sau vị trí index
+                     const closingTag = "</w:p>";
+                     const insertPos = newXml.indexOf(closingTag, index);
+                     
+                     if (insertPos !== -1) {
+                         const splitPos = insertPos + closingTag.length;
+                         const xmlBlock = createXmlBlock(contentToInsert);
+                         newXml = newXml.substring(0, splitPos) + xmlBlock + newXml.substring(splitPos);
+                     }
+                 }
+             });
+        } else {
+            // Fallback: Nếu không tìm thấy từ khóa nào, chèn tất cả vào đầu
+            const xmlBlock = createXmlBlock(content.objectives_addition);
+            newXml = newXml.replace("<w:body>", "<w:body>" + xmlBlock); 
+        }
+        
+        docXml = newXml;
+
+        // 4. Chèn vào các hoạt động (Như cũ)
+        if (Array.isArray(content.activities_enhancement)) {
+            content.activities_enhancement.forEach(item => {
+                // Thuật toán chèn sau tên hoạt động
+                const safeName = escapeXml(item.activity_name);
+                // Tìm vị trí tên hoạt động
+                const actIndex = docXml.indexOf(safeName); // Tìm đơn giản để nhanh
+                if (actIndex !== -1) {
+                     const closingTag = "</w:p>";
+                     const insertPos = docXml.indexOf(closingTag, actIndex);
+                     if (insertPos !== -1) {
+                         const splitPos = insertPos + closingTag.length;
+                         const xmlBlock = createXmlBlock(item.enhanced_content);
+                         docXml = docXml.substring(0, splitPos) + xmlBlock + docXml.substring(splitPos);
+                     }
+                }
+            });
         }
 
-        // Lưu ý: Đã bỏ qua việc chèn vào Thiết bị và Hoạt động để tập trung nội dung vào 1 chỗ.
-
-        // Ghi lại file
         zip.file("word/document.xml", docXml);
-        const out = zip.generate({
-            type: "blob",
-            mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            compression: "DEFLATE"
-        });
-        resolve(out);
+        resolve(zip.generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", compression: "DEFLATE" }));
 
-      } catch (err) {
-        console.error(err);
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     };
     reader.readAsArrayBuffer(file);
   });
@@ -117,8 +145,6 @@ export const injectContentIntoDocx = async (
 
 const escapeXml = (unsafe: string): string => {
   if (!unsafe) return "";
-  const map: Record<string, string> = {
-    '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
-  };
+  const map: Record<string, string> = { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' };
   return unsafe.replace(/[<>&'"]/g, (c) => map[c] || c);
 };
