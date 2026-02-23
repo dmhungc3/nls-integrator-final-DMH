@@ -10,7 +10,7 @@ export const generateCompetencyIntegration = async (
   const genAI = new GoogleGenerativeAI(apiKey);
   // Sử dụng model Flash cho tốc độ nhanh
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-flash-001",
     generationConfig: { responseMimeType: "application/json" } 
   }); 
 

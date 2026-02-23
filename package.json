@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/generative-ai": "0.21.0",
+    "@google/generative-ai": "^0.24.1",
     "docxtemplater": "^3.68.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.284.0",
