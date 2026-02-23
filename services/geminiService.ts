@@ -6,6 +6,7 @@ export const generateCompetencyIntegration = async (prompt: string, apiKey: stri
   const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
   const result = await model.generateContent(prompt);
   const data = JSON.parse((await result.response).text().replace(/```json|```/g, "").trim());
+
   return {
     objectives_addition: data.objectives_addition || "",
     materials_addition: data.materials_addition || "",
