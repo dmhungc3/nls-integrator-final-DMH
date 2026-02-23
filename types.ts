@@ -54,7 +54,7 @@ export type GradeType =
   | 'Lớp 10' | 'Lớp 11' | 'Lớp 12'
   | string;
 
-// Cấu trúc một hoạt động được tích hợp (Cấu trúc Mới)
+// Cấu trúc một hoạt động được tích hợp (Cấu trúc Mới - Quan trọng)
 export interface EnhancedActivityItem {
   activity_name: string;      // Tên hoạt động (VD: Hoạt động 1: Khởi động)
   enhanced_content: string;   // Nội dung đã viết lại có tích hợp công nghệ
@@ -75,9 +75,10 @@ export interface GeneratedNLSContent {
   materials_addition: string;
   
   // QUAN TRỌNG: Danh sách hoạt động đã được nâng cấp (Dạng Mảng)
+  // Đây là trường bắt buộc để sửa lỗi "Property does not exist"
   activities_enhancement: EnhancedActivityItem[];
 
-  // Các trường cũ/phụ (Optional)
+  // Các trường cũ/phụ (Optional - có thể có hoặc không)
   activities_integration?: LegacyActivityItem[]; // Trường cũ
   appendix_table?: string;                       // Bảng phụ lục (nếu có)
 }

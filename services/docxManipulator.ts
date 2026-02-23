@@ -17,7 +17,7 @@ export const injectContentIntoDocx = async (
 
         const zip = new PizZip(binaryString as ArrayBuffer);
         
-        // 1. Chuẩn hóa dữ liệu thành String để tránh lỗi "replace is not a function"
+        // 1. Chuẩn hóa dữ liệu đầu vào
         const safeObjectives = ensureString(content.objectives_addition);
         const safeMaterials = ensureString(content.materials_addition);
         
@@ -32,8 +32,7 @@ export const injectContentIntoDocx = async (
 
         const title = mode === 'NLS' ? "PHIẾU TÍCH HỢP NĂNG LỰC SỐ (NLS)" : "PHIẾU TÍCH HỢP TRÍ TUỆ NHÂN TẠO (AI)";
 
-        // 2. Tạo XML chèn vào cuối trang
-        // Sử dụng màu Xanh (2E74B5) và Đỏ (C00000) giống file mẫu
+        // 2. Tạo nội dung XML mới (Trang phụ lục)
         const newContentXml = `
         <w:p><w:r><w:br w:type="page"/></w:r></w:p>
         <w:p>
@@ -68,9 +67,24 @@ export const injectContentIntoDocx = async (
         const originalXml = zip.file("word/document.xml")?.asText();
         if (!originalXml) throw new Error("File Word lỗi cấu trúc");
 
-        // Chèn vào cuối file
-        const newXml = originalXml.replace('</w:body>', `${newContentXml}</w:body>`);
-        zip.file("word/document.xml", newXml);
+        // --- 3. THUẬT TOÁN CHÈN AN TOÀN (QUAN TRỌNG NHẤT) ---
+        // Tìm vị trí thẻ <w:sectPr> cuối cùng (định dạng trang)
+        // Phải chèn nội dung vào TRƯỚC thẻ này thì file mới không bị lỗi.
+        
+        let finalXml = "";
+        const lastSectPrIndex = originalXml.lastIndexOf("<w:sectPr");
+        
+        if (lastSectPrIndex !== -1) {
+            // Cách 1: Chèn vào giữa nội dung và thẻ định dạng cuối cùng
+            const part1 = originalXml.substring(0, lastSectPrIndex);
+            const part2 = originalXml.substring(lastSectPrIndex);
+            finalXml = part1 + newContentXml + part2;
+        } else {
+            // Cách 2: (Dự phòng) Chèn trước thẻ đóng body nếu không tìm thấy sectPr
+            finalXml = originalXml.replace('</w:body>', `${newContentXml}</w:body>`);
+        }
+
+        zip.file("word/document.xml", finalXml);
 
         const out = zip.generate({
           type: "blob",
