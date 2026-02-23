@@ -16,83 +16,94 @@ export const injectContentIntoDocx = async (
 
         const zip = new PizZip(binaryString as ArrayBuffer);
         
-        // 1. Sửa lỗi TypeScript: Kiểm tra file tồn tại trước khi đọc
+        // 1. Kiểm tra file tồn tại
         const docFile = zip.file("word/document.xml");
-        if (!docFile) {
-            throw new Error("File Word không hợp lệ (thiếu document.xml)");
-        }
+        if (!docFile) throw new Error("File Word không hợp lệ (thiếu document.xml)");
+        
         let docXml = docFile.asText();
-
         const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
 
-        // Hàm tạo khối XML an toàn
+        // 2. Hàm tạo khối XML (Nâng cấp để giữ thông tin "Tiết 1", "Tiết 2")
         const createXmlBlock = (text: string) => {
           if (!text) return "";
           return text.split('\n').filter(l => l.trim()).map(line => {
-            const cleanLine = line.replace(/👉.*?:/g, '').trim();
-            // Sử dụng xml:space="preserve" để giữ khoảng trắng
+            // Tách tiêu đề (màu xanh) và nội dung (màu đen)
+            // Nếu dòng có dạng "👉 Tích hợp NLS (Tiết 1): Nội dung..." thì tách ở dấu : đầu tiên
+            const match = line.match(/^(👉.*?):\s*(.*)$/);
+            
+            let prefix = `👉 ${label}`; // Mặc định
+            let body = line.replace(/👉.*?:/g, '').trim();
+
+            if (match) {
+                prefix = match[1]; // Lấy phần "👉 ... (Tiết 1)"
+                body = match[2];   // Lấy phần nội dung phía sau
+            }
+
             return `<w:p>
                       <w:pPr><w:ind w:left="360"/></w:pPr>
-                      <w:r><w:rPr><w:b/><w:color w:val="2E74B5"/></w:rPr><w:t>👉 ${label}: </w:t></w:r>
-                      <w:r><w:t xml:space="preserve">${escapeXml(cleanLine)}</w:t></w:r>
+                      <w:r><w:rPr><w:b/><w:color w:val="2E74B5"/></w:rPr><w:t>${escapeXml(prefix)}: </w:t></w:r>
+                      <w:r><w:t xml:space="preserve">${escapeXml(body)}</w:t></w:r>
                     </w:p>`;
           }).join('');
         };
 
-        // --- 2. THUẬT TOÁN CHÈN AN TOÀN TUYỆT ĐỐI ---
+        // 3. Thuật toán chèn an toàn (Insert After Paragraph)
         const insertSafe = (fullXml: string, keyword: string, newContent: string): string => {
             if (!newContent) return fullXml;
             
-            // Tìm vị trí từ khóa (ví dụ: "2. Năng lực")
-            // Lưu ý: Trong XML, text có thể bị ngắt bởi thẻ, nhưng ta tìm tương đối
-            // Nếu không tìm thấy chính xác, ta tìm các từ khóa thay thế phổ biến
-            let keywordPos = fullXml.indexOf(keyword);
+            // Tìm vị trí từ khóa (không phân biệt hoa thường)
+            const lowerXml = fullXml.toLowerCase();
+            const lowerKeyword = keyword.toLowerCase();
+            const keywordPos = lowerXml.indexOf(lowerKeyword);
             
-            // Nếu không tìm thấy, thử tìm phiên bản viết thường hoặc viết hoa
-            if (keywordPos === -1) keywordPos = fullXml.indexOf(keyword.toUpperCase());
-            if (keywordPos === -1) return fullXml; // Không tìm thấy thì không chèn, tránh lỗi file
+            if (keywordPos === -1) return fullXml;
 
-            // Từ vị trí từ khóa, quét tới thẻ đóng đoạn văn </w:p> gần nhất
+            // Tìm thẻ đóng </w:p> gần nhất sau từ khóa
             const closingTag = "</w:p>";
             const insertIndex = fullXml.indexOf(closingTag, keywordPos);
-
+            
             if (insertIndex === -1) return fullXml;
 
-            // Vị trí chèn là ngay SAU thẻ đóng </w:p>
+            // Chèn vào ngay sau đoạn văn chứa từ khóa
             const splitPoint = insertIndex + closingTag.length;
-            
-            // Cắt và ghép chuỗi
             return fullXml.substring(0, splitPoint) + newContent + fullXml.substring(splitPoint);
         };
 
-        // Thực hiện chèn lần lượt
-        // Tìm "2. Năng lực" hoặc "2. Năng lực" (chấp nhận biến thể trong file xml)
-        // Mẹo: Word có thể lưu là "2. Năng lực" hoặc "2. <w:r>...</w:r>Năng lực"
-        // Để an toàn nhất, nếu không tìm thấy chuỗi liền mạch, ta chèn vào cuối file (trước thẻ body đóng) 
-        // Tuy nhiên, thuật toán insertSafe sẽ chỉ chèn nếu tìm thấy, đảm bảo không làm hỏng file.
-        
-        docXml = insertSafe(docXml, "2. Năng lực", createXmlBlock(content.objectives_addition));
-        docXml = insertSafe(docXml, "II. THIẾT BỊ", createXmlBlock(content.materials_addition));
+        // 4. CHIẾN LƯỢC TÌM VỊ TRÍ CHÈN THÔNG MINH
+        // Danh sách ưu tiên các từ khóa mục tiêu
+        const priorityKeywords = [
+            "2. Phát triển năng lực", // Ưu tiên số 1 (Giáo án mới)
+            "2. Năng lực",            // Phổ biến
+            "II. MỤC TIÊU",           // Truyền thống
+            "II. Mục tiêu",
+            "Năng lực cần đạt"
+        ];
 
-        if (Array.isArray(content.activities_enhancement)) {
-            content.activities_enhancement.forEach(item => {
-                const safeName = escapeXml(item.activity_name);
-                // Chỉ chèn nếu tìm thấy tên hoạt động
-                if (item.activity_name) {
-                     docXml = insertSafe(docXml, item.activity_name, createXmlBlock(item.enhanced_content));
-                }
-            });
+        let inserted = false;
+        
+        // Duyệt qua danh sách, thấy từ khóa nào thì chèn vào đó và dừng lại
+        for (const key of priorityKeywords) {
+            if (docXml.toLowerCase().includes(key.toLowerCase())) {
+                docXml = insertSafe(docXml, key, createXmlBlock(content.objectives_addition));
+                inserted = true;
+                break; // Đã chèn xong
+            }
         }
 
-        // Ghi lại vào file zip
+        // Nếu giáo án quá lạ, không tìm thấy từ khóa nào -> Chèn tạm vào sau chữ "BÀI"
+        if (!inserted) {
+             docXml = insertSafe(docXml, "BÀI", createXmlBlock(content.objectives_addition));
+        }
+
+        // Lưu ý: Đã bỏ qua việc chèn vào Thiết bị và Hoạt động để tập trung nội dung vào 1 chỗ.
+
+        // Ghi lại file
         zip.file("word/document.xml", docXml);
-        
         const out = zip.generate({
             type: "blob",
             mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             compression: "DEFLATE"
         });
-        
         resolve(out);
 
       } catch (err) {
@@ -104,15 +115,10 @@ export const injectContentIntoDocx = async (
   });
 };
 
-// 3. Sửa lỗi TypeScript: Định nghĩa kiểu rõ ràng cho map thay thế
 const escapeXml = (unsafe: string): string => {
   if (!unsafe) return "";
   const map: Record<string, string> = {
-    '<': '&lt;',
-    '>': '&gt;',
-    '&': '&amp;',
-    "'": '&apos;',
-    '"': '&quot;'
+    '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
   };
   return unsafe.replace(/[<>&'"]/g, (c) => map[c] || c);
 };

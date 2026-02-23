@@ -27,12 +27,14 @@ const SUBJECT_STRATEGIES: Record<string, string> = {
   "Giáo dục thể chất": "Tập trung vào 'Theo dõi sức khỏe số'. Ưu tiên: Smartwatch, App đo bước chân/calo, phân tích video kỹ thuật động tác (Slow motion)."
 };
 
+// 2. MÔ HÌNH SƯ PHẠM
 export const PEDAGOGY_MODELS: Record<string, { name: string; desc: string }> = {
   "DEFAULT": { name: "Linh hoạt (Context-Based)", desc: "Tự động điều chỉnh theo đặc thù môn học và nội dung bài dạy." },
   "5E": { name: "Mô hình 5E (STEM)", desc: "Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá (Phù hợp KHTN)." },
   "PBL": { name: "Dạy học Dự án", desc: "Giải quyết vấn đề thực tiễn (Phù hợp KHXH & Công nghệ)." }
 };
 
+// 3. HÀM ĐỌC FILE WORD
 export const extractTextFromDocx = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -47,6 +49,7 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
   });
 };
 
+// 4. HÀM TẠO PROMPT (BỘ NÃO XỬ LÝ)
 export const createIntegrationTextPrompt = (text: string, subject: string, grade: string, mode: 'NLS' | 'NAI') => {
   const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
   
@@ -61,36 +64,25 @@ export const createIntegrationTextPrompt = (text: string, subject: string, grade
   CHIẾN LƯỢC CỐT LÕI CHO MÔN ${subject.toUpperCase()}:
   "${specificStrategy}"
 
-  NHIỆM VỤ: Phân tích nội dung giáo án dưới đây và đề xuất nội dung ${label} vào 3 vị trí sau:
-
-  1. MỤC TIÊU NĂNG LỰC (objectives_addition):
-     - Viết 2-3 gạch đầu dòng mục tiêu năng lực số/AI cụ thể, đo lường được.
-     - Phải gắn liền với nội dung bài (Ví dụ: Đừng nói "dùng phần mềm" chung chung, hãy nói "Dùng GeoGebra để vẽ đồ thị...").
-
-  2. THIẾT BỊ & HỌC LIỆU (materials_addition):
-     - Liệt kê tên các phần mềm, ứng dụng, trang web, thiết bị cụ thể.
-     - Gợi ý: LMS, App bộ môn, Video mô phỏng, Kính VR...
-
-  3. HOẠT ĐỘNG DẠY HỌC (activities_enhancement):
-     - Tìm trong giáo án các hoạt động quan trọng (Hoạt động Khám phá hoặc Luyện tập).
-     - Viết lại cách tổ chức hoạt động đó có sử dụng công nghệ (GV làm gì trên máy? HS tương tác thế nào?).
-     - Quan trọng: Trích dẫn CHÍNH XÁC tên hoạt động trong giáo án gốc để hệ thống chèn đúng chỗ.
+  NHIỆM VỤ ĐẶC BIỆT: XÁC ĐỊNH SỐ TIẾT VÀ PHÂN CHIA NLS.
+  1. Hãy đọc xem giáo án này dạy trong mấy tiết (Ví dụ: Tiết 1, Tiết 2...).
+  2. Tạo nội dung tích hợp vào mục "NĂNG LỰC" nhưng phân tách rõ ràng cho từng tiết.
+  
+  MẪU ĐẦU RA MONG MUỐN:
+  "👉 ${label} (Chung): [Năng lực xuyên suốt cả bài...]"
+  "👉 ${label} (Tiết 1): [Dùng công cụ X để khám phá kiến thức...]"
+  "👉 ${label} (Tiết 2): [Dùng công cụ Y để luyện tập/làm bài tập...]"
 
   YÊU CẦU ĐẦU RA (JSON CHUẨN - KHÔNG MARKDOWN):
   {
-    "objectives_addition": "👉 ${label}: [Mục tiêu 1]\\n👉 ${label}: [Mục tiêu 2]",
-    "materials_addition": "👉 ${label}: [Công cụ 1]\\n👉 ${label}: [Công cụ 2]",
-    "activities_enhancement": [
-      {
-        "activity_name": "Trích dẫn chính xác tên hoạt động gốc (Ví dụ: Hoạt động 1: Khởi động)", 
-        "enhanced_content": "👉 ${label}: [Mô tả chi tiết hoạt động với công nghệ...]"
-      }
-    ]
+    "objectives_addition": "👉 ${label} (Tiết 1): [Nội dung...]\\n👉 ${label} (Tiết 2): [Nội dung...]",
+    "materials_addition": "", 
+    "activities_enhancement": []
   }
 
   NỘI DUNG GIÁO ÁN GỐC:
   """
-  ${text.substring(0, 12000)}
+  ${text.substring(0, 15000)}
   """
   `;
 };
