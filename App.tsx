@@ -13,7 +13,8 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v2.1.0"; 
+  // Cập nhật phiên bản để đánh dấu logic mới
+  const APP_VERSION = "v2.2.0 (Activity-Based)"; 
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
     file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
@@ -38,7 +39,7 @@ const App: React.FC = () => {
       alert("Vui lòng nhập Key!"); 
     }
   };
-  
+   
   const handleEditKey = () => setIsKeySaved(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,9 +62,13 @@ const App: React.FC = () => {
     try {
       const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
       addLog(`⚙️ Chiến lược: ${modelName}`);
+      addLog("→ Chế độ: Tách năng lực & Lồng ghép hoạt động."); // Log mới xác nhận logic
       addLog("Đang xử lý cấu trúc giáo án...");
+      
       const textContext = await extractTextFromDocx(state.file);
+      // Logic prompt nằm trong hàm này (xem phần 2 bên dưới)
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
+      
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
       addLog(`✓ AI đã hoàn thành thiết kế.`);
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));

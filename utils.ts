@@ -1,90 +1,108 @@
 import PizZip from 'pizzip';
 
-// --- CẤU HÌNH MỨC ĐỘ NĂNG LỰC ---
+// --- CẤU HÌNH MỨC ĐỘ NĂNG LỰC SỐ (DIGITAL COMPETENCE FRAMEWORK) ---
 const LEVEL_MAPPING: Record<string, { ten: string, kyHieu: string, nhiemVu: string }> = {
-  "Lớp 1": { ten: "Khám phá (L1)", kyHieu: "L1", nhiemVu: "Nhận biết, thao tác chạm/kéo thả." },
-  "Lớp 2": { ten: "Khám phá (L1)", kyHieu: "L1", nhiemVu: "Sử dụng phần mềm đơn giản." },
-  "Lớp 3": { ten: "Làm quen (L2)", kyHieu: "L2", nhiemVu: "Gõ phím, mở thư mục." },
-  "Lớp 4": { ten: "Làm quen (L2)", kyHieu: "L2", nhiemVu: "Soạn thảo, tìm kiếm cơ bản." },
-  "Lớp 5": { ten: "Làm quen (L2)", kyHieu: "L2", nhiemVu: "Tạo slide, gửi thư điện tử." },
-  "Lớp 6": { ten: "Vận dụng (L3)", kyHieu: "L3", nhiemVu: "Sơ đồ tư duy, lưu trữ đám mây." },
-  "Lớp 7": { ten: "Vận dụng (L3)", kyHieu: "L3", nhiemVu: "Xử lý số liệu, làm việc nhóm online." },
-  "Lớp 8": { ten: "Tích hợp (L4)", kyHieu: "L4", nhiemVu: "Đa phương tiện, đánh giá tin giả." },
-  "Lớp 9": { ten: "Tích hợp (L4)", kyHieu: "L4", nhiemVu: "Giải quyết vấn đề, mô phỏng ảo." },
-  "Lớp 10": { ten: "Làm chủ (L5)", kyHieu: "L5", nhiemVu: "Phân tích dữ liệu, trợ lý AI." },
-  "Lớp 11": { ten: "Sáng tạo (L6)", kyHieu: "L6", nhiemVu: "Thiết kế sản phẩm, lập trình." },
-  "Lớp 12": { ten: "Chuyên gia (L6)", kyHieu: "L6", nhiemVu: "Quản trị dự án số, giải pháp mới." },
+  "Lớp 1": { ten: "Khám phá (Level 1)", kyHieu: "L1", nhiemVu: "Nhận biết thiết bị, thao tác chạm/vuốt đơn giản." },
+  "Lớp 2": { ten: "Khám phá (Level 1)", kyHieu: "L1", nhiemVu: "Sử dụng phần mềm học tập đơn giản dưới sự hướng dẫn." },
+  "Lớp 3": { ten: "Làm quen (Level 2)", kyHieu: "L2", nhiemVu: "Gõ phím, mở thư mục, truy cập website an toàn." },
+  "Lớp 4": { ten: "Làm quen (Level 2)", kyHieu: "L2", nhiemVu: "Soạn thảo văn bản cơ bản, tìm kiếm thông tin có mục đích." },
+  "Lớp 5": { ten: "Làm quen (Level 2)", kyHieu: "L2", nhiemVu: "Tạo bài trình chiếu đơn giản, gửi thư điện tử." },
+  "Lớp 6": { ten: "Vận dụng (Level 3)", kyHieu: "L3", nhiemVu: "Sử dụng sơ đồ tư duy số, lưu trữ đám mây cơ bản." },
+  "Lớp 7": { ten: "Vận dụng (Level 3)", kyHieu: "L3", nhiemVu: "Xử lý số liệu bảng tính, làm việc nhóm trực tuyến." },
+  "Lớp 8": { ten: "Tích hợp (Level 4)", kyHieu: "L4", nhiemVu: "Biên tập đa phương tiện (ảnh/video), đánh giá tin giả." },
+  "Lớp 9": { ten: "Tích hợp (Level 4)", kyHieu: "L4", nhiemVu: "Giải quyết vấn đề bằng phần mềm, sử dụng mô phỏng ảo." },
+  "Lớp 10": { ten: "Làm chủ (Level 5)", kyHieu: "L5", nhiemVu: "Phân tích dữ liệu lớn, sử dụng trợ lý AI hỗ trợ học tập." },
+  "Lớp 11": { ten: "Sáng tạo (Level 6)", kyHieu: "L6", nhiemVu: "Thiết kế sản phẩm số sáng tạo, lập trình ứng dụng nhỏ." },
+  "Lớp 12": { ten: "Chuyên gia (Level 6)", kyHieu: "L6", nhiemVu: "Quản trị dự án học tập số, đề xuất giải pháp công nghệ mới." },
 };
 
 export const PEDAGOGY_MODELS = {
-  "DEFAULT": { name: "Linh hoạt (Context-Based)", desc: "Tự động điều chỉnh theo đặc thù từng môn học." },
-  "5E": { name: "Mô hình 5E (STEM/KHTN)", desc: "Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá." },
-  "PBL": { name: "Dạy học Dự án (XH/NT)", desc: "Giải quyết vấn đề thực tiễn qua dự án dài hạn." },
-  "FLIPPED": { name: "Lớp học đảo ngược", desc: "HS xem tài liệu ở nhà, lên lớp thảo luận sâu." },
-  "GAMIFICATION": { name: "Trò chơi hóa", desc: "Học thông qua trò chơi số (Quizizz, Kahoot)." }
+  "DEFAULT": { name: "Linh hoạt (Context-Based)", desc: "Tự động điều chỉnh theo đặc thù từng môn học và nội dung bài dạy." },
+  "5E": { name: "Mô hình 5E (STEM/KHTN)", desc: "Gắn kết (Engage) - Khám phá (Explore) - Giải thích (Explain) - Áp dụng (Elaborate) - Đánh giá (Evaluate)." },
+  "PBL": { name: "Dạy học Dự án (Project-Based)", desc: "Học sinh giải quyết vấn đề thực tiễn thông qua dự án dài hạn." },
+  "FLIPPED": { name: "Lớp học đảo ngược (Flipped Classroom)", desc: "Học sinh tự tìm hiểu tài liệu số ở nhà, lên lớp thảo luận sâu và thực hành." },
+  "GAMIFICATION": { name: "Trò chơi hóa (Gamification)", desc: "Tăng hứng thú học tập thông qua các trò chơi số (Quizizz, Kahoot, Blooket)." }
 };
 
-const NLS_CONTEXT = `KHUNG NĂNG LỰC SỐ: Vận hành thiết bị, Khai thác dữ liệu, Giao tiếp số, Sáng tạo nội dung, An toàn số.`;
-const NAI_CONTEXT = `KHUNG NĂNG LỰC AI: Hiểu biết AI, Prompting, Tư duy phản biện, Đạo đức AI.`;
-
+// Hàm tạo Prompt gửi cho AI (QUAN TRỌNG NHẤT)
 export const createIntegrationTextPrompt = (
   text: string, subject: string, grade: string, mode: 'NLS' | 'NAI', pedagogy: string
 ): string => {
-  const mucDo = LEVEL_MAPPING[grade] || { ten: "Cơ bản", kyHieu: "L1", nhiemVu: "Làm quen" };
-  const context = mode === 'NAI' ? NAI_CONTEXT : NLS_CONTEXT;
-  const selectedModel = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS] || PEDAGOGY_MODELS["DEFAULT"];
-  const label = mode === 'NAI' ? "Tích hợp AI" : "Tích hợp NLS";
+  const levelInfo = LEVEL_MAPPING[grade] || { ten: "Cơ bản", kyHieu: "L1", nhiemVu: "Làm quen" };
+  const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
+  const integrationType = mode === 'NLS' ? "Năng lực Số (Digital Competence)" : "Trí tuệ nhân tạo (AI Competence)";
 
   return `
-    Đóng vai: Chuyên gia Sư phạm Số & Công nghệ dạy học Đa lĩnh vực.
-    Nhiệm vụ: Phân tích giáo án môn ${subject} lớp ${grade} để chèn hoạt động Công nghệ/AI "thông minh".
-    Mức độ yêu cầu: ${mucDo.ten} - ${mucDo.nhiemVu}.
-    Chiến lược: ${selectedModel.name}.
-    Ngữ cảnh: ${context}.
+    Đóng vai: Chuyên gia Sư phạm & Công nghệ Giáo dục (EdTech Expert).
+    Nhiệm vụ: Phân tích giáo án sau để tích hợp ${integrationType} một cách tự nhiên và hiệu quả.
+    
+    THÔNG TIN LỚP HỌC:
+    - Môn học: ${subject}
+    - Khối lớp: ${grade}
+    - Mức độ năng lực yêu cầu: ${levelInfo.ten} (${levelInfo.kyHieu}) - ${levelInfo.nhiemVu}.
+    - Chiến lược sư phạm áp dụng: ${modelName}.
 
-    ⚠️ QUY TẮC "THÔNG MINH ĐA MÔN" (Context-Aware):
-    1. NHÓM KHTN (Toán, Lý, Hóa, Sinh): Dùng GeoGebra, Desmos, PhET, Excel...
-    2. NHÓM KHXH (Văn, Sử, Địa, GDCD): Dùng Google Earth, Canva, Padlet, Podcast...
-    3. NHÓM NGHỆ THUẬT/THỂ CHẤT: Dùng MuseScore, Paint 3D, Video slow-motion...
-    4. NHÓM NGOẠI NGỮ: Dùng Duolingo, ELSA, AI Chatbot...
+    NỘI DUNG GIÁO ÁN GỐC (Trích đoạn):
+    """${text.substring(0, 15000)}"""
 
-    NỘI DUNG GIÁO ÁN GỐC: """${text.substring(0, 20000)}"""
+    YÊU CẦU XỬ LÝ (RẤT QUAN TRỌNG):
+    
+    1. PHẦN "MỤC TIÊU - NĂNG LỰC" (Objectives):
+       - Chỉ liệt kê ngắn gọn tên các năng lực chung/đặc thù cần hình thành.
+       - Ví dụ: "Năng lực ứng dụng CNTT và TT", "Năng lực tự chủ và tự học".
+       - TUYỆT ĐỐI KHÔNG liệt kê các thao tác chi tiết (như "bấm chuột", "truy cập link") ở đây.
 
-    YÊU CẦU TRẢ VỀ JSON DUY NHẤT (Không Markdown):
+    2. PHẦN "THIẾT BỊ & HỌC LIỆU" (Materials):
+       - Bổ sung danh sách cụ thể các công cụ/phần mềm sẽ dùng.
+       - Ví dụ: "Máy tính kết nối Internet", "Phần mềm GeoGebra", "Padlet", "ChatGPT", "Canva".
+
+    3. PHẦN "HOẠT ĐỘNG DẠY HỌC" (Activities Enhancement):
+       - Đây là phần quan trọng nhất. Hãy rà soát các hoạt động chính trong giáo án gốc.
+       - Viết lại hoặc bổ sung nội dung cho từng hoạt động để thể hiện rõ Giáo viên và Học sinh làm gì với công nghệ.
+       - Cấu trúc viết lại: "Giáo viên sử dụng [Công cụ] để [Hành động]...", "Học sinh truy cập [Phần mềm] để [Nhiệm vụ]...".
+       - Đảm bảo các hành động phù hợp với mức độ năng lực của học sinh lớp ${grade}.
+
+    OUTPUT FORMAT (JSON ONLY - NO MARKDOWN):
     {
-      "objectives_addition": "Viết 2-3 gạch đầu dòng nội dung ${label} bổ sung vào mục Mục tiêu/Năng lực. (Ví dụ: Sử dụng phần mềm... để...)",
-      "materials_addition": "Liệt kê phần mềm/thiết bị số cụ thể bổ sung vào mục Thiết bị (Ví dụ: Máy chiếu, GeoGebra, Padlet...)",
-      "activities_integration": [
+      "objectives_addition": "Các dòng bổ sung cho phần Mục tiêu (dạng gạch đầu dòng, ngắn gọn)",
+      "materials_addition": "Các dòng bổ sung cho phần Học liệu (dạng gạch đầu dòng)",
+      "activities_enhancement": [
         {
-          "anchor_text": "Trích dẫn CHÍNH XÁC tên hoạt động hoặc mục trong bài (Ví dụ: 'Hoạt động 1', '1. Mở đầu', 'Hoạt động luyện tập')",
-          "content": "Mô tả chi tiết hoạt động giáo viên và học sinh sử dụng công nghệ trong phần này."
+           "activity_name": "Tên hoạt động trong bài (Ví dụ: Hoạt động 1: Khởi động)",
+           "enhanced_content": "Nội dung chi tiết của hoạt động đã được viết lại có lồng ghép công nghệ/AI."
+        },
+        {
+           "activity_name": "Tên hoạt động tiếp theo...",
+           "enhanced_content": "..."
         }
-      ],
-      "appendix_table": "Danh sách 3-4 tiêu chí đánh giá kỹ năng công nghệ của học sinh trong bài."
+      ]
     }
   `;
 };
 
-// Hàm đọc file Word sử dụng PizZip (Chạy tốt trên trình duyệt)
+// Hàm đọc text từ file Docx (Giữ nguyên vì đã hoạt động tốt)
 export const extractTextFromDocx = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const content = e.target?.result;
-        // PizZip giúp đọc file zip (docx thực chất là zip)
+        if (!content) { resolve(""); return; }
+        
         const zip = new PizZip(content as ArrayBuffer);
         const doc = zip.file("word/document.xml");
         if (!doc) { resolve(""); return; }
+        
         const xml = doc.asText();
-        // Loại bỏ các thẻ XML để lấy text thuần
+        // Loại bỏ XML tags, giữ lại text nội dung
         const text = xml.replace(/<[^>]+>/g, ' ');
         resolve(text);
       } catch (error) {
+        console.error("Lỗi đọc file Docx:", error);
         reject(error);
       }
     };
-    reader.onerror = reject;
+    reader.onerror = (err) => reject(err);
     reader.readAsArrayBuffer(file);
   });
 };
