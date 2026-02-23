@@ -16,86 +16,76 @@ export const injectContentIntoDocx = async (
         if (!binaryString) { reject(new Error("Lỗi đọc file")); return; }
 
         const zip = new PizZip(binaryString as ArrayBuffer);
-        
-        // 1. Chuẩn hóa dữ liệu
+        const originalXml = zip.file("word/document.xml")?.asText();
+        if (!originalXml) throw new Error("Cấu trúc file không hợp lệ");
+
+        // 1. CHUẨN HÓA DỮ LIỆU (Tránh lỗi undefined/null gây hỏng XML)
         const safeObjectives = ensureString(content.objectives_addition);
         const safeMaterials = ensureString(content.materials_addition);
-        
         let activitiesText = "";
+        
         if (Array.isArray(content.activities_enhancement)) {
             activitiesText = content.activities_enhancement
-                .map(item => `★ ${item.activity_name}:\n${item.enhanced_content}`)
+                .map(item => `★ ${item.activity_name}\n${item.enhanced_content}`)
                 .join('\n\n');
         } else {
             activitiesText = String(content.activities_enhancement || "");
         }
 
-        const title = mode === 'NLS' ? "PHIẾU TÍCH HỢP NĂNG LỰC SỐ (NLS)" : "PHIẾU TÍCH HỢP AI";
+        const title = mode === 'NLS' ? "TÍCH HỢP NĂNG LỰC SỐ (NLS)" : "TÍCH HỢP AI";
 
-        // --- 2. TẠO XML ĐÃ NÉN (MINIFIED) ---
-        // QUAN TRỌNG: Viết liền mạch, KHÔNG xuống dòng, KHÔNG khoảng trắng thừa giữa các thẻ
-        
-        let xmlBuilder = `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`; // Ngắt trang
+        // 2. XÂY DỰNG CHUỖI XML AN TOÀN (Viết trên 1 dòng để tránh khoảng trắng thừa)
+        // Dùng mã màu HEX chuẩn của Word: 2E74B5 (Xanh), C00000 (Đỏ)
+        let nlsXml = `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`; // Ngắt trang mới
         
         // Tiêu đề
-        xmlBuilder += `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="2E74B5"/></w:rPr><w:t>${title}</w:t></w:r></w:p>`;
+        nlsXml += `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="2E74B5"/></w:rPr><w:t>${title}</w:t></w:r></w:p>`;
         
         // Mục I
-        xmlBuilder += `<w:p><w:r><w:rPr><w:b/><w:sz w:val="24"/><w:color w:val="C00000"/></w:rPr><w:t>I. BỔ SUNG MỤC TIÊU</w:t></w:r></w:p>`;
+        nlsXml += `<w:p><w:r><w:rPr><w:b/><w:sz w:val="26"/><w:color w:val="C00000"/></w:rPr><w:t>I. BỔ SUNG MỤC TIÊU</w:t></w:r></w:p>`;
         safeObjectives.split('\n').filter(l => l.trim()).forEach(line => {
-             xmlBuilder += `<w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
+             nlsXml += `<w:p><w:pPr><w:ind w:left="360"/></w:pPr><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
         });
 
         // Mục II
-        xmlBuilder += `<w:p><w:r><w:rPr><w:b/><w:sz w:val="24"/><w:color w:val="C00000"/></w:rPr><w:t>II. BỔ SUNG HỌC LIỆU & THIẾT BỊ</w:t></w:r></w:p>`;
+        nlsXml += `<w:p><w:r><w:rPr><w:b/><w:sz w:val="26"/><w:color w:val="C00000"/></w:rPr><w:t>II. BỔ SUNG HỌC LIỆU</w:t></w:r></w:p>`;
         safeMaterials.split('\n').filter(l => l.trim()).forEach(line => {
-             xmlBuilder += `<w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
+             nlsXml += `<w:p><w:pPr><w:ind w:left="360"/></w:pPr><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
         });
 
         // Mục III
-        xmlBuilder += `<w:p><w:r><w:rPr><w:b/><w:sz w:val="24"/><w:color w:val="C00000"/></w:rPr><w:t>III. HOẠT ĐỘNG TÍCH HỢP</w:t></w:r></w:p>`;
+        nlsXml += `<w:p><w:r><w:rPr><w:b/><w:sz w:val="26"/><w:color w:val="C00000"/></w:rPr><w:t>III. CHI TIẾT HOẠT ĐỘNG</w:t></w:r></w:p>`;
         activitiesText.split('\n').filter(l => l.trim()).forEach(line => {
-             // Kiểm tra in đậm nếu là tên hoạt động (bắt đầu bằng ★)
-             const isHeader = line.startsWith('★');
-             const formatting = isHeader ? `<w:b/><w:color w:val="000000"/>` : ``;
-             xmlBuilder += `<w:p><w:r><w:rPr>${formatting}</w:rPr><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
+             const isBold = line.startsWith('★');
+             nlsXml += `<w:p><w:pPr><w:ind w:left="${isBold ? '0' : '360'}"/></w:pPr><w:r><w:rPr>${isBold ? '<w:b/>' : ''}</w:rPr><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
         });
 
-        // 3. ĐỌC FILE GỐC VÀ CHÈN AN TOÀN
-        const originalXml = zip.file("word/document.xml")?.asText();
-        if (!originalXml) throw new Error("File Word lỗi cấu trúc");
-
-        // Tìm thẻ đóng body
-        const bodyEndTag = "</w:body>";
-        const bodyEndIndex = originalXml.lastIndexOf(bodyEndTag);
-        
-        if (bodyEndIndex === -1) throw new Error("Không tìm thấy thẻ body trong file Word");
-
-        // Tìm thẻ sectPr cuối cùng (Section Properties)
-        // Đây là thẻ định dạng trang, nếu chèn sau nó thì file sẽ lỗi.
-        const lastSectPrIndex = originalXml.lastIndexOf("<w:sectPr");
+        // 3. THUẬT TOÁN CHÈN "HỘ CHIẾU" (Sửa dứt điểm lỗi corrupt)
+        // Tìm vị trí thẻ Section Properties cuối cùng. Đây là nơi an toàn nhất.
+        const sectPrIndex = originalXml.lastIndexOf("<w:sectPr");
+        const bodyEndIndex = originalXml.lastIndexOf("</w:body>");
         
         let finalXml = "";
-
-        // Logic chèn:
-        // Nếu tìm thấy sectPr và nó nằm trước thẻ đóng body -> Chèn trước sectPr
-        if (lastSectPrIndex !== -1 && lastSectPrIndex < bodyEndIndex) {
-            finalXml = originalXml.substring(0, lastSectPrIndex) + xmlBuilder + originalXml.substring(lastSectPrIndex);
+        if (sectPrIndex !== -1 && sectPrIndex < bodyEndIndex) {
+            // Chèn vào trước sectPr
+            finalXml = originalXml.substring(0, sectPrIndex) + nlsXml + originalXml.substring(sectPrIndex);
         } else {
-            // Nếu không thấy sectPr (file Word đơn giản), chèn ngay trước thẻ đóng body
-            finalXml = originalXml.replace(bodyEndTag, xmlBuilder + bodyEndTag);
+            // Nếu không thấy (file cực đơn giản), chèn trước body end
+            finalXml = originalXml.replace("</w:body>", nlsXml + "</w:body>");
         }
 
+        // Ghi đè XML vào Zip
         zip.file("word/document.xml", finalXml);
 
         const out = zip.generate({
           type: "blob",
           mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          compression: "DEFLATE"
         });
 
         resolve(out);
       } catch (error) {
-        console.error(error);
+        console.error("Lỗi đóng gói:", error);
         reject(error);
       }
     };
@@ -107,12 +97,12 @@ export const injectContentIntoDocx = async (
 const ensureString = (input: any): string => {
     if (!input) return "";
     if (typeof input === 'string') return input;
-    if (Array.isArray(input)) return input.map(item => String(item)).join('\n');
+    if (Array.isArray(input)) return input.join('\n');
     return String(input);
 };
 
-const escapeXml = (unsafe: any) => {
-    return String(unsafe || "").replace(/[<>&'"]/g, (c) => {
+const escapeXml = (unsafe: string) => {
+    return unsafe.replace(/[<>&'"]/g, (c) => {
         switch (c) {
             case '<': return '&lt;'; case '>': return '&gt;'; case '&': return '&amp;'; case '\'': return '&apos;'; case '"': return '&quot;'; default: return c;
         }
