@@ -13,7 +13,6 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  // Nâng cấp version lên bản thương mại
   const APP_VERSION = "v2.3.0 PRO (Commercial UI)"; 
   
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
@@ -26,7 +25,6 @@ const App: React.FC = () => {
   const [userApiKey, setUserApiKey] = useState('');
   const [isKeySaved, setIsKeySaved] = useState(false);
 
-  // Hiệu ứng load key từ local
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key');
     if (savedKey) { setUserApiKey(savedKey); setIsKeySaved(true); }
@@ -190,14 +188,24 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="p-8 space-y-8">
-                      {/* Select Inputs */}
+                      {/* Select Inputs - QUAY VỀ PHIÊN BẢN V2.2 GỌN NHẸ */}
                       <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide ml-1">Môn học</label>
                               <div className="relative group">
                                 <select className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
-                                    <option value="">-- Chọn môn học --</option>
-                                    <optgroup label="Cấp THPT"><option value="Toán">Toán học</option><option value="Vật lí">Vật lí</option><option value="Hóa học">Hóa học</option><option value="Sinh học">Sinh học</option><option value="Tin học">Tin học</option><option value="Ngữ văn">Ngữ văn</option><option value="Lịch sử">Lịch sử</option><option value="Địa lí">Địa lí</option><option value="Tiếng Anh">Tiếng Anh</option><option value="Công nghệ">Công nghệ</option></optgroup>
+                                    <option value="">-- Chọn môn --</option>
+                                    <option value="Toán">Toán</option>
+                                    <option value="Ngữ Văn">Ngữ Văn</option>
+                                    <option value="Vật Lí">Vật Lí</option>
+                                    <option value="Hóa Học">Hóa Học</option>
+                                    <option value="Sinh Học">Sinh Học</option>
+                                    <option value="Tin Học">Tin Học</option>
+                                    <option value="Lịch Sử">Lịch Sử</option>
+                                    <option value="Địa Lí">Địa Lí</option>
+                                    <option value="Tiếng Anh">Tiếng Anh</option>
+                                    <option value="Công Nghệ">Công Nghệ</option>
+                                    <option value="Giáo dục thể chất">Giáo dục thể chất</option>
                                 </select>
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-500 transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></div>
                               </div>
@@ -208,7 +216,7 @@ const App: React.FC = () => {
                               <div className="relative group">
                                 <select className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                     <option value="">-- Chọn khối --</option>
-                                    {[6,7,8,9,10,11,12].map(g => <option key={g} value={`Lớp ${g}`}>Khối {g}</option>)}
+                                    {[6,7,8,9,10,11,12].map(g => <option key={g} value={`Lớp ${g}`}>Lớp {g}</option>)}
                                 </select>
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-500 transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></div>
                               </div>
