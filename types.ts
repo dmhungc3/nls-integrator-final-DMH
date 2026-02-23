@@ -1,23 +1,30 @@
-import PizZip from 'pizzip';
+export interface EnhancedActivityItem {
+  activity_name: string;
+  enhanced_content: string;
+}
 
-// QUAN TRỌNG: Thêm export vào trước mỗi hằng số/hàm
-export const PEDAGOGY_MODELS = {
-  DEFAULT: { name: "Linh hoạt (Context-Based)", desc: "Tự động điều chỉnh" }
-};
+export interface GeneratedNLSContent {
+  objectives_addition: string;
+  materials_addition: string;
+  activities_enhancement: EnhancedActivityItem[];
+}
 
-export const extractTextFromDocx = async (file: File): Promise<string> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const zip = new PizZip(e.target?.result as ArrayBuffer);
-      const text = zip.file("word/document.xml")?.asText().replace(/<[^>]+>/g, ' ') || "";
-      resolve(text);
-    };
-    reader.readAsArrayBuffer(file);
-  });
-};
+export type SubjectType = string;
+export type GradeType = string;
 
-export const createIntegrationTextPrompt = (text: string, subject: string, grade: string, mode: string, pedagogy: string) => {
-  const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
-  return `Phân tích giáo án môn ${subject} lớp ${grade}. Trả về JSON chuẩn có: objectives_addition, materials_addition, activities_enhancement. Nội dung: ${text.substring(0, 5000)}`;
-};
+export interface AppState {
+  file: File | null;
+  subject: SubjectType;
+  grade: GradeType;
+  isProcessing: boolean;
+  step: 'upload' | 'review' | 'done';
+  logs: string[];
+  config: {
+    insertObjectives: boolean;
+    insertMaterials: boolean;
+    insertActivities: boolean;
+    appendTable: boolean;
+  };
+  generatedContent: GeneratedNLSContent | null;
+  result: { fileName: string; blob: Blob } | null;
+}
