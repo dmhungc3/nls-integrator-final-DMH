@@ -1,19 +1,44 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GeneratedNLSContent } from "../types";
 
-export const generateCompetencyIntegration = async (prompt: string, apiKey: string): Promise<GeneratedNLSContent> => {
+export const generateCompetencyIntegration = async (
+  prompt: string, 
+  apiKey: string, 
+  trend: string = 'none', 
+  level: string = 'basic'
+): Promise<GeneratedNLSContent> => {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } }); 
 
+  // Xây dựng hướng dẫn cho AI dựa trên cấu hình
+  let trendGuide = "";
+  if (trend === 'ai') trendGuide = "Tích hợp công cụ Trí tuệ nhân tạo (ChatGPT, Gemini, Canva AI...) để hỗ trợ học sinh.";
+  else if (trend === 'stem') trendGuide = "Tích hợp hoạt động trải nghiệm STEM, liên môn.";
+  else if (trend === 'robotics') trendGuide = "Tích hợp tư duy lập trình và điều khiển robot/mô phỏng.";
+  else if (trend === 'design') trendGuide = "Tích hợp thiết kế đồ họa, infographic, video.";
+
+  let levelGuide = "";
+  if (level === 'basic') levelGuide = "Mức độ CƠ BẢN: Học sinh sử dụng phần mềm có sẵn, tra cứu thông tin, làm bài tập online.";
+  else levelGuide = "Mức độ NÂNG CAO: Học sinh tự tạo sản phẩm số, lập trình, giải quyết vấn đề phức tạp, làm việc cộng tác sâu.";
+
   try {
     const result = await model.generateContent(prompt + `
-      YÊU CẦU: Đóng vai chuyên gia GDPT 2018. Trả về JSON:
-      1. objectives_addition: Liệt kê cụ thể 2-3 năng lực số đặc thù (VD: Sử dụng GeoGebra để vẽ đồ thị, dùng Chatbot để tìm ý tưởng...).
-      2. activities_integration: Tìm các hoạt động chính trong bài, chèn cách dùng công nghệ vào đó.
-      3. materials_addition: Liệt kê thiết bị/phần mềm số.
-      4. appendix_table: Tiêu chí đánh giá kỹ năng số của học sinh.
+      ---------------------------------------------------
+      CẤU HÌNH NĂNG LỰC SỐ (NLS):
+      - Xu hướng: ${trendGuide}
+      - Cấp độ: ${levelGuide}
+      
+      YÊU CẦU: Trả về JSON:
+      1. "objectives_addition": Liệt kê 3 năng lực số đặc thù môn học phù hợp với cấp độ và xu hướng trên.
+      2. "activities_integration": Tìm các hoạt động chính, chèn cách dùng công nghệ tương ứng.
+      3. "materials_addition": Thiết bị/Học liệu số.
+      4. "appendix_table": Tiêu chí đánh giá.
     `);
-    const parsed = JSON.parse(result.response.text().trim().match(/\{[\s\S]*\}/)?.[0] || "{}");
+    
+    const text = result.response.text().trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+
     return {
       objectives_addition: parsed.objectives_addition || "👉 [NLS]: Bổ sung năng lực công nghệ.",
       materials_addition: parsed.materials_addition || "👉 [NLS]: Máy tính, PM dạy học.",
