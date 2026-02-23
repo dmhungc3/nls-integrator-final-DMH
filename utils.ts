@@ -29,9 +29,7 @@ const SUBJECT_STRATEGIES: Record<string, string> = {
 
 // 2. MÔ HÌNH SƯ PHẠM
 export const PEDAGOGY_MODELS: Record<string, { name: string; desc: string }> = {
-  "DEFAULT": { name: "Phân hóa theo Tiết (Session-Based)", desc: "Tự động phân chia nội dung NLS phù hợp cho từng tiết học riêng biệt." },
-  "5E": { name: "Mô hình 5E (STEM)", desc: "Gắn kết - Khám phá - Giải thích - Áp dụng - Đánh giá (Phù hợp KHTN)." },
-  "PBL": { name: "Dạy học Dự án", desc: "Giải quyết vấn đề thực tiễn (Phù hợp KHXH & Công nghệ)." }
+  "DEFAULT": { name: "Tổng hợp & Chi tiết (Comprehensive)", desc: "Tổng hợp NLS ở mục Tiêu và chèn hướng dẫn chi tiết vào từng Hoạt động (Luyện tập, Vận dụng...)." }
 };
 
 // 3. HÀM ĐỌC FILE WORD
@@ -53,8 +51,8 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
 export const createIntegrationTextPrompt = (text: string, subject: string, grade: string, mode: 'NLS' | 'NAI') => {
   const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
   
-  // Lấy chiến lược đặc thù cho môn học (nếu không có thì dùng mặc định)
-  const specificStrategy = SUBJECT_STRATEGIES[subject] || "Tập trung vào việc sử dụng công cụ số để giải quyết vấn đề, tra cứu thông tin và cộng tác trực tuyến.";
+  // Lấy chiến lược đặc thù cho môn học
+  const specificStrategy = SUBJECT_STRATEGIES[subject] || "Tích hợp công nghệ hỗ trợ dạy học hiệu quả.";
 
   return `
   Đóng vai Chuyên gia Sư phạm số và Giáo viên bộ môn ${subject}.
@@ -62,32 +60,35 @@ export const createIntegrationTextPrompt = (text: string, subject: string, grade
   BỐI CẢNH: Bạn đang hỗ trợ giáo viên lớp ${grade} chuyển đổi số giáo án theo định hướng GDPT 2018.
   CHIẾN LƯỢC MÔN HỌC: "${specificStrategy}"
 
-  NHIỆM VỤ: PHÂN TÍCH VÀ TÍCH HỢP NĂNG LỰC SỐ (NLS) THEO TỪNG TIẾT DẠY.
+  NHIỆM VỤ: PHÂN TÍCH VÀ TÍCH HỢP NĂNG LỰC SỐ (NLS) THEO CẤU TRÚC "TỔNG HỢP - CHI TIẾT".
   
-  Bước 1: Phân tích cấu trúc giáo án.
-  - Xác định giáo án gồm mấy tiết (Tiết 1, Tiết 2...).
-  - Tìm phần "Năng lực" (hoặc "Phẩm chất năng lực") CỦA TỪNG TIẾT.
-  - Tìm các "Hoạt động" cụ thể trong từng tiết.
+  --- BƯỚC 1: XÁC ĐỊNH CẤU TRÚC ---
+  - Xác định giáo án có mấy tiết (Tiết 1, Tiết 2...).
+  - Tìm TẤT CẢ các hoạt động: Mở đầu, Hình thành kiến thức, Luyện tập, Vận dụng.
 
-  Bước 2: Viết nội dung tích hợp (JSON).
+  --- BƯỚC 2: VIẾT NỘI DUNG (JSON) ---
   
-  1. PHẦN NĂNG LỰC (objectives_addition):
-     - Viết nội dung NLS riêng cho từng tiết.
-     - Định dạng bắt buộc: "👉 ${label} (Tiết X): [Năng lực số cụ thể ứng với nội dung tiết đó]"
-     - Ví dụ: Tiết 1 dùng phần mềm mô phỏng thì ghi năng lực mô phỏng; Tiết 2 làm bài tập thì ghi năng lực sử dụng công cụ kiểm tra đánh giá.
+  1. PHẦN NĂNG LỰC (objectives_addition) -> ĐÂY LÀ PHẦN TỔNG HỢP:
+     - Viết nội dung NLS tổng quát cho TỪNG TIẾT dạy.
+     - Nếu bài có 2 tiết, hãy viết 2 dòng riêng biệt.
+     - QUAN TRỌNG: KHÔNG được ghi chữ "(Tiết 1)", "(Tiết 2)" vào văn bản (để tích hợp âm thầm). Chỉ ghi nội dung năng lực.
+     - Định dạng: "👉 ${label}: [Tóm tắt các công cụ và kỹ năng số sẽ dùng trong tiết này]"
 
-  2. PHẦN HOẠT ĐỘNG (activities_enhancement):
-     - Chọn 1-2 hoạt động tiêu biểu NHẤT của MỖI tiết để tích hợp.
-     - Trích dẫn CHÍNH XÁC tên hoạt động (ví dụ: "Hoạt động 1: Khởi động", "Hoạt động 2.1...").
-     - Viết nội dung tích hợp: GV dùng công cụ gì? HS làm gì trên thiết bị số?
+  2. PHẦN HOẠT ĐỘNG (activities_enhancement) -> ĐÂY LÀ PHẦN CHI TIẾT:
+     - Rà soát TẤT CẢ các hoạt động: Hoạt động 1, Hoạt động 2, Luyện tập, Vận dụng...
+     - Nếu hoạt động nào có thể ứng dụng công nghệ, hãy viết hướng dẫn chi tiết vào đó.
+     - Trích dẫn CHÍNH XÁC tên hoạt động gốc (ví dụ: "Hoạt động 1: Khởi động", "Hoạt động 2.1...", "Hoạt động Luyện tập").
+     - Viết nội dung: "👉 ${label}: GV dùng [Công cụ] để [Làm gì], HS sử dụng [Thiết bị] để [Thao tác gì]..."
 
-  YÊU CẦU ĐẦU RA (JSON CHUẨN - KHÔNG MARKDOWN, KHÔNG GIẢI THÍCH):
+  YÊU CẦU ĐẦU RA (JSON CHUẨN - KHÔNG MARKDOWN):
   {
-    "objectives_addition": "👉 ${label} (Tiết 1): [Nội dung NLS tiết 1]\\n👉 ${label} (Tiết 2): [Nội dung NLS tiết 2]",
-    "materials_addition": "👉 ${label}: [Danh sách thiết bị/phần mềm hỗ trợ chung]",
+    "objectives_addition": "👉 ${label}: [Nội dung tổng hợp tiết 1]\\n👉 ${label}: [Nội dung tổng hợp tiết 2]",
+    "materials_addition": "",
     "activities_enhancement": [
-      { "activity_name": "[Tên chính xác hoạt động A ở Tiết 1]", "enhanced_content": "👉 ${label}: [Cách dùng công nghệ trong hoạt động A]" },
-      { "activity_name": "[Tên chính xác hoạt động B ở Tiết 2]", "enhanced_content": "👉 ${label}: [Cách dùng công nghệ trong hoạt động B]" }
+      { "activity_name": "[Tên chính xác Hoạt động 1]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" },
+      { "activity_name": "[Tên chính xác Hoạt động 2]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" },
+      { "activity_name": "[Tên chính xác Hoạt động Luyện tập]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" },
+      { "activity_name": "[Tên chính xác Hoạt động Vận dụng]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" }
     ]
   }
 
