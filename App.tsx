@@ -13,7 +13,7 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v2.3.0 PRO (Commercial UI)"; 
+  const APP_VERSION = "v2.3.1 PRO (GDPT 2018)"; 
   
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
@@ -188,24 +188,37 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="p-8 space-y-8">
-                      {/* Select Inputs - QUAY VỀ PHIÊN BẢN V2.2 GỌN NHẸ */}
+                      {/* Select Inputs - PHÂN LOẠI THEO GDPT 2018 */}
                       <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide ml-1">Môn học</label>
                               <div className="relative group">
-                                <select className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
+                                <select 
+                                  className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" 
+                                  value={state.subject} 
+                                  onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}
+                                >
                                     <option value="">-- Chọn môn --</option>
-                                    <option value="Toán">Toán</option>
-                                    <option value="Ngữ Văn">Ngữ Văn</option>
-                                    <option value="Vật Lí">Vật Lí</option>
-                                    <option value="Hóa Học">Hóa Học</option>
-                                    <option value="Sinh Học">Sinh Học</option>
-                                    <option value="Tin Học">Tin Học</option>
-                                    <option value="Lịch Sử">Lịch Sử</option>
-                                    <option value="Địa Lí">Địa Lí</option>
-                                    <option value="Tiếng Anh">Tiếng Anh</option>
-                                    <option value="Công Nghệ">Công Nghệ</option>
-                                    <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                    <optgroup label="Môn Bắt buộc">
+                                        <option value="Toán">Toán học</option>
+                                        <option value="Ngữ Văn">Ngữ Văn</option>
+                                        <option value="Tiếng Anh">Tiếng Anh</option>
+                                        <option value="Lịch Sử">Lịch Sử</option>
+                                        <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                        <option value="Giáo dục quốc phòng và an ninh">GDQP & AN</option>
+                                        <option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm</option>
+                                    </optgroup>
+                                    <optgroup label="Môn Lựa chọn">
+                                        <option value="Vật Lí">Vật Lí</option>
+                                        <option value="Hóa Học">Hóa Học</option>
+                                        <option value="Sinh Học">Sinh Học</option>
+                                        <option value="Địa Lí">Địa Lí</option>
+                                        <option value="Giáo dục kinh tế và pháp luật">GDKT & PL</option>
+                                        <option value="Tin Học">Tin Học</option>
+                                        <option value="Công Nghệ">Công Nghệ</option>
+                                        <option value="Âm Nhạc">Âm Nhạc</option>
+                                        <option value="Mỹ Thuật">Mỹ Thuật</option>
+                                    </optgroup>
                                 </select>
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-500 transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></div>
                               </div>
@@ -214,9 +227,23 @@ const App: React.FC = () => {
                           <div className="space-y-2">
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide ml-1">Khối lớp</label>
                               <div className="relative group">
-                                <select className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
+                                <select 
+                                  className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" 
+                                  value={state.grade} 
+                                  onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}
+                                >
                                     <option value="">-- Chọn khối --</option>
-                                    {[6,7,8,9,10,11,12].map(g => <option key={g} value={`Lớp ${g}`}>Lớp {g}</option>)}
+                                    <optgroup label="Trung học Phổ thông (THPT)">
+                                        <option value="Lớp 10">Lớp 10</option>
+                                        <option value="Lớp 11">Lớp 11</option>
+                                        <option value="Lớp 12">Lớp 12</option>
+                                    </optgroup>
+                                    <optgroup label="Trung học Cơ sở (THCS)">
+                                        <option value="Lớp 6">Lớp 6</option>
+                                        <option value="Lớp 7">Lớp 7</option>
+                                        <option value="Lớp 8">Lớp 8</option>
+                                        <option value="Lớp 9">Lớp 9</option>
+                                    </optgroup>
                                 </select>
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-500 transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></div>
                               </div>
