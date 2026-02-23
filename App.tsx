@@ -1,489 +1,333 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  FileUp, Wand2, FileCheck, Info, Download, Save, Edit3,
-  BookOpen, GraduationCap, Sparkles, Zap, ChevronRight, ArrowLeft, Key,
-  User, School, Phone, Activity, Terminal, Layout 
+  FileUp, Wand2, FileCheck, Download,
+  BookOpen, GraduationCap, Sparkles, ChevronRight,
+  Smartphone, Zap, Layers, Cpu, Phone, Info
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
-import { extractTextFromDocx, createIntegrationTextPrompt } from './utils';
+import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
 import { generateCompetencyIntegration } from './services/geminiService';
 import { injectContentIntoDocx } from './services/docxManipulator';
 import SmartEditor from './components/SmartEditor';
 
-const App: React.FC = () => {
-  const [state, setState] = useState<AppState>({
-    file: null,
-    subject: '',
-    grade: '',
-    isProcessing: false,
-    step: 'upload',
-    logs: [],
-    config: {
-      insertObjectives: true,
-      insertMaterials: true,
-      insertActivities: true,
-      appendTable: true
-    },
-    generatedContent: null,
-    result: null
-  });
+type IntegrationMode = 'NLS' | 'NAI';
 
+const App: React.FC = () => {
+  const APP_VERSION = "v2.1.0"; 
+  const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
+  const [state, setState] = useState<AppState>({
+    file: null, subject: '' as SubjectType, grade: '' as GradeType, isProcessing: false, step: 'upload', logs: [],
+    config: { insertObjectives: true, insertMaterials: true, insertActivities: true, appendTable: true },
+    generatedContent: null, result: null
+  });
+  const [mode, setMode] = useState<IntegrationMode>('NLS');
   const [userApiKey, setUserApiKey] = useState('');
   const [isKeySaved, setIsKeySaved] = useState(false);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key');
-    if (savedKey) {
-      setUserApiKey(savedKey);
-      setIsKeySaved(true);
-    }
+    if (savedKey) { setUserApiKey(savedKey); setIsKeySaved(true); }
   }, []);
 
   const saveKeyToLocal = () => {
-    if (userApiKey.trim()) {
-      localStorage.setItem('gemini_api_key', userApiKey);
-      setIsKeySaved(true);
-      addLog("✓ Đã lưu API Key thành công.");
-    } else {
-      alert("Vui lòng nhập Key trước khi lưu!");
+    if (userApiKey.trim()) { 
+      localStorage.setItem('gemini_api_key', userApiKey); 
+      setIsKeySaved(true); 
+      addLog("✓ Đã lưu API Key hệ thống."); 
+    } else { 
+      alert("Vui lòng nhập Key!"); 
     }
   };
-
-  const handleEditKey = () => {
-    setIsKeySaved(false);
-  };
+  
+  const handleEditKey = () => setIsKeySaved(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.name.endsWith('.docx')) {
-      setState(prev => ({ 
-        ...prev, 
-        file, 
-        result: null, 
-        generatedContent: null,
-        step: 'upload',
-        logs: [`✓ Đã tải lên: ${file.name}`] 
-      }));
-    } else {
-        alert("Vui lòng chọn file Word (.docx)");
+      setState(prev => ({ ...prev, file, result: null, generatedContent: null, step: 'upload', logs: [`✓ Đã nạp file: ${file.name}`] }));
+    } else { 
+      alert("Chỉ hỗ trợ định dạng Word (.docx)!"); 
     }
   };
 
-  const addLog = (msg: string) => {
-    setState(prev => ({ ...prev, logs: [...prev.logs, msg] }));
-  };
+  const addLog = (msg: string) => { setState(prev => ({ ...prev, logs: [...prev.logs, msg] })); };
 
   const handleAnalyze = async () => {
-    if (!userApiKey.trim()) {
-        alert("Vui lòng nhập API Key để tiếp tục!");
-        return;
-    }
-    if (!state.file || !state.subject || !state.grade) {
-        alert("Vui lòng điền đầy đủ thông tin!");
-        return;
-    }
+    if (!userApiKey.trim()) { alert("Vui lòng nhập API Key!"); return; }
+    if (!state.file || !state.subject || !state.grade) { alert("Anh vui lòng chọn đầy đủ thông tin Môn và Lớp!"); return; }
 
-    setState(prev => ({ 
-        ...prev, 
-        isProcessing: true, 
-        logs: ["🚀 Khởi động quy trình phân tích AI..."] 
-    }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [`🚀 Khởi động Core ${APP_VERSION}...`] }));
 
     try {
-      addLog("Đang đọc và phân tích cấu trúc giáo án...");
+      const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
+      addLog(`⚙️ Chiến lược: ${modelName}`);
+      addLog("Đang xử lý cấu trúc giáo án...");
       const textContext = await extractTextFromDocx(state.file);
-      if (!textContext || textContext.length < 50) {
-          throw new Error("File không có nội dung văn bản để xử lý.");
-      }
-
-      addLog("Đang thiết kế kịch bản Năng lực số...");
-      const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade);
-      
+      const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog("✓ AI đã đề xuất phương án tích hợp.");
-      
-      setState(prev => ({ 
-        ...prev, 
-        isProcessing: false,
-        generatedContent: generatedContent,
-        step: 'review'
-      }));
-
+      addLog(`✓ AI đã hoàn thành thiết kế.`);
+      setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
-      addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Unknown error"}`);
+      addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Xung đột hệ thống"}`);
       setState(prev => ({ ...prev, isProcessing: false }));
     }
   };
 
   const handleFinalizeAndDownload = async (finalContent: GeneratedNLSContent) => {
     if (!state.file) return;
-
-    setState(prev => ({ 
-      ...prev, 
-      isProcessing: true,
-      logs: [...prev.logs, "Đang áp dụng thay đổi và tạo file..."]
-    }));
-
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "Đang đóng gói file mới..."] }));
     try {
-      const newBlob = await injectContentIntoDocx(state.file, finalContent, addLog);
-      
+      const newBlob = await injectContentIntoDocx(state.file, finalContent, mode, addLog);
       setState(prev => ({ 
         ...prev, 
         isProcessing: false, 
-        step: 'done',
-        result: {
-            fileName: `NLS_${state.file?.name}`,
-            blob: newBlob
-        },
-        logs: [...prev.logs, "✨ Thành công! File đã sẵn sàng."] 
+        step: 'done', 
+        result: { fileName: `Tich-hop-${mode}-${state.file?.name}`, blob: newBlob }, 
+        logs: [...prev.logs, "✨ Xuất file thành công!"] 
       }));
     } catch (error) {
-       addLog(`❌ Lỗi khi tạo file: ${error instanceof Error ? error.message : "Unknown error"}`);
+       addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Đóng gói thất bại"}`);
        setState(prev => ({ ...prev, isProcessing: false }));
     }
   };
 
   return (
-    // Nền Gradient nhẹ nhàng, hiện đại
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col items-center selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* BACKGROUND DECOR BLOBS */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-200/30 rounded-full blur-[100px]"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-200/30 rounded-full blur-[100px]"></div>
-      </div>
+      <style>{`
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-fade-in-left { animation: fadeInLeft 0.3s ease-out forwards; }
+        .animate-blink { animation: blink 1s infinite; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 20px; }
+      `}</style>
 
-      {/* --- TOP BAR (GLASS EFFECT) --- */}
-      <div className="relative z-10 w-full max-w-7xl mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/60 backdrop-blur-md p-4 rounded-3xl border border-white/50 shadow-sm">
-        
-        {/* Tác giả */}
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <User className="w-5 h-5" />
-           </div>
-           <div className="flex flex-col">
-              <span className="font-bold text-slate-800 text-sm tracking-wide">Tác giả: Đặng Mạnh Hùng</span>
-              <div className="flex items-center gap-3 text-xs text-slate-500 font-medium mt-0.5">
-                  <span className="flex items-center gap-1"><School className="w-3 h-3" /> THPT Lý Nhân Tông</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                  <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> 097 8386 357</span>
+      {/* HEADER */}
+      <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 h-18 flex items-center justify-between gap-4 py-3">
+              <div className="flex items-center gap-3 shrink-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                      <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div className="flex flex-col">
+                      <h2 className="font-bold text-slate-800 text-lg leading-tight tracking-tight">NLS Integrator Pro</h2>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">{APP_VERSION}</span>
+                        <span className="text-[10px] text-slate-400">| GV. Đặng Mạnh Hùng</span>
+                      </div>
+                  </div>
               </div>
-           </div>
-        </div>
 
-        {/* API Key Modern Pill */}
-        <div className="flex items-center justify-end">
-            {isKeySaved ? (
-                <div className="group flex items-center gap-3 bg-white/80 p-2 pl-4 pr-2 rounded-full border border-emerald-100 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
-                        <div className="relative">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                            <div className="absolute top-0 left-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
-                        </div>
-                        <span>API Ready</span>
-                    </div>
-                    <button onClick={handleEditKey} className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                        Thay đổi
-                    </button>
-                </div>
-            ) : (
-                <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-indigo-100 shadow-sm focus-within:ring-2 focus-within:ring-indigo-200 transition-all w-full md:w-80">
-                    <div className="pl-3"><Key className="w-4 h-4 text-amber-500" /></div>
-                    <input 
-                        type="password" 
-                        value={userApiKey} 
-                        onChange={(e) => setUserApiKey(e.target.value)} 
-                        placeholder="Nhập Gemini API Key..." 
-                        className="w-full bg-transparent outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 h-9" 
-                    />
-                    <button onClick={saveKeyToLocal} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all active:scale-95">
-                        Lưu
-                    </button>
-                </div>
-            )}
-        </div>
+              <div className="flex items-center justify-end shrink-0">
+                  {isKeySaved ? (
+                      <div className="flex items-center gap-2 bg-emerald-50/80 px-4 py-1.5 rounded-full border border-emerald-100 shadow-sm">
+                          <div className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                          </div>
+                          <span className="text-emerald-700 font-bold text-xs">AI Ready</span>
+                          <button onClick={handleEditKey} className="ml-2 text-[10px] text-slate-400 hover:text-indigo-600 underline">Đổi</button>
+                      </div>
+                  ) : (
+                      <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập Gemini API Key..." className="text-xs px-2 outline-none w-40" />
+                        <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700">Lưu</button>
+                      </div>
+                  )}
+              </div>
+          </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl">
+      <div className="w-full max-w-7xl px-4 py-8 flex flex-col gap-8">
         
-        {/* HERO HEADER */}
-        <header className="mb-10 text-center">
-          <div className="inline-flex items-center justify-center p-3 bg-white/80 backdrop-blur rounded-2xl mb-4 shadow-xl shadow-indigo-100 border border-white">
-            <Sparkles className="w-8 h-8 text-indigo-600" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-3">
-            NLS <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">Integrator</span> Pro
-          </h1>
-          <p className="text-slate-500 text-base max-w-2xl mx-auto font-medium">
-            Trợ lý AI tích hợp Năng lực số vào Giáo án • <span className="text-indigo-500">Nhanh chóng</span> • <span className="text-indigo-500">Chính xác</span> • <span className="text-indigo-500">Hiện đại</span>
-          </p>
-        </header>
-
-        {/* STEPPER MODERN */}
-        <div className="flex justify-center mb-10">
-             <div className="flex items-center gap-6 bg-white/70 backdrop-blur-md px-8 py-3 rounded-full shadow-lg shadow-indigo-900/5 border border-white/50">
-                 <div className={`flex items-center gap-2 ${state.step === 'upload' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
-                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'upload' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>1</span> 
-                     <span className="text-sm">Tải lên</span>
-                 </div>
-                 <div className="w-12 h-0.5 bg-slate-200/80"></div>
-                 <div className={`flex items-center gap-2 ${state.step === 'review' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
-                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'review' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>2</span> 
-                     <span className="text-sm">Xử lý</span>
-                 </div>
-                 <div className="w-12 h-0.5 bg-slate-200/80"></div>
-                 <div className={`flex items-center gap-2 ${state.step === 'done' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'}`}>
-                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${state.step === 'done' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-300' : 'bg-slate-100'}`}>3</span> 
-                     <span className="text-sm">Hoàn tất</span>
-                 </div>
+        {/* STEPPER */}
+        <div className="flex justify-center">
+             <div className="flex items-center gap-4 bg-white px-6 py-2 rounded-full shadow-sm border border-slate-100">
+                <div className={`flex items-center gap-2 ${state.step === 'upload' ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}><span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] border-current">1</span> Tải lên</div>
+                <div className="w-8 h-px bg-slate-200"></div>
+                <div className={`flex items-center gap-2 ${state.step === 'review' ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}><span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] border-current">2</span> AI Thiết kế</div>
+                <div className="w-8 h-px bg-slate-200"></div>
+                <div className={`flex items-center gap-2 ${state.step === 'done' ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}><span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] border-current">3</span> Tải về</div>
              </div>
-         </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* MAIN ACTION AREA */}
           <div className="lg:col-span-8 flex flex-col gap-6">
-            
-            {/* STEP 1: UPLOAD & CONFIG CARD */}
             {state.step === 'upload' && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 shadow-2xl shadow-indigo-900/5 border border-white relative overflow-hidden group animate-fade-in">
-                
-                {/* Decorative background element */}
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none group-hover:scale-110 transition-transform duration-700"></div>
-
-                <div className="relative z-10 space-y-6">
-                  <h3 className="font-bold text-slate-800 text-lg flex items-center gap-3">
-                      <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600"><BookOpen className="w-5 h-5" /></div>
-                      Thiết lập Giáo án
-                  </h3>
-
-                  <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Môn học</label>
-                          <div className="relative">
-                            <select 
-                                className="w-full p-4 rounded-2xl border border-slate-200 bg-white/50 text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all appearance-none cursor-pointer hover:bg-white"
-                                value={state.subject}
-                                onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}
-                            >
-                                <option value="">-- Chọn môn học --</option>
-                                <option value="Toán">Toán học</option>
-                                <option value="Vật lý">Vật lý</option>
-                                <option value="Hóa học">Hóa học</option>
-                                <option value="Sinh học">Sinh học</option>
-                                <option value="Khoa học tự nhiên">Khoa học tự nhiên</option>
-                                <option value="Ngữ văn">Ngữ văn</option>
-                                <option value="Tiếng Anh">Tiếng Anh</option>
-                                <option value="Tin học">Tin học</option>
-                                <option value="Lịch sử">Lịch sử</option>
-                                <option value="Địa lý">Địa lý</option>
-                                <option value="GDCD">GDCD</option>
-                            </select>
-                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
-                          </div>
+              <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-white overflow-hidden ring-1 ring-slate-100 animate-fade-in-up">
+                  <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50/50 to-white">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-lg">
+                          <BookOpen className="w-5 h-5 text-indigo-600" />
+                          <span>Thiết lập Giáo án</span>
                       </div>
-                      <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Khối lớp</label>
-                          <div className="relative">
-                            <select 
-                                className="w-full p-4 rounded-2xl border border-slate-200 bg-white/50 text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all appearance-none cursor-pointer hover:bg-white"
-                                value={state.grade}
-                                onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}
-                            >
-                                <option value="">-- Chọn khối lớp --</option>
-                                <option value="Lớp 6">Lớp 6</option>
-                                <option value="Lớp 7">Lớp 7</option>
-                                <option value="Lớp 8">Lớp 8</option>
-                                <option value="Lớp 9">Lớp 9</option>
-                                <option value="Lớp 10">Lớp 10</option>
-                                <option value="Lớp 11">Lớp 11</option>
-                                <option value="Lớp 12">Lớp 12</option>
-                            </select>
-                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
-                          </div>
+                      <div className="flex bg-slate-100 p-1 rounded-xl">
+                          <button onClick={() => setMode('NLS')} className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${mode === 'NLS' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'}`}><Smartphone className="w-4 h-4" /> Năng lực Số</button>
+                          <button onClick={() => setMode('NAI')} className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${mode === 'NAI' ? 'bg-white text-rose-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'}`}><Zap className="w-4 h-4" /> Năng lực AI</button>
                       </div>
                   </div>
 
-                  {/* Upload Zone Modern */}
-                  <div className="mt-2">
-                      <label className={`relative flex flex-col items-center justify-center w-full h-44 rounded-3xl border-2 border-dashed transition-all cursor-pointer group/upload overflow-hidden
-                          ${state.file 
-                              ? 'border-indigo-400 bg-indigo-50/50' 
-                              : 'border-slate-300 bg-slate-50/50 hover:bg-white hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100'
-                          }`}
-                      >
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center z-10 transition-transform duration-300 group-hover/upload:scale-105">
+                  <div className="p-8 space-y-8">
+                      <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Môn học (GDPT 2018)</label>
+                              <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
+                                  <option value="">-- Chọn môn học --</option>
+                                  <optgroup label="Môn học Bắt buộc (THPT)">
+                                      <option value="Toán">Toán học</option>
+                                      <option value="Ngữ văn">Ngữ văn</option>
+                                      <option value="Lịch sử">Lịch sử</option>
+                                      <option value="Tiếng Anh">Tiếng Anh</option>
+                                      <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                      <option value="Giáo dục quốc phòng và an ninh">GD Quốc phòng & An ninh</option>
+                                      <option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm, hướng nghiệp</option>
+                                  </optgroup>
+                                  <optgroup label="Môn học Lựa chọn (Tự chọn)">
+                                      <option value="Địa lí">Địa lí</option>
+                                      <option value="Vật lí">Vật lí</option>
+                                      <option value="Hóa học">Hóa học</option>
+                                      <option value="Sinh học">Sinh học</option>
+                                      <option value="Tin học">Tin học</option>
+                                      <option value="Công nghệ">Công nghệ</option>
+                                      <option value="Giáo dục kinh tế và pháp luật">GD Kinh tế & Pháp luật</option>
+                                      <option value="Âm nhạc">Âm nhạc</option>
+                                      <option value="Mỹ thuật">Mỹ thuật</option>
+                                  </optgroup>
+                              </select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Khối lớp</label>
+                              <select className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
+                                  <option value="">-- Chọn khối lớp --</option>
+                                  <optgroup label="Cấp THPT">
+                                      <option value="Lớp 10">Lớp 10</option>
+                                      <option value="Lớp 11">Lớp 11</option>
+                                      <option value="Lớp 12">Lớp 12</option>
+                                  </optgroup>
+                                  <optgroup label="Cấp THCS">
+                                      <option value="Lớp 6">Lớp 6</option>
+                                      <option value="Lớp 7">Lớp 7</option>
+                                      <option value="Lớp 8">Lớp 8</option>
+                                      <option value="Lớp 9">Lớp 9</option>
+                                  </optgroup>
+                              </select>
+                          </div>
+                      </div>
+
+                      <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1"><Layers className="w-3 h-3" /> Mô hình Sư phạm</label>
+                          <div className="relative">
+                            <select 
+                                className="w-full p-4 rounded-xl border-2 border-indigo-50 bg-indigo-50/30 text-sm font-bold text-indigo-900 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer hover:bg-indigo-50/50 appearance-none"
+                                value={pedagogy}
+                                onChange={(e) => setPedagogy(e.target.value)}
+                            >
+                                {Object.entries(PEDAGOGY_MODELS).map(([key, value]) => (
+                                    <option key={key} value={key}>{value.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400"><ChevronRight className="w-4 h-4 rotate-90" /></div>
+                          </div>
+                          <p className="text-[11px] text-slate-500 px-1 pt-1 flex items-center gap-1"><Sparkles className="w-3 h-3 text-amber-500" /> {PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.desc}</p>
+                      </div>
+
+                      <label className={`relative overflow-hidden flex flex-col items-center justify-center w-full h-44 rounded-2xl border-2 border-dashed transition-all cursor-pointer group ${state.file ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'}`}>
+                          <div className="flex flex-col items-center justify-center text-center p-4 z-10">
                               {state.file ? (
-                                  <>
-                                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mb-3 text-indigo-600 animate-bounce">
-                                          <FileCheck className="w-8 h-8" />
-                                      </div>
-                                      <p className="text-base font-bold text-indigo-900">{state.file.name}</p>
-                                      <p className="text-sm text-indigo-500 font-medium mt-1 bg-indigo-100 px-3 py-1 rounded-full">Đã sẵn sàng</p>
-                                  </>
+                                  <div className="flex flex-col items-center gap-2 animate-fade-in-up">
+                                      <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shadow-sm"><FileCheck className="w-6 h-6" /></div>
+                                      <div><p className="font-bold text-indigo-900 text-sm">{state.file.name}</p><p className="text-xs text-indigo-500">File đã sẵn sàng để nâng cấp</p></div>
+                                  </div>
                               ) : (
-                                  <>
-                                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md mb-3 text-slate-400 group-hover/upload:text-indigo-600 group-hover/upload:shadow-indigo-200 transition-all">
-                                          <FileUp className="w-7 h-7" />
-                                      </div>
-                                      <p className="text-base font-bold text-slate-600 mb-1 group-hover/upload:text-indigo-800">
-                                          Thả file Giáo án (.docx) vào đây
-                                      </p>
-                                      <p className="text-xs text-slate-400 font-medium">Hỗ trợ tốt nhất cho MathType & Hình ảnh</p>
-                                  </>
+                                  <div className="flex flex-col items-center gap-2 group-hover:scale-105 transition-transform duration-300">
+                                      <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors"><FileUp className="w-6 h-6" /></div>
+                                      <div><p className="font-bold text-slate-600 text-sm">Nhấn để tải giáo án Word (.docx)</p><p className="text-[10px] text-slate-400 mt-1">Hệ thống giữ nguyên định dạng, MathType và Hình ảnh</p></div>
+                                  </div>
                               )}
                           </div>
                           <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
                       </label>
-                  </div>
 
-                  <button
-                    disabled={!state.file || state.isProcessing}
-                    onClick={handleAnalyze}
-                    className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all transform active:scale-[0.99] ${
-                      !state.file || state.isProcessing 
-                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                          : 'bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50'
-                    }`}
-                  >
-                    {state.isProcessing ? (
-                      <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang phân tích dữ liệu...</>
-                    ) : (
-                      <><Wand2 className="w-5 h-5" /> Kích hoạt AI Phân tích</>
-                    )}
-                  </button>
-                </div>
+                      <button 
+                        disabled={!state.file || state.isProcessing} 
+                        onClick={handleAnalyze} 
+                        className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.99] ${
+                            !state.file || state.isProcessing 
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' 
+                            : 'bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 text-white hover:shadow-indigo-500/40 bg-[length:200%_auto] hover:bg-right transition-all duration-500'
+                        }`}
+                      >
+                        {state.isProcessing ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang thiết kế nội dung...</>) : (<><Wand2 className="w-5 h-5" /> Kích hoạt AI & Tích hợp ngay</>)}
+                      </button>
+                  </div>
               </div>
             )}
 
-            {/* STEP 2: SMART EDITOR */}
             {state.step === 'review' && state.generatedContent && (
-               <SmartEditor 
-                  initialContent={state.generatedContent}
-                  onConfirm={handleFinalizeAndDownload}
-                  onCancel={() => setState(prev => ({ ...prev, step: 'upload', generatedContent: null }))}
-               />
+               <SmartEditor initialContent={state.generatedContent} onConfirm={handleFinalizeAndDownload} onCancel={() => setState(prev => ({ ...prev, step: 'upload', generatedContent: null }))} />
             )}
             
-            {/* STEP 3: DONE */}
             {state.step === 'done' && state.result && (
-              <div className="bg-white/90 backdrop-blur rounded-[2rem] p-10 shadow-2xl border border-white animate-fade-in flex flex-col items-center text-center gap-6">
-                 <div className="relative">
-                    <div className="absolute inset-0 bg-green-200 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                    <div className="relative w-24 h-24 bg-gradient-to-tr from-green-400 to-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg">
-                        <Sparkles className="w-10 h-10" />
-                    </div>
-                 </div>
-                 
-                 <div>
-                    <h3 className="text-2xl font-black text-slate-800 mb-2">Xử lý thành công!</h3>
-                    <p className="text-base text-slate-500">Giáo án đã được tích hợp Năng lực số hoàn chỉnh.</p>
-                 </div>
-                 
-                 <div className="flex gap-4 w-full justify-center mt-2">
-                     <button 
-                        onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))}
-                        className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors flex items-center gap-2"
-                     >
-                        <ArrowLeft className="w-5 h-5" /> Làm bài khác
-                     </button>
-                     <button 
-                        onClick={() => {
-                           if (state.result) {
-                              const url = URL.createObjectURL(state.result.blob);
-                              const a = document.createElement('a');
-                              a.href = url; a.download = state.result.fileName; a.click();
-                           }
-                        }}
-                        className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-base flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg hover:-translate-y-1 hover:shadow-indigo-500/30"
-                     >
-                        <Download className="w-5 h-5" /> Tải về máy ngay
-                     </button>
+              <div className="bg-white rounded-3xl p-10 shadow-2xl shadow-indigo-100/50 border border-white flex flex-col items-center text-center animate-fade-in-up">
+                 <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-200"><Sparkles className="w-10 h-10" /></div>
+                 <h3 className="text-2xl font-bold text-slate-800">Tuyệt vời! Đã nâng cấp xong.</h3>
+                 <p className="text-slate-500 mt-2 mb-8 max-w-md">Giáo án đã được tích hợp năng lực {mode === 'NAI' ? 'AI' : 'Số'} chuẩn GDPT 2018.</p>
+                 <div className="flex gap-4">
+                     <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm bài khác</button>
+                     <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-transform hover:-translate-y-1"><Download className="w-4 h-4" /> Tải giáo án (.docx)</button>
                  </div>
               </div>
             )}
           </div>
-
-          {/* RIGHT COLUMN: LOGS & TIPS */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
-             
-             {/* BLOCK 1: SYSTEM LOGS (TERMINAL STYLE BUT CLEAN) */}
-             <div className="bg-white/80 backdrop-blur-lg rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 border border-white flex flex-col h-[350px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full opacity-60 pointer-events-none"></div>
-
-                <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-4 relative z-10">
-                   <div className="flex items-center gap-2">
-                     <div className="p-1.5 bg-slate-100 rounded-lg">
-                        <Activity className="w-4 h-4 text-slate-600" />
-                     </div>
-                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Nhật ký hệ thống</h4>
-                   </div>
-                   <div className="flex gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                      <div className="w-2 h-2 rounded-full bg-amber-400"></div>
-                      <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                   </div>
+          
+          <div className="lg:col-span-4 flex flex-col gap-6 h-full">
+             <div className="bg-[#1e1e2e] rounded-2xl p-5 shadow-2xl shadow-slate-400/20 flex flex-col h-[320px] border border-slate-700/50 relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/50">
+                    <div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider font-mono"><Cpu className="w-3.5 h-3.5 text-indigo-400" /> AI Terminal Status</div>
+                    <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div></div>
                 </div>
-
-                <div className="space-y-3 font-mono text-xs leading-relaxed overflow-y-auto custom-scrollbar pr-2 flex-1 scroll-smooth relative z-10">
-                   {state.logs.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 mt-4 opacity-60">
-                          <Terminal className="w-8 h-8" />
-                          <span className="italic">Hệ thống đang chờ lệnh...</span>
-                      </div>
-                   ) : (
-                      state.logs.map((log, i) => (
-                          <div key={i} className="flex gap-3 animate-fade-in items-start group">
-                              <span className="text-slate-400 shrink-0 select-none text-[10px] mt-0.5 font-medium">
-                                 {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </span>
-                              <div className={`flex-1 break-words pb-1 border-b border-slate-50 ${
-                                 log.includes("❌") ? "text-rose-600 font-bold" : 
-                                 log.includes("✓") || log.includes("✨") ? "text-emerald-600 font-bold" : 
-                                 "text-slate-600 font-medium"
-                              }`}>
-                                {log}
-                              </div>
-                          </div>
-                      ))
-                   )}
-                   {state.isProcessing && (
-                     <div className="flex gap-2 items-center text-indigo-600 animate-pulse mt-2 bg-indigo-50 p-2 rounded-lg w-fit">
-                        <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce"></div>
-                        <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce delay-75"></div>
-                        <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce delay-150"></div>
-                        <span className="text-xs font-bold ml-1">AI đang xử lý tác vụ...</span>
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed">
+                   {state.logs.length === 0 && <span className="text-slate-600 italic">&gt;&gt; Đang chờ lệnh từ giáo viên...</span>}
+                   {state.logs.map((log, i) => (
+                     <div key={i} className="flex gap-3 animate-fade-in-left">
+                       <span className="text-slate-600 shrink-0 select-none">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span>
+                       <span className={`${log.includes("❌") ? "text-rose-400 font-bold" : log.includes("✓") ? "text-emerald-400 font-bold" : log.includes("🚀") ? "text-amber-400" : "text-indigo-100"}`}>
+                         {log.replace("✓ ", "").replace("🚀 ", "")}
+                       </span>
                      </div>
-                   )}
+                   ))}
                 </div>
              </div>
-
-             {/* BLOCK 2: PEDAGOGICAL CORNER */}
-             <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[2rem] p-6 shadow-xl text-white relative overflow-hidden group">
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
-                
-                <h4 className="font-bold text-sm mb-4 flex items-center gap-2 relative z-10">
-                    <GraduationCap className="w-5 h-5 text-cyan-400" /> 
-                    GÓC SƯ PHẠM
-                </h4>
-                
-                <div className="space-y-3 relative z-10">
-                    {[
-                        "Smart Studio: Cho phép thầy cô biên tập nội dung AI trước khi xuất.",
-                        "Context Aware: AI tự động tìm vị trí phù hợp nhất trong bài dạy.",
-                        "Tool Suggestion: Gợi ý công cụ số (Padlet, Kahoot...) theo đặc thù môn.",
-                        "Format Keeper: Giữ nguyên 100% công thức MathType & Hình ảnh gốc."
-                    ].map((item, i) => (
-                        <div key={i} className="flex gap-3 text-xs text-slate-300 items-start">
-                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-cyan-500 shadow shadow-cyan-500/50 shrink-0"></div>
-                            <span className="leading-relaxed">{item}</span>
-                        </div>
-                    ))}
+             
+             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-slate-200/60 flex-1">
+                <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wide"><GraduationCap className="w-4 h-4 text-indigo-500" /> Thông tin Tác giả</h4>
+                <div className="space-y-4">
+                    <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
+                      <p className="text-xs font-bold text-indigo-700 mb-1 flex items-center gap-2">Tác giả: Đặng Mạnh Hùng</p>
+                      <p className="text-[11px] text-slate-600">Giáo viên Trường THPT Lý Nhân Tông</p>
+                      <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-1 font-bold"><Phone className="w-3.5 h-3.5" /> 097 8386 357</p>
+                    </div>
+                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 shadow-sm flex items-start gap-3">
+                      <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-indigo-800">Phiên bản: {APP_VERSION}</p>
+                        <p className="text-[10px] text-indigo-600 mt-1 leading-relaxed">Bản quyền phần mềm thuộc về GV. Đặng Mạnh Hùng. Mỗi phiên bản được nâng cấp dựa trên nhu cầu thực tiễn của đồng nghiệp.</p>
+                      </div>
+                    </div>
                 </div>
              </div>
           </div>
-
         </div>
+      </div>
+
+      <div className="w-full mt-auto py-6 text-center border-t border-slate-100 bg-white/50">
+          <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">© 2026 NLS Integrator Pro — Cung cấp bởi GV. Đặng Mạnh Hùng — THPT Lý Nhân Tông</p>
       </div>
     </div>
   );
