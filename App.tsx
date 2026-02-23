@@ -67,7 +67,7 @@ const App: React.FC = () => {
       
       const textContext = await extractTextFromDocx(state.file);
       // Logic prompt nằm trong hàm này (xem phần 2 bên dưới)
-      const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode, pedagogy);
+      const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode);
       
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
       addLog(`✓ AI đã hoàn thành thiết kế.`);

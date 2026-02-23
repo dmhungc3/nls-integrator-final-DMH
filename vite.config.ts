@@ -4,11 +4,9 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // QUAN TRỌNG: Đặt base là '/' để Vercel hiểu đường dẫn tuyệt đối
-  base: '/',
+  base: './', // Dùng đường dẫn tương đối để tránh lỗi 404
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: false, // Tắt sourcemap để giảm nhẹ file build
+    chunkSizeWarningLimit: 1600,
   }
 })
