@@ -16,58 +16,71 @@ export const injectContentIntoDocx = async (
 
         const zip = new PizZip(binaryString as ArrayBuffer);
         const docFile = zip.file("word/document.xml");
-        if (!docFile) throw new Error("File Word không hợp lệ (thiếu document.xml)");
+        if (!docFile) throw new Error("File Word không hợp lệ");
         
         let docXml = docFile.asText();
         const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
 
-        // --- HÀM TẠO KHỐI XML (HEADER + LIST) ---
-        const createXmlBlock = (text: string) => {
+        // --- HÀM PHÁT HIỆN CỠ CHỮ (STYLE DETECTOR) ---
+        const detectFontSize = (xml: string, index: number): string => {
+            // Tìm ngược từ vị trí chèn để xem đoạn văn trước đó dùng cỡ chữ nào
+            // Tìm thẻ <w:sz w:val="..."/> gần nhất phía trước
+            const chunk = xml.substring(Math.max(0, index - 2000), index); // Lấy 2000 ký tự trước đó
+            const match = chunk.match(/<w:sz\s+w:val=["'](\d+)["']\s*\/>/g);
+            
+            if (match && match.length > 0) {
+                // Lấy giá trị cuối cùng tìm thấy (gần vị trí chèn nhất)
+                const lastMatch = match[match.length - 1];
+                const valueMatch = lastMatch.match(/val=["'](\d+)["']/);
+                return valueMatch ? valueMatch[1] : "26"; // Mặc định 26 (13pt) nếu không tìm thấy
+            }
+            return "28"; // Mặc định 28 (14pt) nếu không có thông tin - Chuẩn giáo án mới
+        };
+
+        // --- HÀM TẠO KHỐI XML (CÓ ĐỒNG BỘ CỠ CHỮ) ---
+        const createXmlBlock = (text: string, fontSize: string) => {
           if (!text) return "";
           
-          // 1. Tách dòng và lọc dòng trống
           const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           if (lines.length === 0) return "";
 
-          // 2. Tạo dòng TIÊU ĐỀ CHUNG (Đậm, Màu Xanh)
+          // Header: 👉 Tích hợp NLS: (Màu xanh, Đậm, Cỡ chữ đồng bộ)
           let xmlBlock = `<w:p>
                             <w:pPr><w:ind w:left="360"/></w:pPr>
                             <w:r>
-                                <w:rPr><w:b/><w:color w:val="2E74B5"/></w:rPr>
+                                <w:rPr>
+                                    <w:b/>
+                                    <w:color w:val="2E74B5"/>
+                                    <w:sz w:val="${fontSize}"/>
+                                    <w:szCs w:val="${fontSize}"/>
+                                </w:rPr>
                                 <w:t>👉 ${escapeXml(label)}:</w:t>
                             </w:r>
                           </w:p>`;
 
-          // 3. Tạo các dòng NỘI DUNG (Thường, Màu Xanh, bắt đầu bằng -)
+          // Content List: - Nội dung... (Màu xanh, Thường, Cỡ chữ đồng bộ)
           lines.forEach(line => {
-              // Xóa các ký tự thừa ở đầu nếu có, đảm bảo bắt đầu bằng "- "
               let cleanContent = line.replace(/^(👉|NLS:|-|\+|Tiết \d+:)\s*/gi, '').trim();
-              
               if (cleanContent) {
                   xmlBlock += `<w:p>
                                  <w:pPr><w:ind w:left="720"/></w:pPr> 
                                  <w:r>
-                                    <w:rPr><w:color w:val="2E74B5"/></w:rPr>
+                                    <w:rPr>
+                                        <w:color w:val="2E74B5"/>
+                                        <w:sz w:val="${fontSize}"/>
+                                        <w:szCs w:val="${fontSize}"/>
+                                    </w:rPr>
                                     <w:t xml:space="preserve">- ${escapeXml(cleanContent)}</w:t>
                                  </w:r>
                                </w:p>`;
               }
           });
-
           return xmlBlock;
         };
 
         // --- 1. CHÈN NĂNG LỰC TỔNG HỢP ---
         const objectiveLines = content.objectives_addition.split('\n').filter(l => l.trim());
-        const keywords = [
-            "Phẩm chất năng lực", 
-            "2. Phát triển năng lực", 
-            "2. Năng lực", 
-            "2. năng lực", 
-            "II. MỤC TIÊU", 
-            "II. Mục tiêu", 
-            "Năng lực cần đạt"
-        ];
+        const keywords = ["Phẩm chất năng lực", "2. Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt"];
         
         const findAllIndices = (xml: string, keyword: string) => {
             const regex = new RegExp(keyword.replace(/\./g, "\\."), "gi");
@@ -93,10 +106,12 @@ export const injectContentIntoDocx = async (
              reverseIndices.forEach((index, reverseI) => {
                  const realIndex = targetIndices.length - 1 - reverseI;
                  if (realIndex < objectiveLines.length) {
-                     // Lấy nội dung của tiết đó
                      const contentToInsert = objectiveLines[realIndex];
-                     // Tạo block: Header + Dòng nội dung đó
-                     const xmlBlock = createXmlBlock(contentToInsert);
+                     
+                     // PHÁT HIỆN CỠ CHỮ TẠI VỊ TRÍ NÀY
+                     const currentFontSize = detectFontSize(newXml, index);
+                     
+                     const xmlBlock = createXmlBlock(contentToInsert, currentFontSize);
                      
                      if (xmlBlock) {
                          const closingTag = "</w:p>";
@@ -109,8 +124,8 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            // Fallback
-            const xmlBlock = createXmlBlock(content.objectives_addition);
+            // Fallback (Mặc định size 28 - 14pt)
+            const xmlBlock = createXmlBlock(content.objectives_addition, "28");
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
                 const bodyIndex = newXml.indexOf(bodyTag);
@@ -133,13 +148,15 @@ export const injectContentIntoDocx = async (
                 }
 
                 if (actIndex !== -1) {
+                     // PHÁT HIỆN CỠ CHỮ TẠI VỊ TRÍ HOẠT ĐỘNG NÀY
+                     const currentFontSize = detectFontSize(docXml, actIndex);
+
                      const closingTag = "</w:p>";
                      const insertPos = docXml.indexOf(closingTag, actIndex);
                      
                      if (insertPos !== -1) {
                          const splitPos = insertPos + closingTag.length;
-                         // Tạo block: Header + Các bước hướng dẫn
-                         const xmlBlock = createXmlBlock(item.enhanced_content);
+                         const xmlBlock = createXmlBlock(item.enhanced_content, currentFontSize);
                          
                          if (xmlBlock) {
                              docXml = docXml.substring(0, splitPos) + xmlBlock + docXml.substring(splitPos);
