@@ -1,6 +1,6 @@
 import PizZip from 'pizzip';
 
-// 1. CHIẾN LƯỢC NLS CHUYÊN SÂU & HIỆN ĐẠI (Cập nhật mới nhất)
+// 1. CẤU HÌNH CHIẾN LƯỢC NLS CHO TỪNG MÔN (BÍ QUYẾT CỐT LÕI)
 const SUBJECT_STRATEGIES: Record<string, string> = {
   "Toán": "Tư duy tính toán & Mô hình hóa. Ưu tiên: GeoGebra, Desmos, Excel, WolframAlpha. Chuyển đổi số liệu khô khan thành đồ thị động.",
   "Ngữ Văn": "Sáng tạo nội dung đa phương tiện. Ưu tiên: Canva (Infographic), Podcast, Blog văn học, Từ điển số, E-book tương tác.",
@@ -18,7 +18,7 @@ const SUBJECT_STRATEGIES: Record<string, string> = {
 
 // 2. MÔ HÌNH SƯ PHẠM
 export const PEDAGOGY_MODELS: Record<string, { name: string; desc: string }> = {
-  "DEFAULT": { name: "Quét sâu & Đồng bộ (Deep Scan & Sync)", desc: "Quét sâu vào nội dung chuyên môn, tổng hợp Năng lực số chuẩn xác và đồng bộ định dạng văn bản." }
+  "DEFAULT": { name: "Cấu trúc Chuẩn (Tools-Teacher-Student)", desc: "Trình bày chi tiết theo quy trình: Công cụ -> GV tổ chức -> HS thực hiện. Không dùng ký tự lạ." }
 };
 
 // 3. HÀM ĐỌC FILE WORD
@@ -28,7 +28,7 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
     reader.onload = (e) => {
       try {
         const zip = new PizZip(e.target?.result as ArrayBuffer);
-        // Loại bỏ các ký tự gây nhiễu để AI đọc sạch hơn
+        // Lấy text thuần, loại bỏ các ký tự gây nhiễu
         const text = zip.file("word/document.xml")?.asText().replace(/<[^>]+>/g, ' ').replace(/"/g, "'") || "";
         resolve(text);
       } catch (err) { reject(err); }
@@ -37,49 +37,52 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
   });
 };
 
-// 4. HÀM TẠO PROMPT (CHUYÊN SÂU)
+// 4. HÀM TẠO PROMPT (BỘ NÃO XỬ LÝ)
 export const createIntegrationTextPrompt = (text: string, subject: string, grade: string, mode: 'NLS' | 'NAI') => {
+  const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
   const strategy = SUBJECT_STRATEGIES[subject] || "Tích hợp công nghệ hỗ trợ hiện đại.";
 
   return `
-  Đóng vai Chuyên gia Giáo dục số và Giáo viên bộ môn ${subject} xuất sắc.
+  Đóng vai Chuyên gia Sư phạm số và Giáo viên bộ môn ${subject}.
   
-  BỐI CẢNH: Hỗ trợ giáo viên lớp ${grade} soạn giáo án điện tử hiện đại.
-  CHIẾN LƯỢC MÔN HỌC: "${strategy}"
+  BỐI CẢNH: Hỗ trợ giáo viên lớp ${grade} chuyển đổi số giáo án.
+  CHIẾN LƯỢC: "${strategy}"
 
-  NHIỆM VỤ: "QUÉT SÂU" VÀ "TỔNG HỢP NGƯỢC".
+  === QUY TẮC ĐỊNH DẠNG (TUYỆT ĐỐI TUÂN THỦ) ===
+  1. KHÔNG dùng dấu sao đôi (**text**) để in đậm. Hãy viết văn bản thường.
+  2. KHÔNG tự ý viết tiêu đề "👉 Tích hợp NLS:".
+  3. Các dòng nội dung phải bắt đầu bằng dấu gạch ngang "- ".
+  4. Tuyệt đối không dùng dấu ngoặc kép (") trong nội dung JSON.
 
-  --- BƯỚC 1: QUÉT SÂU HOẠT ĐỘNG (Deep Scan) ---
-  - Đọc kỹ từng hoạt động trong bài (kể cả trong bảng).
-  - Đề xuất công cụ số "chuẩn và hiện đại nhất" cho hoạt động đó.
-  - Viết hướng dẫn chi tiết (GV làm gì, HS làm gì).
+  === NHIỆM VỤ ===
 
-  --- BƯỚC 2: TỔNG HỢP NĂNG LỰC (Synthesis) ---
-  - Từ các hoạt động ở Bước 1, hãy tổng hợp lại thành các đầu mục Năng lực số để đưa vào phần Mục tiêu (Năng lực) ở đầu bài.
-  - Nội dung phải khái quát được kỹ năng và công cụ sử dụng.
+  --- BƯỚC 1: CHI TIẾT HÓA HOẠT ĐỘNG (Deep Scan) ---
+  - Rà soát các hoạt động (kể cả trong bảng).
+  - Viết nội dung theo cấu trúc 3 phần rõ ràng:
+    - Công cụ số: [Tên công cụ/Phần mềm]
+    - GV làm gì: [Mô tả hành động của GV]
+    - HS làm gì: [Mô tả hành động của HS]
 
-  YÊU CẦU ĐẦU RA (JSON CHUẨN):
+  --- BƯỚC 2: TỔNG HỢP MỤC TIÊU ---
+  - Tóm tắt lại các công cụ đã dùng thành năng lực chung ở đầu bài.
+
+  === MẪU ĐẦU RA (JSON) ===
   {
-    "objectives_addition": "- [Năng lực số 1: Sử dụng công cụ X để giải quyết vấn đề Y...]\\n- [Năng lực số 2: Khai thác phần mềm Z để thực hiện nhiệm vụ T...]",
+    "objectives_addition": "- [Năng lực 1: Sử dụng công cụ A để... ]\\n- [Năng lực 2: Khai thác phần mềm B để...]",
     
     "materials_addition": "",
     
     "activities_enhancement": [
       { 
         "activity_name": "[Tên chính xác Hoạt động 1]", 
-        "enhanced_content": "- [Hướng dẫn chi tiết sử dụng công nghệ cho HĐ 1...]" 
+        "enhanced_content": "- Công cụ số: [Tên công cụ]\\n- GV làm gì: [Hướng dẫn chi tiết...]\\n- HS làm gì: [Thao tác cụ thể...]" 
       },
       { 
         "activity_name": "[Tên chính xác Hoạt động 2]", 
-        "enhanced_content": "- [Hướng dẫn chi tiết sử dụng công nghệ cho HĐ 2...]" 
+        "enhanced_content": "- Công cụ số: [Tên công cụ]\\n- GV làm gì: [Hướng dẫn chi tiết...]\\n- HS làm gì: [Thao tác cụ thể...]" 
       }
     ]
   }
-
-  QUY TẮC ĐỊNH DẠNG:
-  - Không viết tiêu đề thừa (như "Tích hợp NLS:").
-  - Các ý bắt đầu bằng gạch đầu dòng "- ".
-  - Tuyệt đối không dùng dấu ngoặc kép (") trong nội dung.
 
   NỘI DUNG GIÁO ÁN GỐC:
   """
