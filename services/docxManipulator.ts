@@ -21,60 +21,83 @@ export const injectContentIntoDocx = async (
         let docXml = docFile.asText();
         const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
 
-        // --- HÀM PHÁT HIỆN CỠ CHỮ (STYLE DETECTOR) ---
-        const detectFontSize = (xml: string, index: number): string => {
-            // Tìm ngược từ vị trí chèn để xem đoạn văn trước đó dùng cỡ chữ nào
-            // Tìm thẻ <w:sz w:val="..."/> gần nhất phía trước
-            const chunk = xml.substring(Math.max(0, index - 2000), index); // Lấy 2000 ký tự trước đó
-            const match = chunk.match(/<w:sz\s+w:val=["'](\d+)["']\s*\/>/g);
+        // --- HÀM SAO CHÉP PHONG CÁCH (FONT & SIZE) ---
+        const detectStyle = (xml: string, index: number) => {
+            // Lấy 2000 ký tự trước vị trí chèn để tìm định dạng
+            const chunk = xml.substring(Math.max(0, index - 2000), index);
             
-            if (match && match.length > 0) {
-                // Lấy giá trị cuối cùng tìm thấy (gần vị trí chèn nhất)
-                const lastMatch = match[match.length - 1];
-                const valueMatch = lastMatch.match(/val=["'](\d+)["']/);
-                return valueMatch ? valueMatch[1] : "26"; // Mặc định 26 (13pt) nếu không tìm thấy
+            // 1. Tìm cỡ chữ (w:sz)
+            // Regex tìm thẻ w:sz gần nhất
+            const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
+            let fontSize = null;
+            if (szMatch && szMatch.length > 0) {
+                 const last = szMatch[szMatch.length - 1];
+                 const m = last.match(/val=["'](\d+)["']/);
+                 if (m) fontSize = m[1];
             }
-            return "28"; // Mặc định 28 (14pt) nếu không có thông tin - Chuẩn giáo án mới
+
+            // 2. Tìm Font chữ (w:rFonts)
+            // Regex tìm thẻ w:rFonts gần nhất (để đồng bộ Times New Roman, Arial...)
+            const fontMatch = chunk.match(/<w:rFonts\s+[^>]*\/>/g);
+            let fontTag = ""; 
+            if (fontMatch && fontMatch.length > 0) {
+                fontTag = fontMatch[fontMatch.length - 1]; // Lấy thẻ font cuối cùng
+            }
+
+            return { fontSize, fontTag };
         };
 
-        // --- HÀM TẠO KHỐI XML (CÓ ĐỒNG BỘ CỠ CHỮ) ---
-        const createXmlBlock = (text: string, fontSize: string) => {
+        // --- HÀM TẠO KHỐI XML (ĐỒNG BỘ & SẠCH) ---
+        const createXmlBlock = (text: string, style: { fontSize: string | null, fontTag: string }) => {
           if (!text) return "";
           
           const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           if (lines.length === 0) return "";
 
-          // Header: 👉 Tích hợp NLS: (Màu xanh, Đậm, Cỡ chữ đồng bộ)
+          // Xây dựng thuộc tính định dạng (Run Properties)
+          // Nếu tìm thấy cỡ chữ/font thì dùng, không thì để Word tự quyết (kế thừa)
+          let rPrContent = `<w:b/><w:color w:val="2E74B5"/>`; // Mặc định: Đậm + Xanh cho tiêu đề
+          let rPrContentNormal = `<w:color w:val="2E74B5"/>`; // Mặc định: Xanh cho nội dung
+
+          if (style.fontSize) {
+              const szTag = `<w:sz w:val="${style.fontSize}"/><w:szCs w:val="${style.fontSize}"/>`;
+              rPrContent += szTag;
+              rPrContentNormal += szTag;
+          }
+          if (style.fontTag) {
+              rPrContent += style.fontTag;
+              rPrContentNormal += style.fontTag;
+          }
+
+          // 1. Tiêu đề chung
           let xmlBlock = `<w:p>
                             <w:pPr><w:ind w:left="360"/></w:pPr>
                             <w:r>
-                                <w:rPr>
-                                    <w:b/>
-                                    <w:color w:val="2E74B5"/>
-                                    <w:sz w:val="${fontSize}"/>
-                                    <w:szCs w:val="${fontSize}"/>
-                                </w:rPr>
+                                <w:rPr>${rPrContent}</w:rPr>
                                 <w:t>👉 ${escapeXml(label)}:</w:t>
                             </w:r>
                           </w:p>`;
 
-          // Content List: - Nội dung... (Màu xanh, Thường, Cỡ chữ đồng bộ)
+          // 2. Nội dung chi tiết
           lines.forEach(line => {
-              let cleanContent = line.replace(/^(👉|NLS:|-|\+|Tiết \d+:)\s*/gi, '').trim();
-              if (cleanContent) {
+              // LỌC RÁC: Xóa các dấu ** (nếu AI lỡ sinh ra) và các tiền tố thừa
+              let cleanLine = line
+                  .replace(/\*\*/g, "") // Xóa dấu **
+                  .replace(/^\s*[-•]\s*/, "") // Xóa gạch đầu dòng cũ để mình tự thêm chuẩn
+                  .replace(/^(👉|NLS:|Tiết \d+:)\s*/gi, "")
+                  .trim();
+
+              if (cleanLine) {
                   xmlBlock += `<w:p>
                                  <w:pPr><w:ind w:left="720"/></w:pPr> 
                                  <w:r>
-                                    <w:rPr>
-                                        <w:color w:val="2E74B5"/>
-                                        <w:sz w:val="${fontSize}"/>
-                                        <w:szCs w:val="${fontSize}"/>
-                                    </w:rPr>
-                                    <w:t xml:space="preserve">- ${escapeXml(cleanContent)}</w:t>
+                                    <w:rPr>${rPrContentNormal}</w:rPr>
+                                    <w:t xml:space="preserve">- ${escapeXml(cleanLine)}</w:t>
                                  </w:r>
                                </w:p>`;
               }
           });
+
           return xmlBlock;
         };
 
@@ -108,10 +131,10 @@ export const injectContentIntoDocx = async (
                  if (realIndex < objectiveLines.length) {
                      const contentToInsert = objectiveLines[realIndex];
                      
-                     // PHÁT HIỆN CỠ CHỮ TẠI VỊ TRÍ NÀY
-                     const currentFontSize = detectFontSize(newXml, index);
+                     // PHÁT HIỆN STYLE TẠI CHỖ CHÈN
+                     const currentStyle = detectStyle(newXml, index);
                      
-                     const xmlBlock = createXmlBlock(contentToInsert, currentFontSize);
+                     const xmlBlock = createXmlBlock(contentToInsert, currentStyle);
                      
                      if (xmlBlock) {
                          const closingTag = "</w:p>";
@@ -124,8 +147,8 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            // Fallback (Mặc định size 28 - 14pt)
-            const xmlBlock = createXmlBlock(content.objectives_addition, "28");
+            // Fallback (Mặc định không style, để Word tự kế thừa)
+            const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: null, fontTag: "" });
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
                 const bodyIndex = newXml.indexOf(bodyTag);
@@ -148,15 +171,15 @@ export const injectContentIntoDocx = async (
                 }
 
                 if (actIndex !== -1) {
-                     // PHÁT HIỆN CỠ CHỮ TẠI VỊ TRÍ HOẠT ĐỘNG NÀY
-                     const currentFontSize = detectFontSize(docXml, actIndex);
+                     // PHÁT HIỆN STYLE TẠI CHỖ CHÈN HOẠT ĐỘNG
+                     const currentStyle = detectStyle(docXml, actIndex);
 
                      const closingTag = "</w:p>";
                      const insertPos = docXml.indexOf(closingTag, actIndex);
                      
                      if (insertPos !== -1) {
                          const splitPos = insertPos + closingTag.length;
-                         const xmlBlock = createXmlBlock(item.enhanced_content, currentFontSize);
+                         const xmlBlock = createXmlBlock(item.enhanced_content, currentStyle);
                          
                          if (xmlBlock) {
                              docXml = docXml.substring(0, splitPos) + xmlBlock + docXml.substring(splitPos);
