@@ -23,7 +23,7 @@ export const injectContentIntoDocx = async (
 
         // --- HÀM 1: SAO CHÉP PHONG CÁCH (FONT & SIZE) ---
         const detectStyle = (xml: string, index: number) => {
-            const chunk = xml.substring(Math.max(0, index - 3000), index); 
+            const chunk = xml.substring(Math.max(0, index - 3000), index);
             
             // Tìm cỡ chữ (w:sz)
             const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
@@ -44,18 +44,21 @@ export const injectContentIntoDocx = async (
             return { fontSize, fontTag };
         };
 
-        // --- HÀM 2: TẠO KHỐI XML (HEADER + LIST) ---
+        // --- HÀM 2: TẠO KHỐI XML (XỬ LÝ XUỐNG DÒNG & THỤT ĐẦU DÒNG) ---
         const createXmlBlock = (text: string, style: { fontSize: string | null, fontTag: string }) => {
           if (!text) return "";
           
-          const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          // 1. XỬ LÝ KÝ TỰ \n (QUAN TRỌNG): Thay thế \n bằng xuống dòng thật
+          const normalizedText = text.replace(/\\n/g, '\n'); 
+          const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          
           if (lines.length === 0) return "";
 
-          // Style chung cho cả khối (Màu xanh dương đậm)
-          let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; // Header: Đậm
-          let rPrBody = `<w:color w:val="2E74B5"/>`; // Body: Thường
+          // Style chung (Màu xanh)
+          let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; 
+          let rPrBody = `<w:color w:val="2E74B5"/>`;
 
-          // Áp dụng style sao chép được
+          // Áp dụng Font/Size gốc
           if (style.fontSize) {
               const szTag = `<w:sz w:val="${style.fontSize}"/><w:szCs w:val="${style.fontSize}"/>`;
               rPrHeader += szTag;
@@ -66,7 +69,7 @@ export const injectContentIntoDocx = async (
               rPrBody += style.fontTag;
           }
 
-          // 1. Tạo dòng Tiêu đề (Header)
+          // Tạo dòng Tiêu đề
           let xmlBlock = `<w:p>
                             <w:pPr><w:ind w:left="360"/></w:pPr>
                             <w:r>
@@ -75,22 +78,38 @@ export const injectContentIntoDocx = async (
                             </w:r>
                           </w:p>`;
 
-          // 2. Tạo các dòng Liệt kê (List)
+          // Tạo các dòng Nội dung (Xử lý dấu - và +)
           lines.forEach(line => {
-              // Lọc sạch các ký tự thừa
+              // Lọc rác
               let cleanLine = line
-                  .replace(/\*\*/g, "") 
+                  .replace(/\*\*/g, "")
                   .replace(/__/, "")
-                  .replace(/^\s*[-•+]\s*/, "") // Xóa gạch đầu dòng cũ
                   .replace(/^(👉|NLS:|Tiết \d+:|Tích hợp NLS:)\s*/gi, "")
                   .trim();
 
               if (cleanLine) {
+                  // Mặc định là cấp 1 (dấu -)
+                  let indentLevel = "720"; 
+                  let bulletChar = "-";
+
+                  // Nếu dòng bắt đầu bằng dấu + (Cấp 2)
+                  if (cleanLine.startsWith("+")) {
+                      indentLevel = "1080"; // Thụt sâu hơn
+                      bulletChar = "+";
+                      cleanLine = cleanLine.substring(1).trim(); // Bỏ dấu + cũ
+                  } 
+                  // Nếu dòng bắt đầu bằng dấu - (Cấp 1)
+                  else if (cleanLine.startsWith("-")) {
+                      indentLevel = "720";
+                      bulletChar = "-";
+                      cleanLine = cleanLine.substring(1).trim(); // Bỏ dấu - cũ
+                  }
+
                   xmlBlock += `<w:p>
-                                 <w:pPr><w:ind w:left="720"/></w:pPr> 
+                                 <w:pPr><w:ind w:left="${indentLevel}"/></w:pPr> 
                                  <w:r>
                                     <w:rPr>${rPrBody}</w:rPr>
-                                    <w:t xml:space="preserve">- ${escapeXml(cleanLine)}</w:t>
+                                    <w:t xml:space="preserve">${bulletChar} ${escapeXml(cleanLine)}</w:t>
                                  </w:r>
                                </w:p>`;
               }
@@ -99,9 +118,8 @@ export const injectContentIntoDocx = async (
           return xmlBlock;
         };
 
-        // --- 3. CHÈN NĂNG LỰC (VÀO MỤC 2. NĂNG LỰC) ---
+        // --- 3. CHÈN NĂNG LỰC ---
         const objectiveLines = content.objectives_addition.split('\n').filter(l => l.trim());
-        // Từ khóa mở rộng để bắt dính nhiều giáo án hơn
         const keywords = ["Phẩm chất năng lực", "2. Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt", "3. Năng lực"];
         
         const findAllIndices = (xml: string, keyword: string) => {
@@ -129,12 +147,7 @@ export const injectContentIntoDocx = async (
         
         if (targetIndices.length > 0) {
              reverseIndices.forEach((index, reverseI) => {
-                 const realIndex = targetIndices.length - 1 - reverseI;
-                 
-                 // Logic mới: Chèn toàn bộ nội dung tổng hợp vào mỗi mục Năng lực tìm thấy
-                 // (Vì anh muốn "tổng hợp tất cả" vào đây)
                  let contentToInsert = content.objectives_addition;
-
                  if (contentToInsert) {
                      const currentStyle = detectStyle(newXml, index);
                      const xmlBlock = createXmlBlock(contentToInsert, currentStyle);
@@ -150,7 +163,7 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            // Fallback: Chèn vào đầu
+            // Fallback
             const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: null, fontTag: "" });
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
@@ -162,13 +175,12 @@ export const injectContentIntoDocx = async (
         }
         docXml = newXml;
 
-        // --- 4. CHÈN HOẠT ĐỘNG (VÀO BẢNG HOẶC VĂN BẢN) ---
+        // --- 4. CHÈN HOẠT ĐỘNG ---
         if (Array.isArray(content.activities_enhancement)) {
             content.activities_enhancement.forEach(item => {
                 let safeName = escapeXml(item.activity_name);
                 let actIndex = docXml.indexOf(safeName); 
                 
-                // Thử tìm biến thể ngắn hơn nếu tên dài không khớp
                 if (actIndex === -1 && safeName.includes(":")) {
                     safeName = safeName.split(":")[0];
                     actIndex = docXml.indexOf(safeName);
