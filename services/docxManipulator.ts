@@ -25,9 +25,9 @@ export const injectContentIntoDocx = async (
         const detectStyle = (xml: string, index: number) => {
             const chunk = xml.substring(Math.max(0, index - 3000), index); 
             
-            // Tìm cỡ chữ (w:sz)
+            // Tìm cỡ chữ (w:sz) - Mặc định 28 (14pt) nếu không thấy
             const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
-            let fontSize = null;
+            let fontSize = "28"; 
             if (szMatch && szMatch.length > 0) {
                  const last = szMatch[szMatch.length - 1];
                  const m = last.match(/val=["'](\d+)["']/);
@@ -77,6 +77,7 @@ export const injectContentIntoDocx = async (
 
           // 2. Tạo các dòng Liệt kê
           lines.forEach(line => {
+              // Lọc sạch rác
               let cleanLine = line
                   .replace(/\*\*/g, "") 
                   .replace(/__/, "")
@@ -98,29 +99,50 @@ export const injectContentIntoDocx = async (
           return xmlBlock;
         };
 
-        // --- 3. CHÈN NĂNG LỰC (VÀO MỤC 2. NĂNG LỰC) ---
+        // --- HÀM 3: TÌM KIẾM XUYÊN THẤU (FUZZY XML SEARCH) ---
+        // Giúp tìm từ khóa ngay cả khi nó bị ngắt bởi thẻ XML (ví dụ: HOẠT <w:t>...</w:t> ĐỘNG)
+        const findFuzzyIndex = (xml: string, keyword: string) => {
+            // 1. Tìm chính xác trước (Nhanh nhất)
+            let idx = xml.indexOf(keyword);
+            if (idx !== -1) return idx;
+
+            // 2. Nếu không thấy, dùng Regex "xuyên thấu"
+            // Tách từ khóa thành các từ đơn: "HOẠT ĐỘNG" -> ["HOẠT", "ĐỘNG"]
+            const words = keyword.split(/\s+/).map(w => escapeRegex(w));
+            if (words.length === 0) return -1;
+
+            // Tạo pattern: HOẠT (bất kỳ thẻ tag hoặc khoảng trắng nào) ĐỘNG
+            // Pattern ví dụ: /HOẠT(?:<[^>]+>|\s)*ĐỘNG/gi
+            const patternStr = words.join('(?:<[^>]+>|\\s)+');
+            const regex = new RegExp(patternStr, 'gi'); // g: global, i: case-insensitive
+            
+            const match = regex.exec(xml);
+            return match ? match.index : -1;
+        };
+
+        // --- 4. CHÈN NĂNG LỰC (VÀO MỤC 2. NĂNG LỰC) ---
         const objectiveLines = content.objectives_addition.split('\n').filter(l => l.trim());
         const keywords = ["Phẩm chất năng lực", "2. Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt", "3. Năng lực"];
         
-        const findAllIndices = (xml: string, keyword: string) => {
-            const regex = new RegExp(keyword.replace(/\./g, "\\."), "gi");
-            let match;
-            const indices = [];
-            while ((match = regex.exec(xml)) !== null) indices.push(match.index);
-            return indices;
-        };
-
         let targetIndices: number[] = [];
+        
+        // Dùng thuật toán tìm xuyên thấu cho từ khóa năng lực
         for (const key of keywords) {
-            const found = findAllIndices(docXml, key);
-            if (found.length > 0) {
-                if (targetIndices.length === 0) targetIndices = found;
-                if (found.length >= objectiveLines.length) { 
-                    targetIndices = found; 
-                    break; 
-                }
+            // Tìm tất cả vị trí (Dùng loop exec để tìm hết)
+            const words = key.split(/\s+/).map(w => escapeRegex(w));
+            const patternStr = words.join('(?:<[^>]+>|\\s)+');
+            const regex = new RegExp(patternStr, 'gi');
+            
+            let match;
+            while ((match = regex.exec(docXml)) !== null) {
+                targetIndices.push(match.index);
             }
+            
+            if (targetIndices.length > 0) break; // Ưu tiên từ khóa đầu tiên tìm thấy
         }
+
+        // Sắp xếp tăng dần
+        targetIndices.sort((a, b) => a - b);
 
         let newXml = docXml;
         const reverseIndices = [...targetIndices].reverse(); 
@@ -143,7 +165,8 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: null, fontTag: "" });
+            // Fallback
+            const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: "28", fontTag: "" });
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
                 const bodyIndex = newXml.indexOf(bodyTag);
@@ -154,42 +177,38 @@ export const injectContentIntoDocx = async (
         }
         docXml = newXml;
 
-        // --- 4. CHÈN HOẠT ĐỘNG (THUẬT TOÁN TÌM KIẾM ĐA TẦNG) ---
+        // --- 5. CHÈN HOẠT ĐỘNG (DÙNG FUZZY SEARCH) ---
         if (Array.isArray(content.activities_enhancement)) {
             content.activities_enhancement.forEach(item => {
                 let safeName = escapeXml(item.activity_name);
                 let actIndex = -1;
 
-                // TẦNG 1: Tìm chính xác tuyệt đối
-                actIndex = docXml.indexOf(safeName);
+                // CHIẾN LƯỢC TÌM KIẾM ĐA TẦNG (MỚI)
+                
+                // Tầng 1: Tìm tên chính xác (Xuyên thấu XML)
+                actIndex = findFuzzyIndex(docXml, safeName);
 
-                // TẦNG 2: Tìm theo từ khóa cốt lõi (Khởi động, Luyện tập...)
+                // Tầng 2: Tìm theo từ khóa cốt lõi (Khởi động, Luyện tập...)
                 if (actIndex === -1) {
                     const coreKeywords = ["Khởi động", "Hình thành kiến thức", "Luyện tập", "Vận dụng", "Mở đầu", "Kết nối"];
                     
                     for (const key of coreKeywords) {
                         if (safeName.includes(key)) {
-                            const upperKey = key.toUpperCase(); // Ví dụ: LUYỆN TẬP
-                            
-                            // ƯU TIÊN 1: Tìm Tiêu đề lớn (Viết hoa toàn bộ hoặc có chữ HOẠT ĐỘNG)
-                            // Tránh tìm nhầm vào các câu văn thường như "chuyển sang phần luyện tập"
-                            const headerVariants = [
-                                `HOẠT ĐỘNG ${upperKey}`, // HOẠT ĐỘNG LUYỆN TẬP
-                                `HOẠT ĐỘNG ${key}`,      // HOẠT ĐỘNG Luyện tập
-                                `${upperKey}`            // LUYỆN TẬP (Đứng một mình)
+                            // Tạo các biến thể tiêu đề lớn để tìm trước
+                            const variants = [
+                                `HOẠT ĐỘNG ${key.toUpperCase()}`, // HOẠT ĐỘNG LUYỆN TẬP
+                                `HOẠT ĐỘNG ${key}`,             // HOẠT ĐỘNG Luyện tập
+                                `${key.toUpperCase()}`            // LUYỆN TẬP
                             ];
 
-                            for (const variant of headerVariants) {
-                                let idx = docXml.indexOf(variant);
-                                if (idx !== -1) {
-                                    actIndex = idx;
-                                    break;
-                                }
+                            for (const v of variants) {
+                                actIndex = findFuzzyIndex(docXml, v);
+                                if (actIndex !== -1) break;
                             }
-
-                            // ƯU TIÊN 2: Nếu không thấy tiêu đề lớn, mới chấp nhận tìm từ khóa thường
+                            
+                            // Nếu vẫn chưa thấy, tìm từ khóa gốc
                             if (actIndex === -1) {
-                                actIndex = docXml.indexOf(key);
+                                actIndex = findFuzzyIndex(docXml, key);
                             }
                             
                             if (actIndex !== -1) break;
@@ -197,19 +216,15 @@ export const injectContentIntoDocx = async (
                     }
                 }
 
-                // TẦNG 3: Tìm theo số thứ tự (Hoạt động 1, HĐ 2...)
+                // Tầng 3: Tìm theo số thứ tự (HĐ 1, HĐ 2...)
                 if (actIndex === -1) {
                      const matchNum = safeName.match(/\d+/);
                      if (matchNum) {
                          const num = matchNum[0];
                          const variants = [`Hoạt động ${num}`, `HĐ ${num}`, `HĐ${num}`, `Nhiệm vụ ${num}`];
                          for (const v of variants) {
-                             let idx = docXml.indexOf(v);
-                             if (idx === -1) idx = docXml.indexOf(v.toUpperCase());
-                             if (idx !== -1) {
-                                 actIndex = idx;
-                                 break;
-                             }
+                             actIndex = findFuzzyIndex(docXml, v);
+                             if (actIndex !== -1) break;
                          }
                      }
                 }
@@ -239,6 +254,11 @@ export const injectContentIntoDocx = async (
     };
     reader.readAsArrayBuffer(file);
   });
+};
+
+// Helper: Escape chuỗi cho Regex
+const escapeRegex = (string: string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
 const escapeXml = (unsafe: string): string => {
