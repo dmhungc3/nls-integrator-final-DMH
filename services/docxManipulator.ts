@@ -16,14 +16,14 @@ export const injectContentIntoDocx = async (
 
         const zip = new PizZip(binaryString as ArrayBuffer);
         const docFile = zip.file("word/document.xml");
-        if (!docFile) throw new Error("File Word không hợp lệ");
+        if (!docFile) throw new Error("File Word không hợp lệ (thiếu document.xml)");
         
         let docXml = docFile.asText();
         const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
 
         // --- HÀM 1: SAO CHÉP PHONG CÁCH (FONT & SIZE) ---
         const detectStyle = (xml: string, index: number) => {
-            const chunk = xml.substring(Math.max(0, index - 3000), index);
+            const chunk = xml.substring(Math.max(0, index - 3000), index); 
             
             // Tìm cỡ chữ (w:sz)
             const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
@@ -44,21 +44,18 @@ export const injectContentIntoDocx = async (
             return { fontSize, fontTag };
         };
 
-        // --- HÀM 2: TẠO KHỐI XML (XỬ LÝ XUỐNG DÒNG & THỤT ĐẦU DÒNG) ---
+        // --- HÀM 2: TẠO KHỐI XML (HEADER + LIST) ---
         const createXmlBlock = (text: string, style: { fontSize: string | null, fontTag: string }) => {
           if (!text) return "";
           
-          // 1. XỬ LÝ KÝ TỰ \n (QUAN TRỌNG): Thay thế \n bằng xuống dòng thật
-          const normalizedText = text.replace(/\\n/g, '\n'); 
-          const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-          
+          const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           if (lines.length === 0) return "";
 
-          // Style chung (Màu xanh)
+          // Style chung (Màu xanh dương đậm)
           let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; 
           let rPrBody = `<w:color w:val="2E74B5"/>`;
 
-          // Áp dụng Font/Size gốc
+          // Áp dụng style sao chép
           if (style.fontSize) {
               const szTag = `<w:sz w:val="${style.fontSize}"/><w:szCs w:val="${style.fontSize}"/>`;
               rPrHeader += szTag;
@@ -69,7 +66,7 @@ export const injectContentIntoDocx = async (
               rPrBody += style.fontTag;
           }
 
-          // Tạo dòng Tiêu đề
+          // 1. Tạo dòng Tiêu đề
           let xmlBlock = `<w:p>
                             <w:pPr><w:ind w:left="360"/></w:pPr>
                             <w:r>
@@ -78,38 +75,22 @@ export const injectContentIntoDocx = async (
                             </w:r>
                           </w:p>`;
 
-          // Tạo các dòng Nội dung (Xử lý dấu - và +)
+          // 2. Tạo các dòng Liệt kê
           lines.forEach(line => {
-              // Lọc rác
+              // Lọc sạch rác
               let cleanLine = line
-                  .replace(/\*\*/g, "")
+                  .replace(/\*\*/g, "") 
                   .replace(/__/, "")
+                  .replace(/^\s*[-•+]\s*/, "") 
                   .replace(/^(👉|NLS:|Tiết \d+:|Tích hợp NLS:)\s*/gi, "")
                   .trim();
 
               if (cleanLine) {
-                  // Mặc định là cấp 1 (dấu -)
-                  let indentLevel = "720"; 
-                  let bulletChar = "-";
-
-                  // Nếu dòng bắt đầu bằng dấu + (Cấp 2)
-                  if (cleanLine.startsWith("+")) {
-                      indentLevel = "1080"; // Thụt sâu hơn
-                      bulletChar = "+";
-                      cleanLine = cleanLine.substring(1).trim(); // Bỏ dấu + cũ
-                  } 
-                  // Nếu dòng bắt đầu bằng dấu - (Cấp 1)
-                  else if (cleanLine.startsWith("-")) {
-                      indentLevel = "720";
-                      bulletChar = "-";
-                      cleanLine = cleanLine.substring(1).trim(); // Bỏ dấu - cũ
-                  }
-
                   xmlBlock += `<w:p>
-                                 <w:pPr><w:ind w:left="${indentLevel}"/></w:pPr> 
+                                 <w:pPr><w:ind w:left="720"/></w:pPr> 
                                  <w:r>
                                     <w:rPr>${rPrBody}</w:rPr>
-                                    <w:t xml:space="preserve">${bulletChar} ${escapeXml(cleanLine)}</w:t>
+                                    <w:t xml:space="preserve">- ${escapeXml(cleanLine)}</w:t>
                                  </w:r>
                                </w:p>`;
               }
@@ -118,7 +99,7 @@ export const injectContentIntoDocx = async (
           return xmlBlock;
         };
 
-        // --- 3. CHÈN NĂNG LỰC ---
+        // --- 3. CHÈN NĂNG LỰC (VÀO MỤC 2. NĂNG LỰC) ---
         const objectiveLines = content.objectives_addition.split('\n').filter(l => l.trim());
         const keywords = ["Phẩm chất năng lực", "2. Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt", "3. Năng lực"];
         
@@ -175,15 +156,57 @@ export const injectContentIntoDocx = async (
         }
         docXml = newXml;
 
-        // --- 4. CHÈN HOẠT ĐỘNG ---
+        // --- 4. CHÈN HOẠT ĐỘNG (TÌM KIẾM THÔNG MINH - SMART SEARCH) ---
+        // Phần này được nâng cấp để tìm được tên hoạt động ngay cả khi sai lệch
         if (Array.isArray(content.activities_enhancement)) {
             content.activities_enhancement.forEach(item => {
                 let safeName = escapeXml(item.activity_name);
-                let actIndex = docXml.indexOf(safeName); 
-                
+                let actIndex = -1;
+
+                // CHIẾN LƯỢC 1: Tìm chính xác tuyệt đối
+                actIndex = docXml.indexOf(safeName);
+
+                // CHIẾN LƯỢC 2: Thử bỏ phần sau dấu hai chấm (VD: "Hoạt động 1: Mở đầu" -> tìm "Hoạt động 1")
                 if (actIndex === -1 && safeName.includes(":")) {
-                    safeName = safeName.split(":")[0];
-                    actIndex = docXml.indexOf(safeName);
+                    let shortName = safeName.split(":")[0].trim();
+                    actIndex = docXml.indexOf(shortName);
+                }
+                
+                // CHIẾN LƯỢC 3: Thử tìm theo từ khóa cốt lõi (VD: "Khởi động", "Luyện tập")
+                if (actIndex === -1) {
+                    const coreKeywords = ["Khởi động", "Hình thành kiến thức", "Luyện tập", "Vận dụng", "Mở đầu", "Kết nối"];
+                    for (const key of coreKeywords) {
+                        if (safeName.includes(key)) {
+                            // Tìm từ khóa này trong file word (viết hoa hoặc thường)
+                            // Lưu ý: indexOf phân biệt hoa thường, nên ta thử tìm chính xác từ khóa đó trong tên hoạt động
+                            const realKeyInDoc = key.toUpperCase(); // Thử tìm dạng viết hoa (VD: KHỞI ĐỘNG)
+                            let tempIndex = docXml.indexOf(realKeyInDoc);
+                            if (tempIndex === -1) tempIndex = docXml.indexOf(key); // Tìm dạng thường
+                            
+                            if (tempIndex !== -1) {
+                                actIndex = tempIndex;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // CHIẾN LƯỢC 4: Tìm theo số thứ tự hoạt động (VD: "Hoạt động 1", "HĐ 1")
+                if (actIndex === -1) {
+                     const matchNum = safeName.match(/\d+/);
+                     if (matchNum) {
+                         const num = matchNum[0];
+                         // Thử các biến thể phổ biến
+                         const variants = [`Hoạt động ${num}`, `HĐ ${num}`, `HĐ${num}`, `Nhiệm vụ ${num}`];
+                         for (const v of variants) {
+                             let tempIndex = docXml.indexOf(v);
+                             if (tempIndex === -1) tempIndex = docXml.indexOf(v.toUpperCase());
+                             if (tempIndex !== -1) {
+                                 actIndex = tempIndex;
+                                 break;
+                             }
+                         }
+                     }
                 }
 
                 if (actIndex !== -1) {
