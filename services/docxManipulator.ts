@@ -30,7 +30,6 @@ export const injectContentIntoDocx = async (
             const cleanLine = line.replace(/👉.*?:/g, '').trim();
             
             // Lấy prefix từ dòng text (nếu AI sinh ra) hoặc dùng mặc định
-            // Vì Prompt đã yêu cầu không ghi "(Tiết 1)" nên prefix sẽ sạch
             const prefixMatch = line.match(/^(👉.*?):/);
             const prefix = prefixMatch ? prefixMatch[1] : `👉 ${label}`;
 
@@ -42,18 +41,25 @@ export const injectContentIntoDocx = async (
           }).join('');
         };
 
-        // --- 3. THUẬT TOÁN CHÈN PHÂN PHỐI (DISTRIBUTED INSERT) ---
+        // --- 3. THUẬT TOÁN CHÈN NĂNG LỰC TỔNG HỢP (DISTRIBUTED INSERT) ---
         
         // Bước A: Tách nội dung năng lực thành mảng (Mỗi dòng là 1 tiết)
         const objectiveLines = content.objectives_addition.split('\n').filter(line => line.trim().length > 0);
 
         // Bước B: Tìm tất cả vị trí các từ khóa Mục tiêu/Năng lực
-        // Danh sách từ khóa ưu tiên (từ phổ biến nhất đến ít phổ biến)
-        const keywords = ["Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt"];
+        // Danh sách từ khóa ưu tiên (Đã thêm "Phẩm chất năng lực")
+        const keywords = [
+            "2. Phát triển năng lực", 
+            "Phẩm chất năng lực", 
+            "2. Năng lực", 
+            "2. năng lực", 
+            "II. MỤC TIÊU", 
+            "II. Mục tiêu", 
+            "Năng lực cần đạt"
+        ];
         
         // Hàm tìm tất cả chỉ số (index) của một từ khóa trong văn bản XML
         const findAllIndices = (xml: string, keyword: string) => {
-            // Escape ký tự đặc biệt như dấu chấm
             const regex = new RegExp(keyword.replace(/\./g, "\\."), "gi");
             let match;
             const indices = [];
@@ -65,8 +71,7 @@ export const injectContentIntoDocx = async (
 
         let targetIndices: number[] = [];
         
-        // Quét từng từ khóa, chọn từ khóa nào tìm thấy số lượng vị trí hợp lý nhất
-        // (Tìm thấy ít nhất bằng số lượng tiết mà AI đã sinh ra)
+        // Quét từng từ khóa
         for (const key of keywords) {
             const found = findAllIndices(docXml, key);
             if (found.length > 0) {
@@ -75,22 +80,18 @@ export const injectContentIntoDocx = async (
                     targetIndices = found;
                     break; 
                 }
-                // Nếu chưa tìm thấy đủ, cứ tạm lưu lại kết quả của từ khóa đầu tiên tìm thấy
                 if (targetIndices.length === 0) targetIndices = found; 
             }
         }
 
-        // Bước C: Tiến hành chèn (QUAN TRỌNG: Chèn từ dưới lên trên để không làm lệch index)
+        // Bước C: Tiến hành chèn (Chèn từ dưới lên trên)
         let newXml = docXml;
         const reverseIndices = [...targetIndices].reverse(); 
         
         if (targetIndices.length > 0) {
              reverseIndices.forEach((index, reverseI) => {
-                 // Tính chỉ số thực trong mảng xuôi: i = (length - 1) - reverseI
-                 // Ví dụ: Có 2 vị trí. Vị trí cuối (reverseI=0) là index 1. Vị trí đầu (reverseI=1) là index 0.
                  const realIndex = targetIndices.length - 1 - reverseI;
                  
-                 // Chỉ chèn nếu có nội dung tương ứng cho tiết này
                  if (realIndex < objectiveLines.length) {
                      const contentToInsert = objectiveLines[realIndex];
                      
@@ -101,15 +102,13 @@ export const injectContentIntoDocx = async (
                      if (insertPos !== -1) {
                          const splitPos = insertPos + closingTag.length;
                          const xmlBlock = createXmlBlock(contentToInsert);
-                         // Chèn đoạn XML mới vào
                          newXml = newXml.substring(0, splitPos) + xmlBlock + newXml.substring(splitPos);
                      }
                  }
              });
         } else {
-            // Fallback: Nếu giáo án quá lạ, không tìm thấy từ khóa nào -> Chèn tất cả vào đầu trang
+            // Fallback: Chèn vào đầu body nếu không tìm thấy từ khóa
             const xmlBlock = createXmlBlock(content.objectives_addition);
-            // Tìm thẻ body để chèn vào đầu
             const bodyTag = "<w:body>";
             const bodyIndex = newXml.indexOf(bodyTag);
             if (bodyIndex !== -1) {
@@ -119,14 +118,24 @@ export const injectContentIntoDocx = async (
         
         docXml = newXml;
 
-        // --- 4. THUẬT TOÁN CHÈN HOẠT ĐỘNG (ACTIVITY INSERT) ---
+        // --- 4. THUẬT TOÁN CHÈN HOẠT ĐỘNG (DEEP TABLE SCAN) ---
         if (Array.isArray(content.activities_enhancement)) {
             content.activities_enhancement.forEach(item => {
-                const safeName = escapeXml(item.activity_name);
-                // Tìm vị trí tên hoạt động
-                const actIndex = docXml.indexOf(safeName); 
+                // Làm sạch tên hoạt động
+                let safeName = escapeXml(item.activity_name);
                 
+                // Tìm vị trí tên hoạt động trong XML
+                let actIndex = docXml.indexOf(safeName); 
+                
+                // Nếu không tìm thấy chính xác, thử tìm phiên bản ngắn gọn hơn (bỏ dấu : phía sau)
+                if (actIndex === -1 && safeName.includes(":")) {
+                    safeName = safeName.split(":")[0]; // Ví dụ: "Hoạt động 1: Mở đầu" -> "Hoạt động 1"
+                    actIndex = docXml.indexOf(safeName);
+                }
+
                 if (actIndex !== -1) {
+                     // Tìm thẻ đóng đoạn văn </w:p> gần nhất
+                     // Trong bảng, </w:p> là kết thúc dòng trong ô đó -> Chèn vào sau nó là OK
                      const closingTag = "</w:p>";
                      const insertPos = docXml.indexOf(closingTag, actIndex);
                      

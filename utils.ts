@@ -2,34 +2,23 @@ import PizZip from 'pizzip';
 
 // 1. CẤU HÌNH CHIẾN LƯỢC NLS CHO TỪNG MÔN (BÍ QUYẾT CỐT LÕI)
 const SUBJECT_STRATEGIES: Record<string, string> = {
-  "Toán": "Tập trung vào 'Tư duy tính toán' (Computational Thinking) và 'Mô hình hóa toán học'. Ưu tiên các công cụ: GeoGebra, Desmos, Excel (xử lý thống kê), WolframAlpha. Nhấn mạnh việc biến các con số khô khan thành hình ảnh trực quan.",
-  
-  "Ngữ Văn": "Tập trung vào 'Sáng tạo nội dung số' và 'Văn hóa đọc/viết trên không gian mạng'. Ưu tiên: Tạo Podcast, Infographic (Canva), E-book, Blog văn học, tra cứu từ điển số. Nhấn mạnh đạo đức trích dẫn nguồn và an toàn thông tin.",
-  
-  "Tiếng Anh": "Tập trung vào 'Giao tiếp xuyên biên giới' và 'Cá nhân hóa lộ trình học'. Ưu tiên: Elsa Speak (AI phát âm), Duolingo, Grammarly, kết nối với người nước ngoài qua Skype/Zoom, tra từ điển ngữ cảnh (Ozdic).",
-  
-  "Vật Lí": "Tập trung vào 'Thí nghiệm ảo' và 'Thu thập số liệu thực nghiệm'. Ưu tiên: PhET Simulations, phần mềm phân tích video chuyển động (Tracker), cảm biến số (Data logger).",
-  
-  "Hóa Học": "Tập trung vào 'Mô phỏng cấu trúc phân tử' và 'Phản ứng nguy hiểm'. Ưu tiên: ChemDraw, PhET, Video thí nghiệm 3D, bảng tuần hoàn tương tác.",
-  
-  "Sinh Học": "Tập trung vào 'Giải phẫu ảo' và 'Hệ sinh thái số'. Ưu tiên: Human Anatomy Atlas, kính hiển vi ảo, Google Earth (quan sát sinh cảnh), iNaturalist (định danh loài).",
-  
-  "Lịch Sử": "Tập trung vào 'Tái hiện quá khứ' và 'Tư duy đa chiều'. Ưu tiên: Bảo tàng ảo 3D, Google Earth VR, Bản đồ lịch sử tương tác, phục dựng 3D di tích.",
-  
-  "Địa Lí": "Tập trung vào 'Hệ thống thông tin địa lý (GIS)' và 'Dữ liệu thực địa'. Ưu tiên: Google Maps/Earth, GPS, Worldometer (số liệu dân số thực), phân tích biểu đồ số.",
-  
-  "Tin Học": "Tập trung vào 'Tư duy lập trình', 'Giải quyết vấn đề' và 'Đạo đức số'. Ưu tiên: Python, Scratch, Code.org, an toàn an ninh mạng.",
-  
-  "Công Nghệ": "Tập trung vào 'Thiết kế kỹ thuật' và 'Mô phỏng quy trình'. Ưu tiên: AutoCAD, Tinkercad (in 3D), sơ đồ tư duy quy trình công nghệ.",
-  
-  "Nghệ Thuật": "Tập trung vào 'Sáng tạo nghệ thuật số'. Ưu tiên: Photoshop, AI vẽ tranh (Midjourney), soạn nhạc số (GarageBand).",
-  
-  "Giáo dục thể chất": "Tập trung vào 'Theo dõi sức khỏe số'. Ưu tiên: Smartwatch, App đo bước chân/calo, phân tích video kỹ thuật động tác (Slow motion)."
+  "Toán": "Tư duy tính toán, Mô hình hóa (GeoGebra, Excel).",
+  "Ngữ Văn": "Sáng tạo nội dung số, Văn hóa đọc mạng.",
+  "Tiếng Anh": "Giao tiếp số, Học tập cá nhân hóa.",
+  "Vật Lí": "Thí nghiệm ảo (PhET), Xử lý số liệu thực nghiệm.",
+  "Hóa Học": "Mô phỏng 3D cấu trúc, An toàn hóa chất số.",
+  "Sinh Học": "Giải phẫu ảo, Thế giới quan sinh học số.",
+  "Lịch Sử": "Tái hiện lịch sử, Bảo tàng số 3D.",
+  "Địa Lí": "Bản đồ số (GIS), Thực địa ảo (Google Earth).",
+  "Tin Học": "Tư duy máy tính, Đạo đức số.",
+  "Công Nghệ": "Thiết kế kỹ thuật (CAD), Mô phỏng.",
+  "Nghệ Thuật": "Sáng tạo nghệ thuật số.",
+  "Giáo dục thể chất": "Y tế số, Phân tích vận động."
 };
 
 // 2. MÔ HÌNH SƯ PHẠM
 export const PEDAGOGY_MODELS: Record<string, { name: string; desc: string }> = {
-  "DEFAULT": { name: "Tổng hợp & Chi tiết (Comprehensive)", desc: "Tổng hợp NLS ở mục Tiêu và chèn hướng dẫn chi tiết vào từng Hoạt động (Luyện tập, Vận dụng...)." }
+  "DEFAULT": { name: "Tích hợp Sâu & Chi tiết (Deep & Dense)", desc: "Quét sâu vào bảng/văn bản, viết hướng dẫn chi tiết từng bước và tổng hợp ngược lên mục tiêu." }
 };
 
 // 3. HÀM ĐỌC FILE WORD
@@ -39,6 +28,7 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
     reader.onload = (e) => {
       try {
         const zip = new PizZip(e.target?.result as ArrayBuffer);
+        // Lấy text thuần để AI đọc nội dung
         const text = zip.file("word/document.xml")?.asText().replace(/<[^>]+>/g, ' ') || "";
         resolve(text);
       } catch (err) { reject(err); }
@@ -50,51 +40,64 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
 // 4. HÀM TẠO PROMPT (BỘ NÃO XỬ LÝ)
 export const createIntegrationTextPrompt = (text: string, subject: string, grade: string, mode: 'NLS' | 'NAI') => {
   const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
-  
-  // Lấy chiến lược đặc thù cho môn học
-  const specificStrategy = SUBJECT_STRATEGIES[subject] || "Tích hợp công nghệ hỗ trợ dạy học hiệu quả.";
+  const strategy = SUBJECT_STRATEGIES[subject] || "Tích hợp công nghệ hỗ trợ.";
 
   return `
   Đóng vai Chuyên gia Sư phạm số và Giáo viên bộ môn ${subject}.
   
-  BỐI CẢNH: Bạn đang hỗ trợ giáo viên lớp ${grade} chuyển đổi số giáo án theo định hướng GDPT 2018.
-  CHIẾN LƯỢC MÔN HỌC: "${specificStrategy}"
+  BỐI CẢNH: Bạn đang hỗ trợ giáo viên lớp ${grade} chuyển đổi số giáo án. 
+  LƯU Ý: Giáo án này có thể trình bày dạng văn bản HOẶC DẠNG BẢNG (Table).
+  CHIẾN LƯỢC: "${strategy}"
 
-  NHIỆM VỤ: PHÂN TÍCH VÀ TÍCH HỢP NĂNG LỰC SỐ (NLS) THEO CẤU TRÚC "TỔNG HỢP - CHI TIẾT".
-  
-  --- BƯỚC 1: XÁC ĐỊNH CẤU TRÚC ---
-  - Xác định giáo án có mấy tiết (Tiết 1, Tiết 2...).
-  - Tìm TẤT CẢ các hoạt động: Mở đầu, Hình thành kiến thức, Luyện tập, Vận dụng.
+  NHIỆM VỤ: TÍCH HỢP NLS MỘT CÁCH "ĐẬM ĐẶC", CHI TIẾT VÀ QUÉT SÂU VÀO CẤU TRÚC.
+
+  --- BƯỚC 1: QUÉT HOẠT ĐỘNG (Deep Scan) ---
+  - Rà soát TẤT CẢ các hoạt động: Khởi động, Hình thành kiến thức, Luyện tập, Vận dụng.
+  - Nếu giáo án là BẢNG: Hãy tìm tên hoạt động nằm trong các cột/ô.
+  - Phân tích xem hoạt động nào có thể "số hóa" mạnh mẽ nhất.
 
   --- BƯỚC 2: VIẾT NỘI DUNG (JSON) ---
   
-  1. PHẦN NĂNG LỰC (objectives_addition) -> ĐÂY LÀ PHẦN TỔNG HỢP:
-     - Viết nội dung NLS tổng quát cho TỪNG TIẾT dạy.
-     - Nếu bài có 2 tiết, hãy viết 2 dòng riêng biệt.
-     - QUAN TRỌNG: KHÔNG được ghi chữ "(Tiết 1)", "(Tiết 2)" vào văn bản (để tích hợp âm thầm). Chỉ ghi nội dung năng lực.
-     - Định dạng: "👉 ${label}: [Tóm tắt các công cụ và kỹ năng số sẽ dùng trong tiết này]"
+  1. PHẦN NĂNG LỰC (objectives_addition) -> TỔNG HỢP NGƯỢC:
+     - Dựa trên các công cụ đã chọn ở phần Hoạt động, hãy viết tóm tắt năng lực lên đầu bài.
+     - Viết tách dòng cho từng tiết (nếu bài nhiều tiết).
+     - Định dạng: "👉 ${label}: [Tiết X sử dụng thành thạo phần mềm A để làm B...]" (Không ghi chữ "(Tiết X)" nếu chỉ có 1 tiết).
 
-  2. PHẦN HOẠT ĐỘNG (activities_enhancement) -> ĐÂY LÀ PHẦN CHI TIẾT:
-     - Rà soát TẤT CẢ các hoạt động: Hoạt động 1, Hoạt động 2, Luyện tập, Vận dụng...
-     - Nếu hoạt động nào có thể ứng dụng công nghệ, hãy viết hướng dẫn chi tiết vào đó.
-     - Trích dẫn CHÍNH XÁC tên hoạt động gốc (ví dụ: "Hoạt động 1: Khởi động", "Hoạt động 2.1...", "Hoạt động Luyện tập").
-     - Viết nội dung: "👉 ${label}: GV dùng [Công cụ] để [Làm gì], HS sử dụng [Thiết bị] để [Thao tác gì]..."
+  2. PHẦN HOẠT ĐỘNG (activities_enhancement) -> CHI TIẾT CẦM TAY CHỈ VIỆC:
+     - Đây là phần quan trọng nhất. KHÔNG viết chung chung kiểu "GV dùng phần mềm".
+     - Hãy viết quy trình 3 bước: 
+       + Bước 1: GV chuẩn bị gì (Link, File, App)? 
+       + Bước 2: HS thao tác gì trên thiết bị (Quét QR, Nhập code, Vẽ hình)? 
+       + Bước 3: Kết quả hiển thị ra sao?
+     - Trích dẫn CHÍNH XÁC tên hoạt động gốc (ví dụ: "Hoạt động 1", "HĐ Khởi động", "2.1. Tìm hiểu...").
 
   YÊU CẦU ĐẦU RA (JSON CHUẨN - KHÔNG MARKDOWN):
   {
-    "objectives_addition": "👉 ${label}: [Nội dung tổng hợp tiết 1]\\n👉 ${label}: [Nội dung tổng hợp tiết 2]",
+    "objectives_addition": "👉 ${label}: [Tổng hợp năng lực số của Tiết 1...]\\n👉 ${label}: [Tổng hợp năng lực số của Tiết 2...]",
     "materials_addition": "",
     "activities_enhancement": [
-      { "activity_name": "[Tên chính xác Hoạt động 1]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" },
-      { "activity_name": "[Tên chính xác Hoạt động 2]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" },
-      { "activity_name": "[Tên chính xác Hoạt động Luyện tập]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" },
-      { "activity_name": "[Tên chính xác Hoạt động Vận dụng]", "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" }
+      { 
+        "activity_name": "[Tên chính xác Hoạt động 1]", 
+        "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết đậm đặc: GV chiếu... HS dùng... Kết quả...]" 
+      },
+      { 
+        "activity_name": "[Tên chính xác Hoạt động 2]", 
+        "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết đậm đặc...]" 
+      },
+      { 
+        "activity_name": "[Tên chính xác Hoạt động Luyện tập]", 
+        "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" 
+      },
+      { 
+        "activity_name": "[Tên chính xác Hoạt động Vận dụng]", 
+        "enhanced_content": "👉 ${label}: [Hướng dẫn chi tiết...]" 
+      }
     ]
   }
 
   NỘI DUNG GIÁO ÁN GỐC:
   """
-  ${text.substring(0, 15000)}
+  ${text.substring(0, 18000)}
   """
   `;
 };
