@@ -13,7 +13,7 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v2.3.1 PRO (GDPT 2018)"; 
+  const APP_VERSION = "v2.3.2 PRO (GDPT 2018 - Updated)"; 
   
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
@@ -188,7 +188,7 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="p-8 space-y-8">
-                      {/* Select Inputs - PHÂN LOẠI THEO GDPT 2018 */}
+                      {/* Select Inputs - PHÂN LOẠI THEO GDPT 2018 (CÓ TÁCH CÔNG NGHỆ) */}
                       <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide ml-1">Môn học</label>
@@ -215,7 +215,8 @@ const App: React.FC = () => {
                                         <option value="Địa Lí">Địa Lí</option>
                                         <option value="Giáo dục kinh tế và pháp luật">GDKT & PL</option>
                                         <option value="Tin Học">Tin Học</option>
-                                        <option value="Công Nghệ">Công Nghệ</option>
+                                        <option value="Công nghệ Công nghiệp">Công nghệ (Công nghiệp)</option>
+                                        <option value="Công nghệ Nông nghiệp">Công nghệ (Nông nghiệp)</option>
                                         <option value="Âm Nhạc">Âm Nhạc</option>
                                         <option value="Mỹ Thuật">Mỹ Thuật</option>
                                     </optgroup>
