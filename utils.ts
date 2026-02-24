@@ -9,7 +9,7 @@ const SUBJECT_STRATEGIES: Record<string, string> = {
   "Hóa Học": "Trực quan hóa chất. Ưu tiên: Bảng tuần hoàn Ptable, PhET (Cân bằng phản ứng), Video thí nghiệm an toàn.",
   "Sinh Học": "Thế giới sống. Ưu tiên: Google Earth (Sinh cảnh), Video 3D về tế bào/cơ thể người, Hành trang số.",
   "Lịch Sử": "Tư duy thời gian. Ưu tiên: Google Maps (Địa danh lịch sử), Bảo tàng ảo 3D, Trục thời gian (Timeline), Phim tư liệu.",
-  "Địa Lí": "Bản đồ số. Ưu tiên: Google Maps, Google Earth Pro, Địa lý hành chính (Atlas điện tử), Số liệu thống kê dân số.",
+  "Địa Lí": "Bản đồ số. Ưu tiên: Google Maps, Google Earth Pro, Địa lý hành chính (Atlas điện tử), Số liệu thống kê dân số (Worldometer).",
   "Tin Học": "Tư duy máy tính. Ưu tiên: Python, Scratch, Code.org, Sơ đồ tư duy (MindMap), Soạn thảo văn bản.",
   "Công Nghệ": "Thiết kế & Kỹ thuật. Ưu tiên: Tinkercad (Mô phỏng 3D đơn giản), Sơ đồ nguyên lý (vẽ trên máy), Video quy trình công nghệ.",
   "Nghệ Thuật": "Sáng tạo số. Ưu tiên: Canva, Paint, Ứng dụng chỉnh sửa ảnh cơ bản trên điện thoại.",

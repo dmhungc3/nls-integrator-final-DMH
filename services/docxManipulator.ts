@@ -116,9 +116,7 @@ export const injectContentIntoDocx = async (
         for (const key of keywords) {
             const found = findAllIndices(docXml, key);
             if (found.length > 0) {
-                // Ưu tiên từ khóa tìm thấy đầu tiên có vẻ hợp lý
                 if (targetIndices.length === 0) targetIndices = found;
-                // Nếu tìm thấy khớp số lượng tiết (nâng cao)
                 if (found.length >= objectiveLines.length) { 
                     targetIndices = found; 
                     break; 
@@ -132,18 +130,10 @@ export const injectContentIntoDocx = async (
         if (targetIndices.length > 0) {
              reverseIndices.forEach((index, reverseI) => {
                  const realIndex = targetIndices.length - 1 - reverseI;
-                 // Chèn nội dung tổng hợp vào vị trí tìm thấy
-                 // Nếu chỉ có 1 vị trí Năng lực (thường thấy), chèn tất cả vào đó.
-                 // Nếu có nhiều tiết (nhiều mục Năng lực), chia đều.
                  
-                 let contentToInsert = "";
-                 if (targetIndices.length === 1) {
-                     // Nếu chỉ có 1 mục năng lực chung -> Chèn hết
-                     contentToInsert = content.objectives_addition;
-                 } else if (realIndex < objectiveLines.length) {
-                     // Nếu có nhiều mục -> Chia theo tiết
-                     contentToInsert = objectiveLines[realIndex];
-                 }
+                 // Logic mới: Chèn toàn bộ nội dung tổng hợp vào mỗi mục Năng lực tìm thấy
+                 // (Vì anh muốn "tổng hợp tất cả" vào đây)
+                 let contentToInsert = content.objectives_addition;
 
                  if (contentToInsert) {
                      const currentStyle = detectStyle(newXml, index);
