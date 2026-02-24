@@ -21,41 +21,57 @@ export const injectContentIntoDocx = async (
         let docXml = docFile.asText();
         const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
 
-        // --- HÀM 1: SAO CHÉP PHONG CÁCH ---
+        // --- HÀM 1: PHÁT HIỆN STYLE (CẢI TIẾN: KHÔNG ÉP CỠ CHỮ) ---
         const detectStyle = (xml: string, index: number) => {
-            const chunk = xml.substring(Math.max(0, index - 3000), index); 
-            const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
+            // Quét ngược 10.000 ký tự để tìm định dạng chuẩn nhất
+            const chunk = xml.substring(Math.max(0, index - 10000), index); 
+            
+            // Tìm cỡ chữ (w:sz)
+            // QUAN TRỌNG: Không đặt default là "28" nữa. Nếu không thấy thì để null.
+            // Để Word tự quyết định dựa trên Style của đoạn văn đó.
             let fontSize = null;
+            const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
             if (szMatch && szMatch.length > 0) {
                  const last = szMatch[szMatch.length - 1];
                  const m = last.match(/val=["'](\d+)["']/);
                  if (m) fontSize = m[1];
             }
-            const fontMatch = chunk.match(/<w:rFonts\s+[^>]*\/>/g);
+
+            // Tìm Font chữ (w:rFonts)
+            // Tương tự, nếu không thấy thì để null để thừa kế
             let fontTag = ""; 
-            if (fontMatch && fontMatch.length > 0) fontTag = fontMatch[fontMatch.length - 1];
+            const fontMatch = chunk.match(/<w:rFonts\s+[^>]*\/>/g);
+            if (fontMatch && fontMatch.length > 0) {
+                fontTag = fontMatch[fontMatch.length - 1];
+            }
+
             return { fontSize, fontTag };
         };
 
-        // --- HÀM 2: TẠO KHỐI XML ---
+        // --- HÀM 2: TẠO KHỐI XML (HEADER + LIST) ---
         const createXmlBlock = (text: string, style: { fontSize: string | null, fontTag: string }) => {
           if (!text) return "";
+          
           const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           if (lines.length === 0) return "";
 
+          // Style cơ bản: Màu xanh dương đậm (2E74B5)
           let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; 
           let rPrBody = `<w:color w:val="2E74B5"/>`;
 
+          // Chỉ áp dụng Font/Size nếu thực sự tìm thấy trong văn bản gốc
           if (style.fontSize) {
               const szTag = `<w:sz w:val="${style.fontSize}"/><w:szCs w:val="${style.fontSize}"/>`;
               rPrHeader += szTag;
               rPrBody += szTag;
           }
+          
           if (style.fontTag) {
               rPrHeader += style.fontTag;
               rPrBody += style.fontTag;
           }
 
+          // 1. Tạo dòng Tiêu đề
           let xmlBlock = `<w:p>
                             <w:pPr><w:ind w:left="360"/></w:pPr>
                             <w:r>
@@ -64,8 +80,16 @@ export const injectContentIntoDocx = async (
                             </w:r>
                           </w:p>`;
 
+          // 2. Tạo các dòng Liệt kê
           lines.forEach(line => {
-              let cleanLine = line.replace(/\*\*/g, "").replace(/__/, "").replace(/^\s*[-•+]\s*/, "").replace(/^(👉|NLS:|Tiết \d+:|Tích hợp NLS:)\s*/gi, "").trim();
+              // Lọc rác
+              let cleanLine = line
+                  .replace(/\*\*/g, "") 
+                  .replace(/__/, "")
+                  .replace(/^\s*[-•+]\s*/, "") 
+                  .replace(/^(👉|NLS:|Tiết \d+:|Tích hợp NLS:)\s*/gi, "")
+                  .trim();
+
               if (cleanLine) {
                   xmlBlock += `<w:p>
                                  <w:pPr><w:ind w:left="720"/></w:pPr> 
@@ -76,6 +100,7 @@ export const injectContentIntoDocx = async (
                                </w:p>`;
               }
           });
+
           return xmlBlock;
         };
 
@@ -84,11 +109,10 @@ export const injectContentIntoDocx = async (
             let idx = xml.indexOf(keyword);
             if (idx !== -1) return idx;
 
-            // Xử lý dấu cách đặc biệt (Non-breaking space) và thẻ XML
+            // Xử lý dấu cách đặc biệt và thẻ XML xen giữa
             const words = keyword.split(/[\s\u00A0]+/).map(w => escapeRegex(w));
             if (words.length === 0) return -1;
 
-            // Pattern cho phép thẻ XML hoặc bất kỳ loại khoảng trắng nào xen vào giữa
             const patternStr = words.join('(?:<[^>]+>|[\\s\\u00A0])+');
             const regex = new RegExp(patternStr, 'gi'); 
             
@@ -102,7 +126,6 @@ export const injectContentIntoDocx = async (
         
         let targetIndices: number[] = [];
         for (const key of keywords) {
-            // Dùng thuật toán xuyên thấu cho từ khóa năng lực
             const words = key.split(/\s+/).map(w => escapeRegex(w));
             const patternStr = words.join('(?:<[^>]+>|[\\s\\u00A0])+');
             const regex = new RegExp(patternStr, 'gi');
@@ -121,6 +144,7 @@ export const injectContentIntoDocx = async (
                  if (contentToInsert) {
                      const currentStyle = detectStyle(newXml, index);
                      const xmlBlock = createXmlBlock(contentToInsert, currentStyle);
+                     
                      if (xmlBlock) {
                          const closingTag = "</w:p>";
                          const insertPos = newXml.indexOf(closingTag, index);
@@ -132,7 +156,8 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: "28", fontTag: "" });
+            // Fallback: Không ép size, để tự nhiên
+            const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: null, fontTag: "" });
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
                 const bodyIndex = newXml.indexOf(bodyTag);
@@ -141,21 +166,18 @@ export const injectContentIntoDocx = async (
         }
         docXml = newXml;
 
-        // --- 5. CHÈN HOẠT ĐỘNG (SMART FUZZY SEARCH) ---
+        // --- 5. CHÈN HOẠT ĐỘNG ---
         if (Array.isArray(content.activities_enhancement)) {
             content.activities_enhancement.forEach(item => {
                 let safeName = escapeXml(item.activity_name);
                 let actIndex = -1;
 
-                // Chiến lược 1: Tìm chính xác xuyên thấu (Ưu tiên số 1)
                 actIndex = findFuzzyIndex(docXml, safeName);
 
-                // Chiến lược 2: Tìm theo từ khóa cốt lõi + Tiêu đề lớn
                 if (actIndex === -1) {
                     const coreKeywords = ["Khởi động", "Hình thành kiến thức", "Luyện tập", "Vận dụng", "Mở đầu", "Kết nối"];
                     for (const key of coreKeywords) {
                         if (safeName.includes(key)) {
-                            // Tạo các biến thể tiêu đề lớn (thường viết hoa hoặc có số)
                             const variants = [
                                 `HOẠT ĐỘNG ${key.toUpperCase()}`, 
                                 `HOẠT ĐỘNG ${key}`,             
@@ -171,7 +193,6 @@ export const injectContentIntoDocx = async (
                     }
                 }
 
-                // Chiến lược 3: Tìm theo số thứ tự (HĐ 1, HĐ 2...)
                 if (actIndex === -1) {
                      const matchNum = safeName.match(/\d+/);
                      if (matchNum) {
@@ -188,10 +209,14 @@ export const injectContentIntoDocx = async (
                      const currentStyle = detectStyle(docXml, actIndex);
                      const closingTag = "</w:p>";
                      const insertPos = docXml.indexOf(closingTag, actIndex);
+                     
                      if (insertPos !== -1) {
                          const splitPos = insertPos + closingTag.length;
                          const xmlBlock = createXmlBlock(item.enhanced_content, currentStyle);
-                         if (xmlBlock) docXml = docXml.substring(0, splitPos) + xmlBlock + docXml.substring(splitPos);
+                         
+                         if (xmlBlock) {
+                             docXml = docXml.substring(0, splitPos) + xmlBlock + docXml.substring(splitPos);
+                         }
                      }
                 }
             });
