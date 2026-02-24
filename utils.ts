@@ -1,24 +1,24 @@
 import PizZip from 'pizzip';
 
-// 1. CHIẾN LƯỢC NLS: CƠ BẢN - HIỆN ĐẠI - PHÙ HỢP (CHUẨN GDPT 2018)
+// 1. CHIẾN LƯỢC NLS: CƠ BẢN - THIẾT THỰC - CHUẨN BỘ GD&ĐT
 const SUBJECT_STRATEGIES: Record<string, string> = {
-  "Toán": "Tư duy tính toán & Mô hình hóa. Ưu tiên: GeoGebra, Desmos (Vẽ đồ thị), Excel (Thống kê), WolframAlpha (Kiểm chứng). Biến công thức khô khan thành hình ảnh trực quan.",
-  "Ngữ Văn": "Sáng tạo nội dung số & Văn hóa mạng. Ưu tiên: Canva (Infographic/Poster), Padlet (Thảo luận), Podcast (Nói và Nghe), E-book.",
-  "Tiếng Anh": "Giao tiếp đa phương tiện & Tự học. Ưu tiên: Elsa Speak (Luyện phát âm AI), Duolingo, Quizizz/Kahoot (Kiểm tra từ vựng), Google Docs (Viết cộng tác).",
-  "Vật Lí": "Thí nghiệm ảo & Xử lý số liệu. Ưu tiên: PhET Simulations (Mô phỏng), Tracker (Phân tích video chuyển động), Excel (Vẽ đồ thị thực nghiệm).",
-  "Hóa Học": "Mô phỏng vi mô & Cấu trúc chất. Ưu tiên: PhET (Phản ứng), ChemDraw/Avogadro (Vẽ cấu trúc phân tử 3D), Bảng tuần hoàn Ptable.",
-  "Sinh Học": "Trực quan hóa & Sinh thái số. Ưu tiên: Human Anatomy Atlas (Giải phẫu 3D), Google Earth (Sinh cảnh), Kính hiển vi ảo.",
-  "Lịch Sử": "Tái hiện lịch sử & Tư duy thời gian. Ưu tiên: Google Earth VR (Tham quan di tích), Bảo tàng ảo 3D, TimelineJS (Trục thời gian số).",
-  "Địa Lí": "Bản đồ số & Thực địa ảo. Ưu tiên: Google Maps/Earth Pro (Quan sát địa hình), GIS cơ bản, Worldometer (Số liệu dân số thực).",
-  "Tin Học": "Tư duy máy tính & Giải quyết vấn đề. Ưu tiên: Python, Scratch, Code.org, Tinkercad (Mô phỏng mạch/3D).",
-  "Công Nghệ": "Thiết kế kỹ thuật & Mô phỏng quy trình. Ưu tiên: Tinkercad (Thiết kế 3D đơn giản), AutoCAD (Cơ bản), Sơ đồ tư duy (Miro/Xmind).",
-  "Nghệ Thuật": "Sáng tạo nghệ thuật số. Ưu tiên: Canva, Photoshop cơ bản, AI Art, GarageBand.",
-  "Giáo dục thể chất": "Y tế số & Phân tích kỹ thuật. Ưu tiên: App đo bước chân/nhịp tim, Quay video slow-motion để sửa động tác."
+  "Toán": "Tư duy tính toán. Ưu tiên: GeoGebra (Vẽ hình/Đồ thị), Excel (Thống kê), Azota/Olm (Giao bài tập), Máy tính cầm tay giả lập.",
+  "Ngữ Văn": "Sáng tạo & Văn hóa đọc. Ưu tiên: Padlet (Thảo luận/Viết), Canva (Làm Poster/Infographic), PowerPoint (Thuyết trình), E-book.",
+  "Tiếng Anh": "Giao tiếp & Tự học. Ưu tiên: Quizizz/Kahoot (Kiểm tra từ vựng), Google Forms, YouTube (Video bài học), Từ điển Ozdic/Oxford.",
+  "Vật Lí": "Thí nghiệm ảo. Ưu tiên: PhET Simulations (Mô phỏng cơ/điện/quang), Excel (Xử lý số liệu thực hành), Video thí nghiệm thực tế.",
+  "Hóa Học": "Trực quan hóa chất. Ưu tiên: Bảng tuần hoàn Ptable, PhET (Cân bằng phản ứng), Video thí nghiệm an toàn.",
+  "Sinh Học": "Thế giới sống. Ưu tiên: Google Earth (Sinh cảnh), Video 3D về tế bào/cơ thể người, Hành trang số.",
+  "Lịch Sử": "Tư duy thời gian. Ưu tiên: Google Maps (Địa danh lịch sử), Bảo tàng ảo 3D, Trục thời gian (Timeline), Phim tư liệu.",
+  "Địa Lí": "Bản đồ số. Ưu tiên: Google Maps, Google Earth Pro, Địa lý hành chính (Atlas điện tử), Số liệu thống kê dân số.",
+  "Tin Học": "Tư duy máy tính. Ưu tiên: Python, Scratch, Code.org, Sơ đồ tư duy (MindMap), Soạn thảo văn bản.",
+  "Công Nghệ": "Thiết kế & Kỹ thuật. Ưu tiên: Tinkercad (Mô phỏng 3D đơn giản), Sơ đồ nguyên lý (vẽ trên máy), Video quy trình công nghệ.",
+  "Nghệ Thuật": "Sáng tạo số. Ưu tiên: Canva, Paint, Ứng dụng chỉnh sửa ảnh cơ bản trên điện thoại.",
+  "Giáo dục thể chất": "Sức khỏe số. Ưu tiên: Video hướng dẫn kỹ thuật động tác (Slow motion), Ứng dụng đếm nhịp tim/bước chân."
 };
 
 // 2. MÔ HÌNH SƯ PHẠM
 export const PEDAGOGY_MODELS: Record<string, { name: string; desc: string }> = {
-  "DEFAULT": { name: "Chuẩn hóa & Đồng bộ (Standard & Sync)", desc: "Nội dung sạch, không ký tự lạ, cấu trúc rõ ràng và đồng bộ định dạng với văn bản gốc." }
+  "DEFAULT": { name: "Tổng hợp & Thực chiến (Aggregation & Practical)", desc: "Tổng hợp toàn bộ công cụ sử dụng trong bài vào mục Năng lực. Hướng dẫn chi tiết, dễ thực hiện." }
 };
 
 // 3. HÀM ĐỌC FILE WORD
@@ -28,7 +28,7 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
     reader.onload = (e) => {
       try {
         const zip = new PizZip(e.target?.result as ArrayBuffer);
-        // Làm sạch văn bản đầu vào để AI đọc tốt hơn
+        // Làm sạch văn bản: Xóa thẻ XML, xóa dấu ngoặc kép gây lỗi JSON
         const text = zip.file("word/document.xml")?.asText().replace(/<[^>]+>/g, ' ').replace(/"/g, "'") || "";
         resolve(text);
       } catch (err) { reject(err); }
@@ -37,47 +37,46 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
   });
 };
 
-// 4. HÀM TẠO PROMPT (BỘ NÃO XỬ LÝ - SIÊU SẠCH & CHUẨN MỰC)
+// 4. HÀM TẠO PROMPT (CHỈ ĐẠO AI TỔNG HỢP LIST)
 export const createIntegrationTextPrompt = (text: string, subject: string, grade: string, mode: 'NLS' | 'NAI') => {
-  const strategy = SUBJECT_STRATEGIES[subject] || "Tích hợp công nghệ hỗ trợ hiện đại, phù hợp lứa tuổi.";
+  const strategy = SUBJECT_STRATEGIES[subject] || "Tích hợp công nghệ giáo dục phổ thông hiệu quả.";
 
   return `
-  Đóng vai Chuyên gia Sư phạm số và Giáo viên bộ môn ${subject} cốt cán.
-  BỐI CẢNH: Soạn giáo án điện tử theo định hướng Chương trình GDPT 2018 cho học sinh lớp ${grade}.
+  Đóng vai Tổ trưởng chuyên môn và Giáo viên bộ môn ${subject} giỏi.
+  BỐI CẢNH: Soạn giáo án điện tử theo định hướng GDPT 2018 cho HS lớp ${grade}.
   CHIẾN LƯỢC: "${strategy}"
 
-  === QUY TẮC ĐỊNH DẠNG TUYỆT ĐỐI (ĐỂ ĐỒNG BỘ FILE WORD) ===
-  1. KHÔNG dùng dấu sao (**text**), dấu gạch dưới (_text_) hay ngoặc kép (") trong nội dung. Chỉ viết văn bản thường.
-  2. KHÔNG viết tiêu đề thừa (như "👉 Tích hợp NLS:", "Tiết 1:", "Phần 1:").
-  3. Mọi ý phải bắt đầu bằng dấu gạch ngang "- ".
-  4. Ngôn ngữ: Sư phạm, ngắn gọn, súc tích, đi thẳng vào vấn đề.
+  === NHIỆM VỤ 1: QUÉT HOẠT ĐỘNG (CHI TIẾT) ===
+  - Rà soát toàn bộ bài dạy (cả trong bảng và văn bản).
+  - Chọn các công cụ số THIẾT THỰC, ĐƠN GIẢN, DỄ DÙNG.
+  - Viết hướng dẫn 3 bước: (1) Công cụ - (2) GV tổ chức - (3) HS thực hiện.
 
-  === NHIỆM VỤ ===
+  === NHIỆM VỤ 2: TỔNG HỢP NĂNG LỰC (LIỆT KÊ) ===
+  - Hãy gom TẤT CẢ các công cụ/kỹ năng số đã dùng ở Nhiệm vụ 1.
+  - Liệt kê chúng vào phần Mục tiêu (objectives_addition) dưới dạng các gạch đầu dòng.
+  - Mỗi gạch đầu dòng là một năng lực cụ thể.
+  - Ví dụ:
+    "- Năng lực sử dụng GeoGebra để vẽ đồ thị hàm số."
+    "- Năng lực khai thác thông tin từ bảng số liệu Excel."
 
-  --- BƯỚC 1: QUÉT HOẠT ĐỘNG (Chi tiết hóa - Cầm tay chỉ việc) ---
-  - Rà soát toàn bộ bài dạy (kể cả nội dung trong bảng).
-  - Đề xuất hoạt động số thiết thực, khả thi.
-  - Viết nội dung theo cấu trúc 3 phần (viết liền mạch thành 1 đoạn hoặc các gạch đầu dòng):
-    - Công cụ: [Tên phần mềm/Web]
-    - GV: [Tổ chức thế nào?]
-    - HS: [Thao tác gì trên thiết bị?]
+  === QUY TẮC ĐỊNH DẠNG (BẮT BUỘC) ===
+  1. KHÔNG dùng dấu sao (**), ngoặc kép (") trong nội dung.
+  2. KHÔNG viết tiêu đề thừa (hệ thống tự thêm "👉 Tích hợp NLS:").
+  3. Mọi ý trong phần mục tiêu phải bắt đầu bằng "- ".
 
-  --- BƯỚC 2: TỔNG HỢP MỤC TIÊU (Tư duy ngược) ---
-  - Từ các hoạt động chi tiết ở trên, hãy rút ra "Năng lực số" mà học sinh đạt được.
-  - Viết thành câu mục tiêu chuẩn (Ví dụ: Năng lực sử dụng phần mềm X để giải quyết vấn đề Y).
-  - Nếu bài nhiều tiết, hãy tách dòng cho từng tiết.
-
-  === MẪU ĐẦU RA (JSON CHUẨN) ===
+  === MẪU ĐẦU RA (JSON) ===
   {
-    "objectives_addition": "- [Năng lực số 1...]\\n- [Năng lực số 2...]",
+    "objectives_addition": "- [Năng lực số 1...]\\n- [Năng lực số 2...]\\n- [Năng lực số 3...]",
+    
     "materials_addition": "",
+    
     "activities_enhancement": [
       { 
-        "activity_name": "[Tên chính xác Hoạt động 1]", 
+        "activity_name": "[Tên hoạt động 1]", 
         "enhanced_content": "- Công cụ: [Tên]\\n- GV: [Hướng dẫn]\\n- HS: [Thực hiện]" 
       },
       { 
-        "activity_name": "[Tên chính xác Hoạt động 2]", 
+        "activity_name": "[Tên hoạt động 2]", 
         "enhanced_content": "- Công cụ: [Tên]\\n- GV: [Hướng dẫn]\\n- HS: [Thực hiện]" 
       }
     ]

@@ -21,13 +21,11 @@ export const injectContentIntoDocx = async (
         let docXml = docFile.asText();
         const label = mode === 'NLS' ? "Tích hợp NLS" : "Tích hợp AI";
 
-        // --- 1. THUẬT TOÁN SAO CHÉP PHONG CÁCH (STYLE CLONING) ---
-        // Giúp đồng bộ cỡ chữ và font chữ với văn bản gốc
+        // --- HÀM 1: SAO CHÉP PHONG CÁCH (FONT & SIZE) ---
         const detectStyle = (xml: string, index: number) => {
-            // Lấy 2000 ký tự trước vị trí chèn
-            const chunk = xml.substring(Math.max(0, index - 2000), index);
+            const chunk = xml.substring(Math.max(0, index - 3000), index); // Quét rộng hơn chút để tìm style
             
-            // Tìm cỡ chữ (w:sz) gần nhất
+            // Tìm cỡ chữ (w:sz)
             const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
             let fontSize = null;
             if (szMatch && szMatch.length > 0) {
@@ -36,7 +34,7 @@ export const injectContentIntoDocx = async (
                  if (m) fontSize = m[1];
             }
 
-            // Tìm Font chữ (w:rFonts) gần nhất
+            // Tìm Font chữ (w:rFonts)
             const fontMatch = chunk.match(/<w:rFonts\s+[^>]*\/>/g);
             let fontTag = ""; 
             if (fontMatch && fontMatch.length > 0) {
@@ -46,18 +44,18 @@ export const injectContentIntoDocx = async (
             return { fontSize, fontTag };
         };
 
-        // --- 2. HÀM TẠO KHỐI XML (SẠCH & ĐỒNG BỘ) ---
+        // --- HÀM 2: TẠO KHỐI XML (HEADER + LIST) ---
         const createXmlBlock = (text: string, style: { fontSize: string | null, fontTag: string }) => {
           if (!text) return "";
           
           const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           if (lines.length === 0) return "";
 
-          // Xây dựng thuộc tính định dạng (Run Properties)
-          // Mặc định là Màu xanh (2E74B5). Nếu có style gốc thì chèn thêm vào.
-          let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; // Tiêu đề: Đậm + Xanh
-          let rPrBody = `<w:color w:val="2E74B5"/>`; // Nội dung: Thường + Xanh
+          // Style chung cho cả khối (Màu xanh dương đậm)
+          let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; // Header: Đậm
+          let rPrBody = `<w:color w:val="2E74B5"/>`; // Body: Thường
 
+          // Áp dụng style sao chép được
           if (style.fontSize) {
               const szTag = `<w:sz w:val="${style.fontSize}"/><w:szCs w:val="${style.fontSize}"/>`;
               rPrHeader += szTag;
@@ -68,7 +66,7 @@ export const injectContentIntoDocx = async (
               rPrBody += style.fontTag;
           }
 
-          // Tạo dòng Tiêu đề chung (Chỉ xuất hiện 1 lần)
+          // 1. Tạo dòng Tiêu đề (Header)
           let xmlBlock = `<w:p>
                             <w:pPr><w:ind w:left="360"/></w:pPr>
                             <w:r>
@@ -77,16 +75,13 @@ export const injectContentIntoDocx = async (
                             </w:r>
                           </w:p>`;
 
-          // Tạo các dòng Nội dung (Danh sách)
+          // 2. Tạo các dòng Liệt kê (List)
           lines.forEach(line => {
-              // LỌC RÁC TUYỆT ĐỐI:
-              // 1. Xóa dấu ** (in đậm markdown)
-              // 2. Xóa các tiền tố thừa (NLS:, Tiết 1:...)
-              // 3. Xóa dấu gạch đầu dòng cũ để tự thêm dấu chuẩn
+              // Lọc sạch các ký tự thừa
               let cleanLine = line
                   .replace(/\*\*/g, "") 
                   .replace(/__/, "")
-                  .replace(/^\s*[-•+]\s*/, "") 
+                  .replace(/^\s*[-•+]\s*/, "") // Xóa gạch đầu dòng cũ
                   .replace(/^(👉|NLS:|Tiết \d+:|Tích hợp NLS:)\s*/gi, "")
                   .trim();
 
@@ -104,7 +99,7 @@ export const injectContentIntoDocx = async (
           return xmlBlock;
         };
 
-        // --- 3. CHÈN NĂNG LỰC TỔNG HỢP ---
+        // --- 3. CHÈN NĂNG LỰC (VÀO MỤC 2. NĂNG LỰC) ---
         const objectiveLines = content.objectives_addition.split('\n').filter(l => l.trim());
         const keywords = ["Phẩm chất năng lực", "2. Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt"];
         
@@ -134,7 +129,7 @@ export const injectContentIntoDocx = async (
                  if (realIndex < objectiveLines.length) {
                      const contentToInsert = objectiveLines[realIndex];
                      
-                     // BẮT CỠ CHỮ TẠI CHỖ CHÈN
+                     // Style Cloning tại vị trí chèn
                      const currentStyle = detectStyle(newXml, index);
                      const xmlBlock = createXmlBlock(contentToInsert, currentStyle);
                      
@@ -149,7 +144,7 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            // Fallback (Mặc định không style)
+            // Fallback
             const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: null, fontTag: "" });
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
@@ -161,7 +156,7 @@ export const injectContentIntoDocx = async (
         }
         docXml = newXml;
 
-        // --- 4. CHÈN HOẠT ĐỘNG (DEEP SCAN) ---
+        // --- 4. CHÈN HOẠT ĐỘNG (VÀO BẢNG HOẶC VĂN BẢN) ---
         if (Array.isArray(content.activities_enhancement)) {
             content.activities_enhancement.forEach(item => {
                 let safeName = escapeXml(item.activity_name);
@@ -173,7 +168,7 @@ export const injectContentIntoDocx = async (
                 }
 
                 if (actIndex !== -1) {
-                     // BẮT CỠ CHỮ TẠI HOẠT ĐỘNG
+                     // Style Cloning tại vị trí hoạt động
                      const currentStyle = detectStyle(docXml, actIndex);
                      const closingTag = "</w:p>";
                      const insertPos = docXml.indexOf(closingTag, actIndex);
