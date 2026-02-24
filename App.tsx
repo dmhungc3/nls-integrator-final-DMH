@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight,
-  Smartphone, Zap, Layers, Cpu, Phone, Info, ShieldCheck, Key
+  Smartphone, Zap, Layers, Cpu, Phone, Info, ShieldCheck, Key,
+  Activity, AlertCircle
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
@@ -13,7 +14,7 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v2.3.2 PRO (GDPT 2018 - Updated)"; 
+  const APP_VERSION = "v3.0 PRO (Futuristic UI)"; 
   
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
@@ -34,7 +35,7 @@ const App: React.FC = () => {
     if (userApiKey.trim()) { 
       localStorage.setItem('gemini_api_key', userApiKey); 
       setIsKeySaved(true); 
-      addLog("🔐 Đã lưu API Key bảo mật vào hệ thống."); 
+      addLog("🔐 Đã kích hoạt bản quyền API."); 
     } else { 
       alert("Vui lòng nhập Key!"); 
     }
@@ -61,27 +62,27 @@ const App: React.FC = () => {
 
     try {
       const modelName = PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.name || "Linh hoạt";
-      addLog(`⚙️ Cấu hình chiến lược: ${modelName}`);
-      addLog("→ Chế độ: Tách năng lực & Lồng ghép hoạt động (Smart Mode)."); 
+      addLog(`⚙️ Chiến lược: ${modelName}`);
+      addLog(`📚 Môn: ${state.subject} - Khối: ${state.grade}`);
       addLog("🔍 Đang phân tích cấu trúc giáo án...");
       
       const textContext = await extractTextFromDocx(state.file);
       const prompt = createIntegrationTextPrompt(textContext, state.subject, state.grade, mode);
       
-      addLog("🧠 Đang kích hoạt mô hình AI xử lý...");
+      addLog("🧠 AI đang tư duy và thiết kế nội dung...");
       const generatedContent = await generateCompetencyIntegration(prompt, userApiKey);
-      addLog(`✓ AI đã hoàn thành thiết kế nội dung.`);
+      addLog(`✓ Hoàn tất thiết kế.`);
       
       setState(prev => ({ ...prev, isProcessing: false, generatedContent, step: 'review' }));
     } catch (error) {
-      addLog(`❌ Lỗi hệ thống: ${error instanceof Error ? error.message : "Xung đột không xác định"}`);
+      addLog(`❌ Lỗi: ${error instanceof Error ? error.message : "Không xác định"}`);
       setState(prev => ({ ...prev, isProcessing: false }));
     }
   };
 
   const handleFinalizeAndDownload = async (finalContent: GeneratedNLSContent) => {
     if (!state.file) return;
-    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "📦 Đang đóng gói file chuẩn định dạng..."] }));
+    setState(prev => ({ ...prev, isProcessing: true, logs: [...prev.logs, "📦 Đang đóng gói file..."] }));
     try {
       const newBlob = await injectContentIntoDocx(state.file, finalContent, mode, addLog);
       setState(prev => ({ 
@@ -89,7 +90,7 @@ const App: React.FC = () => {
         isProcessing: false, 
         step: 'done', 
         result: { fileName: `[NLS-PRO] ${state.file?.name}`, blob: newBlob }, 
-        logs: [...prev.logs, "✨ Xuất file thành công! Sẵn sàng tải về."] 
+        logs: [...prev.logs, "✨ Xuất bản thành công!"] 
       }));
     } catch (error) {
        addLog(`❌ Lỗi đóng gói: ${error instanceof Error ? error.message : "Thất bại"}`);
@@ -98,113 +99,97 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-800 selection:bg-indigo-100 selection:text-indigo-800 pb-10">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-10 overflow-x-hidden">
       
-      {/* Background Decor */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-200/20 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-violet-200/20 blur-[120px]" />
+      {/* Background Ambience */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-300/20 blur-[150px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-300/20 blur-[150px]" />
       </div>
 
       {/* HEADER */}
-      <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-indigo-50 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                  <div className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 ring-4 ring-indigo-50">
-                      <Sparkles className="w-6 h-6" />
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                      <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
-                      <h1 className="font-bold text-slate-800 text-xl tracking-tight">NLS Integrator <span className="text-indigo-600">Pro</span></h1>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">{APP_VERSION}</span>
-                        <span className="text-[10px] text-slate-400">| Developed by GV. Đặng Mạnh Hùng</span>
-                      </div>
+                      <h1 className="font-bold text-slate-800 text-lg tracking-tight leading-none">NLS Integrator <span className="text-indigo-600">Pro</span></h1>
+                      <p className="text-[10px] text-slate-500 font-medium">AI Education Assistant</p>
                   </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                   {isKeySaved ? (
-                      <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 shadow-sm transition-all hover:shadow-md">
-                          <div className="relative flex h-2.5 w-2.5">
+                      <div className="flex items-center gap-2 bg-emerald-50/80 px-3 py-1.5 rounded-full border border-emerald-100 shadow-sm">
+                          <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                          </div>
-                          <span className="text-emerald-700 font-bold text-xs">AI Connected</span>
-                          <button onClick={handleEditKey} className="ml-2 text-xs text-slate-400 hover:text-indigo-600 underline decoration-indigo-200">Đổi Key</button>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          </span>
+                          <span className="text-emerald-700 font-bold text-[11px]">Sẵn sàng</span>
+                          <button onClick={handleEditKey} className="ml-1 text-[10px] text-slate-400 hover:text-indigo-600 underline">Đổi Key</button>
                       </div>
                   ) : (
-                      <div className="flex gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm ring-4 ring-slate-50">
-                        <div className="flex items-center px-3 text-slate-400"><Key className="w-4 h-4" /></div>
-                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập Gemini API Key..." className="text-sm outline-none w-48 bg-transparent" />
-                        <button onClick={saveKeyToLocal} className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200">Kết nối</button>
+                      <div className="flex gap-2 bg-white/50 p-1 rounded-lg border border-slate-200">
+                        <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập API Key..." className="text-xs px-2 outline-none w-32 bg-transparent" />
+                        <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700">Lưu</button>
                       </div>
                   )}
               </div>
           </div>
-      </div>
+      </header>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 py-10 flex flex-col gap-10">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         
-        {/* STEPPER */}
-        <div className="flex justify-center">
-             <div className="flex items-center gap-6 bg-white px-8 py-3 rounded-2xl shadow-sm border border-slate-100 ring-1 ring-slate-50">
-                <div className={`flex items-center gap-2 text-sm font-bold ${state.step === 'upload' ? 'text-indigo-600' : 'text-slate-400'}`}>
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] border-2 ${state.step === 'upload' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300'}`}>1</span> 
-                    Tải giáo án
-                </div>
-                <div className="w-12 h-0.5 bg-slate-100 rounded-full"></div>
-                <div className={`flex items-center gap-2 text-sm font-bold ${state.step === 'review' ? 'text-indigo-600' : 'text-slate-400'}`}>
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] border-2 ${state.step === 'review' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300'}`}>2</span> 
-                    AI Thiết kế
-                </div>
-                <div className="w-12 h-0.5 bg-slate-100 rounded-full"></div>
-                <div className={`flex items-center gap-2 text-sm font-bold ${state.step === 'done' ? 'text-indigo-600' : 'text-slate-400'}`}>
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] border-2 ${state.step === 'done' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300'}`}>3</span> 
-                    Xuất bản
-                </div>
-             </div>
+        {/* HERO SECTION */}
+        <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-slate-800 mb-2">Chuyển đổi số Giáo án <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">Tự động & Thông minh</span></h2>
+            <p className="text-slate-500 text-sm max-w-2xl mx-auto">Hệ thống sử dụng AI để tích hợp năng lực số chuẩn GDPT 2018 vào từng hoạt động dạy học.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* LEFT PANEL: MAIN INTERFACE */}
-          <div className="lg:col-span-8 space-y-6">
+          {/* LEFT: CONTROL CENTER (BENTO GRID STYLE) */}
+          <div className="lg:col-span-8 space-y-4">
+            
             {state.step === 'upload' && (
-              <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white overflow-hidden ring-1 ring-slate-100/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up">
                   
-                  {/* Card Header */}
-                  <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between bg-gradient-to-r from-slate-50/50 to-white">
+                  {/* Card 1: Chế độ */}
+                  <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                          <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600"><BookOpen className="w-5 h-5" /></div>
+                          <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600"><Activity className="w-5 h-5" /></div>
                           <div>
-                              <h3 className="font-bold text-slate-800 text-lg">Cấu hình Tích hợp</h3>
-                              <p className="text-xs text-slate-500">Thiết lập thông số cho AI xử lý giáo án</p>
+                              <h3 className="font-bold text-slate-800 text-sm">Chế độ Tích hợp</h3>
+                              <p className="text-xs text-slate-500">Chọn loại năng lực cần phát triển</p>
                           </div>
                       </div>
-                      <div className="flex bg-slate-100/80 p-1 rounded-xl shadow-inner">
-                          <button onClick={() => setMode('NLS')} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${mode === 'NLS' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'}`}><Smartphone className="w-4 h-4" /> Năng lực Số</button>
-                          <button onClick={() => setMode('NAI')} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${mode === 'NAI' ? 'bg-white text-rose-600 shadow-sm ring-1 ring-black/5' : 'text-slate-500 hover:text-slate-700'}`}><Zap className="w-4 h-4" /> Năng lực AI</button>
+                      <div className="flex bg-slate-100 p-1 rounded-lg">
+                          <button onClick={() => setMode('NLS')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${mode === 'NLS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Năng lực Số</button>
+                          <button onClick={() => setMode('NAI')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${mode === 'NAI' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Năng lực AI</button>
                       </div>
                   </div>
 
-                  <div className="p-8 space-y-8">
-                      {/* Select Inputs - PHÂN LOẠI THEO GDPT 2018 (CÓ TÁCH CÔNG NGHỆ) */}
-                      <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide ml-1">Môn học</label>
+                  {/* Card 2: Thông tin chuyên môn (Grid Input) */}
+                  <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-5">
+                      <div className="flex items-center gap-2 mb-2">
+                          <BookOpen className="w-4 h-4 text-indigo-500" />
+                          <span className="text-sm font-bold text-slate-700 uppercase tracking-wide">Thông tin Giáo án</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Môn học</label>
                               <div className="relative group">
-                                <select 
-                                  className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" 
-                                  value={state.subject} 
-                                  onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}
-                                >
+                                <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                                     <option value="">-- Chọn môn --</option>
                                     <optgroup label="Môn Bắt buộc">
                                         <option value="Toán">Toán học</option>
                                         <option value="Ngữ Văn">Ngữ Văn</option>
                                         <option value="Tiếng Anh">Tiếng Anh</option>
                                         <option value="Lịch Sử">Lịch Sử</option>
-                                        <option value="Giáo dục thể chất">Giáo dục thể chất</option>
+                                        <option value="Giáo dục thể chất">GD Thể chất</option>
                                         <option value="Giáo dục quốc phòng và an ninh">GDQP & AN</option>
                                         <option value="Hoạt động trải nghiệm, hướng nghiệp">HĐ Trải nghiệm</option>
                                     </optgroup>
@@ -215,204 +200,163 @@ const App: React.FC = () => {
                                         <option value="Địa Lí">Địa Lí</option>
                                         <option value="Giáo dục kinh tế và pháp luật">GDKT & PL</option>
                                         <option value="Tin Học">Tin Học</option>
-                                        <option value="Công nghệ Công nghiệp">Công nghệ (Công nghiệp)</option>
-                                        <option value="Công nghệ Nông nghiệp">Công nghệ (Nông nghiệp)</option>
+                                        <option value="Công nghệ Công nghiệp">CN (Công nghiệp)</option>
+                                        <option value="Công nghệ Nông nghiệp">CN (Nông nghiệp)</option>
                                         <option value="Âm Nhạc">Âm Nhạc</option>
                                         <option value="Mỹ Thuật">Mỹ Thuật</option>
                                     </optgroup>
                                 </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-500 transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></div>
+                                <ChevronRight className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
                               </div>
                           </div>
-                          
-                          <div className="space-y-2">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide ml-1">Khối lớp</label>
+
+                          <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Khối lớp</label>
                               <div className="relative group">
-                                <select 
-                                  className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer hover:bg-white" 
-                                  value={state.grade} 
-                                  onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}
-                                >
+                                <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                     <option value="">-- Chọn khối --</option>
-                                    <optgroup label="Trung học Phổ thông (THPT)">
+                                    <optgroup label="Trung học Phổ thông">
                                         <option value="Lớp 10">Lớp 10</option>
                                         <option value="Lớp 11">Lớp 11</option>
                                         <option value="Lớp 12">Lớp 12</option>
                                     </optgroup>
-                                    <optgroup label="Trung học Cơ sở (THCS)">
+                                    <optgroup label="Trung học Cơ sở">
                                         <option value="Lớp 6">Lớp 6</option>
                                         <option value="Lớp 7">Lớp 7</option>
                                         <option value="Lớp 8">Lớp 8</option>
                                         <option value="Lớp 9">Lớp 9</option>
                                     </optgroup>
                                 </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-indigo-500 transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></div>
+                                <ChevronRight className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
                               </div>
                           </div>
                       </div>
 
-                      <div className="space-y-3">
-                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5 ml-1"><Layers className="w-3.5 h-3.5" /> Mô hình Sư phạm</label>
+                      <div className="space-y-1.5 pt-2">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Chiến lược Sư phạm</label>
                           <div className="relative group">
-                            <select 
-                                className="w-full p-4 pl-12 rounded-xl border-2 border-indigo-50 bg-indigo-50/30 text-sm font-bold text-indigo-900 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer hover:bg-indigo-50/50 appearance-none"
-                                value={pedagogy}
-                                onChange={(e) => setPedagogy(e.target.value)}
-                            >
+                            <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer" value={pedagogy} onChange={(e) => setPedagogy(e.target.value)}>
                                 {Object.entries(PEDAGOGY_MODELS).map(([key, value]) => (
                                     <option key={key} value={key}>{value.name}</option>
                                 ))}
                             </select>
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500"><Sparkles className="w-5 h-5" /></div>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-300 pointer-events-none group-hover:text-indigo-600 transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></div>
+                            <ChevronRight className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
                           </div>
-                          <p className="text-xs text-slate-500 pl-2 italic">ℹ️ {PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.desc}</p>
+                          <p className="text-[10px] text-slate-400 italic pl-1 flex items-center gap-1"><Info className="w-3 h-3" /> {PEDAGOGY_MODELS[pedagogy as keyof typeof PEDAGOGY_MODELS]?.desc}</p>
                       </div>
+                  </div>
 
-                      {/* File Dropzone */}
-                      <label className={`relative overflow-hidden flex flex-col items-center justify-center w-full h-48 rounded-2xl border-2 border-dashed transition-all cursor-pointer group ${state.file ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/10'}`}>
-                          <div className="flex flex-col items-center justify-center text-center p-4 z-10 transition-transform duration-300 group-hover:scale-105">
+                  {/* Card 3: Upload & Action */}
+                  <div className="col-span-1 md:col-span-2">
+                      <label className={`relative flex flex-col items-center justify-center w-full h-40 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden group ${state.file ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300 hover:border-indigo-400 hover:bg-white'}`}>
+                          <div className="flex flex-col items-center justify-center text-center z-10 transition-transform duration-300 group-hover:scale-105">
                               {state.file ? (
-                                  <div className="flex flex-col items-center gap-3">
-                                      <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-100"><FileCheck className="w-7 h-7" /></div>
-                                      <div>
-                                        <p className="font-bold text-indigo-900 text-base">{state.file.name}</p>
-                                        <p className="text-xs text-indigo-500 font-medium bg-indigo-50 px-3 py-1 rounded-full mt-2 inline-block">Đã sẵn sàng xử lý</p>
-                                      </div>
-                                  </div>
+                                  <>
+                                    <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-2 shadow-sm"><FileCheck className="w-6 h-6" /></div>
+                                    <p className="font-bold text-indigo-900 text-sm">{state.file.name}</p>
+                                    <p className="text-[10px] text-indigo-500">Sẵn sàng xử lý</p>
+                                  </>
                               ) : (
-                                  <div className="flex flex-col items-center gap-3">
-                                      <div className="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors"><FileUp className="w-7 h-7" /></div>
-                                      <div>
-                                        <p className="font-bold text-slate-600 text-base">Nhấn để chọn giáo án (.docx)</p>
-                                        <p className="text-xs text-slate-400 mt-1">hoặc kéo thả file vào đây</p>
-                                      </div>
-                                  </div>
+                                  <>
+                                    <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-indigo-50 group-hover:text-indigo-500"><FileUp className="w-6 h-6" /></div>
+                                    <p className="font-bold text-slate-600 text-sm">Chọn giáo án (.docx)</p>
+                                    <p className="text-[10px] text-slate-400">hoặc kéo thả vào đây</p>
+                                  </>
                               )}
                           </div>
                           <input type="file" accept=".docx" className="hidden" onChange={handleFileChange} />
                       </label>
 
-                      {/* Action Button */}
                       <button 
                         disabled={!state.file || state.isProcessing} 
                         onClick={handleAnalyze} 
-                        className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-indigo-200 transform active:scale-[0.98] ${
+                        className={`mt-4 w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
                             !state.file || state.isProcessing 
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' 
-                            : 'bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 text-white hover:shadow-indigo-500/40 bg-[length:200%_auto] hover:bg-right transition-all duration-500'
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
+                            : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-indigo-500/30'
                         }`}
                       >
-                        {state.isProcessing ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang thiết kế nội dung...</>) : (<><Wand2 className="w-5 h-5" /> Kích hoạt AI & Tích hợp ngay</>)}
+                        {state.isProcessing ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang xử lý...</>) : (<><Wand2 className="w-4 h-4" /> Kích hoạt AI</>)}
                       </button>
                   </div>
               </div>
             )}
 
+            {/* Smart Editor & Result Steps */}
             {state.step === 'review' && state.generatedContent && (
                <SmartEditor initialContent={state.generatedContent} onConfirm={handleFinalizeAndDownload} onCancel={() => setState(prev => ({ ...prev, step: 'upload', generatedContent: null }))} />
             )}
             
             {state.step === 'done' && state.result && (
-              <div className="bg-white rounded-3xl p-12 shadow-[0_20px_50px_rgb(0,0,0,0.1)] border border-white flex flex-col items-center text-center animate-fade-in-up">
-                  <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-100 ring-8 ring-emerald-50/50"><Sparkles className="w-12 h-12" /></div>
-                  <h3 className="text-3xl font-bold text-slate-800 mb-2">Tuyệt vời!</h3>
-                  <p className="text-slate-500 mb-8 max-w-md mx-auto text-sm leading-relaxed">Giáo án của thầy/cô đã được tích hợp năng lực {mode === 'NAI' ? 'AI' : 'Số'} chuẩn GDPT 2018 thành công.</p>
+              <div className="bg-white rounded-2xl p-8 shadow-xl shadow-green-500/10 border border-green-100 text-center animate-fade-in-up">
+                  <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-4 mx-auto ring-8 ring-green-50/50"><Sparkles className="w-10 h-10" /></div>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-2">Thành công!</h3>
+                  <p className="text-slate-500 mb-6 text-sm">Giáo án đã được tích hợp năng lực {mode === 'NAI' ? 'AI' : 'Số'} chuẩn GDPT 2018.</p>
                   
-                  <div className="flex gap-4">
-                      <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-6 py-3.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200 transition-colors">Làm bài khác</button>
-                      <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-transform hover:-translate-y-1"><Download className="w-4 h-4" /> Tải giáo án về máy</button>
+                  <div className="flex justify-center gap-3">
+                      <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-5 py-2.5 rounded-lg font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm lại</button>
+                      <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-green-700 shadow-lg shadow-green-200"><Download className="w-4 h-4" /> Tải về ngay</button>
                   </div>
               </div>
             )}
           </div>
           
-          {/* RIGHT PANEL: TERMINAL & INFO */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
-             {/* Terminal Card */}
-             <div className="bg-[#1e1e2e] rounded-3xl p-6 shadow-2xl shadow-slate-400/20 flex flex-col h-[420px] border border-slate-800 relative overflow-hidden group">
-                {/* Terminal Header */}
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700/50">
-                    <div className="flex items-center gap-2.5">
-                       <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                       <span className="text-slate-300 text-xs font-bold uppercase tracking-wider font-mono">AI Secure Core</span>
+          {/* RIGHT: LIVE TERMINAL & INFO (COMPACT STYLE) */}
+          <div className="lg:col-span-4 space-y-4">
+             {/* Terminal */}
+             <div className="bg-slate-900 rounded-2xl p-5 shadow-xl shadow-slate-900/10 border border-slate-800 flex flex-col h-[320px] relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-50"></div>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                       <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                       <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider font-mono">System Core</span>
                     </div>
-                    <div className="flex gap-2">
-                       <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80 hover:bg-rose-500 transition-colors"></div>
-                       <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80 hover:bg-amber-500 transition-colors"></div>
-                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 hover:bg-emerald-500 transition-colors"></div>
-                    </div>
+                    <div className="flex gap-1.5"><div className="w-2 h-2 rounded-full bg-slate-700"></div><div className="w-2 h-2 rounded-full bg-slate-700"></div></div>
                 </div>
                 
-                {/* Terminal Logs */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 font-mono text-[11px] leading-relaxed pr-2">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 font-mono text-[10px] leading-relaxed">
                    {state.logs.length === 0 ? (
-                     <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-60">
-                        <Cpu className="w-10 h-10 mb-3 animate-pulse" />
-                        <p>Hệ thống sẵn sàng...</p>
+                     <div className="h-full flex flex-col items-center justify-center text-slate-700">
+                        <p>Waiting for command...</p>
                      </div>
                    ) : (
                      state.logs.map((log, i) => (
-                       <div key={i} className="flex gap-3 animate-fade-in-left group/log">
-                         <span className="text-slate-600 shrink-0 select-none group-hover/log:text-slate-500 transition-colors">➜</span>
-                         <span className={`${log.includes("❌") ? "text-rose-400 font-bold" : log.includes("✓") ? "text-emerald-400 font-bold" : log.includes("🚀") ? "text-amber-400 font-bold" : "text-indigo-200"}`}>
+                       <div key={i} className="flex gap-2 animate-fade-in-left">
+                         <span className="text-slate-600 shrink-0">➜</span>
+                         <span className={`${log.includes("❌") ? "text-rose-400" : log.includes("✓") ? "text-emerald-400" : "text-indigo-200"}`}>
                            {log.replace("✓ ", "").replace("🚀 ", "")}
                          </span>
                        </div>
                      ))
                    )}
-                   {state.isProcessing && (
-                      <div className="flex gap-2 animate-pulse pl-6">
-                        <span className="w-2 h-4 bg-indigo-500 block"></span>
-                      </div>
-                   )}
+                   {state.isProcessing && <div className="w-1.5 h-3 bg-indigo-500 animate-pulse mt-1 ml-4"></div>}
                 </div>
              </div>
              
-             {/* Author Card */}
-             <div className="bg-white/60 backdrop-blur-md rounded-3xl p-6 shadow-sm border border-white flex-1 flex flex-col gap-4">
-                <div className="flex items-center gap-2 mb-2">
-                   <div className="p-2 bg-rose-50 rounded-lg text-rose-500"><GraduationCap className="w-5 h-5" /></div>
-                   <h4 className="font-bold text-sm text-slate-800 uppercase tracking-wide">Thông tin bản quyền</h4>
-                </div>
-                
-                <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-                   <div className="flex justify-between items-start">
-                      <div>
-                         <p className="text-xs font-bold text-indigo-900 mb-1">Tác giả: Đặng Mạnh Hùng</p>
-                         <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Giáo viên Trường THPT Lý Nhân Tông</p>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                         <Info className="w-4 h-4" />
-                      </div>
+             {/* Info Card */}
+             <div className="bg-white/60 backdrop-blur-md rounded-2xl p-5 shadow-sm border border-white flex-1">
+                <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2"><GraduationCap className="w-4 h-4" /> Bản quyền</h4>
+                <div className="flex items-start gap-3">
+                   <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-100">GV</div>
+                   <div>
+                      <p className="text-sm font-bold text-slate-800">Đặng Mạnh Hùng</p>
+                      <p className="text-[11px] text-slate-500">THPT Lý Nhân Tông</p>
+                      <p className="text-[10px] text-indigo-500 mt-1 font-mono">097 8386 357</p>
                    </div>
-                   <div className="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2 text-[11px] text-slate-500 font-medium">
-                      <Phone className="w-3 h-3 text-indigo-500" /> 097 8386 357
-                   </div>
-                </div>
-
-                <div className="mt-auto text-center">
-                   <p className="text-[10px] text-slate-400 leading-relaxed">
-                      Sản phẩm được phát triển nhằm hỗ trợ giáo viên chuyển đổi số theo chương trình GDPT 2018. <br/>
-                      <span className="text-indigo-400 font-bold">Phiên bản: {APP_VERSION}</span>
-                   </p>
                 </div>
              </div>
           </div>
         </div>
-      </div>
+      </main>
 
-      <div className="w-full text-center border-t border-slate-100 pt-6">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest hover:text-indigo-500 transition-colors cursor-default">© 2026 NLS Integrator Pro</p>
-      </div>
+      <footer className="text-center mt-auto pt-6">
+          <p className="text-[10px] text-slate-400 font-medium">© 2026 NLS Integrator Pro. All rights reserved.</p>
+      </footer>
       
-      {/* CSS Animations */}
       <style>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
         .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
-        .animate-fade-in-left { animation: fadeInLeft 0.3s ease-out forwards; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 10px; }
       `}</style>
