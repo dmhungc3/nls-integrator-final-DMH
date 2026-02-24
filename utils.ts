@@ -37,14 +37,18 @@ export const extractTextFromDocx = async (file: File): Promise<string> => {
   });
 };
 
-// 4. HÀM TẠO PROMPT (CHỈ ĐẠO AI TỔNG HỢP LIST)
+// 4. HÀM TẠO PROMPT (FIX LỖI JSON TUYỆT ĐỐI)
 export const createIntegrationTextPrompt = (text: string, subject: string, grade: string, mode: 'NLS' | 'NAI') => {
   const strategy = SUBJECT_STRATEGIES[subject] || "Tích hợp công nghệ giáo dục phổ thông hiệu quả.";
 
   return `
-  Đóng vai Tổ trưởng chuyên môn và Giáo viên bộ môn ${subject} giỏi.
-  BỐI CẢNH: Soạn giáo án điện tử theo định hướng GDPT 2018 cho HS lớp ${grade}.
+  BỐI CẢNH: Soạn giáo án điện tử theo định hướng GDPT 2018 cho HS lớp ${grade} môn ${subject}.
   CHIẾN LƯỢC: "${strategy}"
+
+  *** CRITICAL INSTRUCTION (BẮT BUỘC): ***
+  - ONLY return valid JSON. DO NOT write any introduction, explanation, or conversational text.
+  - DO NOT use markdown code blocks (\`\`\`json). Just the raw JSON string.
+  - Escape all double quotes within the content.
 
   === NHIỆM VỤ 1: QUÉT HOẠT ĐỘNG (CHI TIẾT) ===
   - Rà soát toàn bộ bài dạy (cả trong bảng và văn bản).
@@ -59,24 +63,17 @@ export const createIntegrationTextPrompt = (text: string, subject: string, grade
     "- Năng lực sử dụng GeoGebra để vẽ đồ thị hàm số."
     "- Năng lực khai thác thông tin từ bảng số liệu Excel."
 
-  === QUY TẮC ĐỊNH DẠNG (BẮT BUỘC) ===
-  1. KHÔNG dùng dấu sao (**), ngoặc kép (") trong nội dung.
-  2. KHÔNG viết tiêu đề thừa (hệ thống tự thêm "👉 Tích hợp NLS:").
-  3. Mọi ý trong phần mục tiêu phải bắt đầu bằng "- ".
-
-  === MẪU ĐẦU RA (JSON) ===
+  === CẤU TRÚC JSON ĐẦU RA ===
   {
     "objectives_addition": "- [Năng lực số 1...]\\n- [Năng lực số 2...]\\n- [Năng lực số 3...]",
-    
     "materials_addition": "",
-    
     "activities_enhancement": [
       { 
-        "activity_name": "[Tên hoạt động 1]", 
+        "activity_name": "[Tên hoạt động 1 trong bài]", 
         "enhanced_content": "- Công cụ: [Tên]\\n- GV: [Hướng dẫn]\\n- HS: [Thực hiện]" 
       },
       { 
-        "activity_name": "[Tên hoạt động 2]", 
+        "activity_name": "[Tên hoạt động 2 trong bài]", 
         "enhanced_content": "- Công cụ: [Tên]\\n- GV: [Hướng dẫn]\\n- HS: [Thực hiện]" 
       }
     ]
@@ -84,7 +81,7 @@ export const createIntegrationTextPrompt = (text: string, subject: string, grade
 
   NỘI DUNG GIÁO ÁN GỐC:
   """
-  ${text.substring(0, 18000)}
+  ${text.substring(0, 15000)}
   """
   `;
 };

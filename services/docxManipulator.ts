@@ -23,7 +23,7 @@ export const injectContentIntoDocx = async (
 
         // --- HÀM 1: SAO CHÉP PHONG CÁCH (FONT & SIZE) ---
         const detectStyle = (xml: string, index: number) => {
-            const chunk = xml.substring(Math.max(0, index - 3000), index); // Quét rộng hơn chút để tìm style
+            const chunk = xml.substring(Math.max(0, index - 3000), index); 
             
             // Tìm cỡ chữ (w:sz)
             const szMatch = chunk.match(/<w:sz\s+w:val=["'](\d+)["'][^>]*\/>/g);
@@ -101,7 +101,8 @@ export const injectContentIntoDocx = async (
 
         // --- 3. CHÈN NĂNG LỰC (VÀO MỤC 2. NĂNG LỰC) ---
         const objectiveLines = content.objectives_addition.split('\n').filter(l => l.trim());
-        const keywords = ["Phẩm chất năng lực", "2. Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt"];
+        // Từ khóa mở rộng để bắt dính nhiều giáo án hơn
+        const keywords = ["Phẩm chất năng lực", "2. Phát triển năng lực", "2. Năng lực", "2. năng lực", "II. MỤC TIÊU", "II. Mục tiêu", "Năng lực cần đạt", "3. Năng lực"];
         
         const findAllIndices = (xml: string, keyword: string) => {
             const regex = new RegExp(keyword.replace(/\./g, "\\."), "gi");
@@ -115,8 +116,13 @@ export const injectContentIntoDocx = async (
         for (const key of keywords) {
             const found = findAllIndices(docXml, key);
             if (found.length > 0) {
-                if (found.length >= objectiveLines.length) { targetIndices = found; break; }
-                if (targetIndices.length === 0) targetIndices = found; 
+                // Ưu tiên từ khóa tìm thấy đầu tiên có vẻ hợp lý
+                if (targetIndices.length === 0) targetIndices = found;
+                // Nếu tìm thấy khớp số lượng tiết (nâng cao)
+                if (found.length >= objectiveLines.length) { 
+                    targetIndices = found; 
+                    break; 
+                }
             }
         }
 
@@ -126,10 +132,20 @@ export const injectContentIntoDocx = async (
         if (targetIndices.length > 0) {
              reverseIndices.forEach((index, reverseI) => {
                  const realIndex = targetIndices.length - 1 - reverseI;
-                 if (realIndex < objectiveLines.length) {
-                     const contentToInsert = objectiveLines[realIndex];
-                     
-                     // Style Cloning tại vị trí chèn
+                 // Chèn nội dung tổng hợp vào vị trí tìm thấy
+                 // Nếu chỉ có 1 vị trí Năng lực (thường thấy), chèn tất cả vào đó.
+                 // Nếu có nhiều tiết (nhiều mục Năng lực), chia đều.
+                 
+                 let contentToInsert = "";
+                 if (targetIndices.length === 1) {
+                     // Nếu chỉ có 1 mục năng lực chung -> Chèn hết
+                     contentToInsert = content.objectives_addition;
+                 } else if (realIndex < objectiveLines.length) {
+                     // Nếu có nhiều mục -> Chia theo tiết
+                     contentToInsert = objectiveLines[realIndex];
+                 }
+
+                 if (contentToInsert) {
                      const currentStyle = detectStyle(newXml, index);
                      const xmlBlock = createXmlBlock(contentToInsert, currentStyle);
                      
@@ -144,7 +160,7 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            // Fallback
+            // Fallback: Chèn vào đầu
             const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: null, fontTag: "" });
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
@@ -162,13 +178,13 @@ export const injectContentIntoDocx = async (
                 let safeName = escapeXml(item.activity_name);
                 let actIndex = docXml.indexOf(safeName); 
                 
+                // Thử tìm biến thể ngắn hơn nếu tên dài không khớp
                 if (actIndex === -1 && safeName.includes(":")) {
                     safeName = safeName.split(":")[0];
                     actIndex = docXml.indexOf(safeName);
                 }
 
                 if (actIndex !== -1) {
-                     // Style Cloning tại vị trí hoạt động
                      const currentStyle = detectStyle(docXml, actIndex);
                      const closingTag = "</w:p>";
                      const insertPos = docXml.indexOf(closingTag, actIndex);
