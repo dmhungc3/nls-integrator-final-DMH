@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileUp, Wand2, FileCheck, Download,
   BookOpen, GraduationCap, Sparkles, ChevronRight,
-  Smartphone, Zap, Layers, Cpu, Phone, Info, ShieldCheck, Key,
-  Activity, AlertCircle
+  Activity, Cpu, Info, ShieldCheck, Key, CheckCircle2
 } from 'lucide-react';
 import { AppState, SubjectType, GradeType, GeneratedNLSContent } from './types';
 import { extractTextFromDocx, createIntegrationTextPrompt, PEDAGOGY_MODELS } from './utils';
@@ -14,7 +13,7 @@ import SmartEditor from './components/SmartEditor';
 type IntegrationMode = 'NLS' | 'NAI';
 
 const App: React.FC = () => {
-  const APP_VERSION = "v3.0 PRO (Futuristic UI)"; 
+  const APP_VERSION = "v3.1 PRO (Sticky UI)"; 
   
   const [pedagogy, setPedagogy] = useState<string>('DEFAULT');
   const [state, setState] = useState<AppState>({
@@ -99,39 +98,36 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-10 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-10 overflow-x-hidden selection:bg-indigo-100 selection:text-indigo-900">
       
       {/* Background Ambience */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-300/20 blur-[150px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-300/20 blur-[150px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-300/10 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-300/10 blur-[120px]" />
       </div>
 
       {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-50">
                       <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
                       <h1 className="font-bold text-slate-800 text-lg tracking-tight leading-none">NLS Integrator <span className="text-indigo-600">Pro</span></h1>
-                      <p className="text-[10px] text-slate-500 font-medium">AI Education Assistant</p>
+                      <p className="text-[10px] text-slate-500 font-medium tracking-wide">AI Education Assistant</p>
                   </div>
               </div>
 
               <div className="flex items-center gap-3">
                   {isKeySaved ? (
-                      <div className="flex items-center gap-2 bg-emerald-50/80 px-3 py-1.5 rounded-full border border-emerald-100 shadow-sm">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                          </span>
+                      <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 shadow-sm">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                           <span className="text-emerald-700 font-bold text-[11px]">Sẵn sàng</span>
                           <button onClick={handleEditKey} className="ml-1 text-[10px] text-slate-400 hover:text-indigo-600 underline">Đổi Key</button>
                       </div>
                   ) : (
-                      <div className="flex gap-2 bg-white/50 p-1 rounded-lg border border-slate-200">
+                      <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200">
                         <input type="password" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} placeholder="Nhập API Key..." className="text-xs px-2 outline-none w-32 bg-transparent" />
                         <button onClick={saveKeyToLocal} className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700">Lưu</button>
                       </div>
@@ -142,22 +138,22 @@ const App: React.FC = () => {
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         
-        {/* HERO SECTION */}
-        <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-slate-800 mb-2">Chuyển đổi số Giáo án <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">Tự động & Thông minh</span></h2>
-            <p className="text-slate-500 text-sm max-w-2xl mx-auto">Hệ thống sử dụng AI để tích hợp năng lực số chuẩn GDPT 2018 vào từng hoạt động dạy học.</p>
+        {/* HERO */}
+        <div className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-800">Bảng điều khiển</h2>
+            <p className="text-slate-500 text-xs">Quản lý quy trình tích hợp năng lực số</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* LEFT: CONTROL CENTER (BENTO GRID STYLE) */}
-          <div className="lg:col-span-8 space-y-4">
+          {/* LEFT: CONTROL CENTER */}
+          <div className="lg:col-span-8 space-y-6">
             
             {state.step === 'upload' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up">
                   
                   {/* Card 1: Chế độ */}
-                  <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center justify-between">
+                  <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                           <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600"><Activity className="w-5 h-5" /></div>
                           <div>
@@ -171,18 +167,18 @@ const App: React.FC = () => {
                       </div>
                   </div>
 
-                  {/* Card 2: Thông tin chuyên môn (Grid Input) */}
-                  <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-5">
-                      <div className="flex items-center gap-2 mb-2">
+                  {/* Card 2: Thông tin chuyên môn */}
+                  <div className="col-span-1 md:col-span-2 bg-white rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-slate-100 space-y-5">
+                      <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-2">
                           <BookOpen className="w-4 h-4 text-indigo-500" />
-                          <span className="text-sm font-bold text-slate-700 uppercase tracking-wide">Thông tin Giáo án</span>
+                          <span className="text-sm font-bold text-slate-700 uppercase tracking-wide">Cấu hình Giáo án</span>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-5">
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Môn học</label>
                               <div className="relative group">
-                                <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
+                                <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer hover:bg-white" value={state.subject} onChange={(e) => setState(prev => ({...prev, subject: e.target.value as SubjectType}))}>
                                     <option value="">-- Chọn môn --</option>
                                     <optgroup label="Môn Bắt buộc">
                                         <option value="Toán">Toán học</option>
@@ -213,7 +209,7 @@ const App: React.FC = () => {
                           <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Khối lớp</label>
                               <div className="relative group">
-                                <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
+                                <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer hover:bg-white" value={state.grade} onChange={(e) => setState(prev => ({...prev, grade: e.target.value as GradeType}))}>
                                     <option value="">-- Chọn khối --</option>
                                     <optgroup label="Trung học Phổ thông">
                                         <option value="Lớp 10">Lớp 10</option>
@@ -235,7 +231,7 @@ const App: React.FC = () => {
                       <div className="space-y-1.5 pt-2">
                           <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Chiến lược Sư phạm</label>
                           <div className="relative group">
-                            <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer" value={pedagogy} onChange={(e) => setPedagogy(e.target.value)}>
+                            <select className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer hover:bg-white" value={pedagogy} onChange={(e) => setPedagogy(e.target.value)}>
                                 {Object.entries(PEDAGOGY_MODELS).map(([key, value]) => (
                                     <option key={key} value={key}>{value.name}</option>
                                 ))}
@@ -248,17 +244,17 @@ const App: React.FC = () => {
 
                   {/* Card 3: Upload & Action */}
                   <div className="col-span-1 md:col-span-2">
-                      <label className={`relative flex flex-col items-center justify-center w-full h-40 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden group ${state.file ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300 hover:border-indigo-400 hover:bg-white'}`}>
+                      <label className={`relative flex flex-col items-center justify-center w-full h-40 rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden group bg-white ${state.file ? 'border-indigo-500 bg-indigo-50/10' : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/5'}`}>
                           <div className="flex flex-col items-center justify-center text-center z-10 transition-transform duration-300 group-hover:scale-105">
                               {state.file ? (
                                   <>
                                     <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-2 shadow-sm"><FileCheck className="w-6 h-6" /></div>
                                     <p className="font-bold text-indigo-900 text-sm">{state.file.name}</p>
-                                    <p className="text-[10px] text-indigo-500">Sẵn sàng xử lý</p>
+                                    <p className="text-[10px] text-indigo-500 font-medium">Sẵn sàng xử lý</p>
                                   </>
                               ) : (
                                   <>
-                                    <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-indigo-50 group-hover:text-indigo-500"><FileUp className="w-6 h-6" /></div>
+                                    <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-2 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors"><FileUp className="w-6 h-6" /></div>
                                     <p className="font-bold text-slate-600 text-sm">Chọn giáo án (.docx)</p>
                                     <p className="text-[10px] text-slate-400">hoặc kéo thả vào đây</p>
                                   </>
@@ -270,43 +266,44 @@ const App: React.FC = () => {
                       <button 
                         disabled={!state.file || state.isProcessing} 
                         onClick={handleAnalyze} 
-                        className={`mt-4 w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
+                        className={`mt-4 w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-200/50 active:scale-[0.98] ${
                             !state.file || state.isProcessing 
                             ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
-                            : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-indigo-500/30'
+                            : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-indigo-500/40 hover:-translate-y-0.5'
                         }`}
                       >
-                        {state.isProcessing ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang xử lý...</>) : (<><Wand2 className="w-4 h-4" /> Kích hoạt AI</>)}
+                        {state.isProcessing ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang thiết kế...</>) : (<><Wand2 className="w-4 h-4" /> Kích hoạt AI</>)}
                       </button>
                   </div>
               </div>
             )}
 
-            {/* Smart Editor & Result Steps */}
+            {/* Smart Editor */}
             {state.step === 'review' && state.generatedContent && (
                <SmartEditor initialContent={state.generatedContent} onConfirm={handleFinalizeAndDownload} onCancel={() => setState(prev => ({ ...prev, step: 'upload', generatedContent: null }))} />
             )}
             
+            {/* Result */}
             {state.step === 'done' && state.result && (
-              <div className="bg-white rounded-2xl p-8 shadow-xl shadow-green-500/10 border border-green-100 text-center animate-fade-in-up">
-                  <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-4 mx-auto ring-8 ring-green-50/50"><Sparkles className="w-10 h-10" /></div>
+              <div className="bg-white rounded-2xl p-8 shadow-xl shadow-emerald-500/10 border border-emerald-100 text-center animate-fade-in-up">
+                  <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-4 mx-auto ring-8 ring-emerald-50/50"><Sparkles className="w-10 h-10" /></div>
                   <h3 className="text-2xl font-bold text-slate-800 mb-2">Thành công!</h3>
                   <p className="text-slate-500 mb-6 text-sm">Giáo án đã được tích hợp năng lực {mode === 'NAI' ? 'AI' : 'Số'} chuẩn GDPT 2018.</p>
                   
                   <div className="flex justify-center gap-3">
                       <button onClick={() => setState(prev => ({ ...prev, step: 'upload', result: null, generatedContent: null }))} className="px-5 py-2.5 rounded-lg font-bold text-sm text-slate-600 hover:bg-slate-50 border border-slate-200">Làm lại</button>
-                      <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-green-700 shadow-lg shadow-green-200"><Download className="w-4 h-4" /> Tải về ngay</button>
+                      <button onClick={() => { if (state.result) { const url = URL.createObjectURL(state.result.blob); const a = document.createElement('a'); a.href = url; a.download = state.result.fileName; a.click(); } }} className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 hover:-translate-y-0.5 transition-all"><Download className="w-4 h-4" /> Tải về ngay</button>
                   </div>
               </div>
             )}
           </div>
           
-          {/* RIGHT: LIVE TERMINAL & INFO (COMPACT STYLE) */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* RIGHT: LIVE TERMINAL & INFO (STICKY) */}
+          <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
              {/* Terminal */}
-             <div className="bg-slate-900 rounded-2xl p-5 shadow-xl shadow-slate-900/10 border border-slate-800 flex flex-col h-[320px] relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-50"></div>
-                <div className="flex items-center justify-between mb-3">
+             <div className="bg-[#0f172a] rounded-2xl p-5 shadow-2xl shadow-slate-900/10 border border-slate-800 flex flex-col h-[400px] relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-75"></div>
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                        <Cpu className="w-3.5 h-3.5 text-indigo-400" />
                        <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider font-mono">System Core</span>
@@ -314,16 +311,17 @@ const App: React.FC = () => {
                     <div className="flex gap-1.5"><div className="w-2 h-2 rounded-full bg-slate-700"></div><div className="w-2 h-2 rounded-full bg-slate-700"></div></div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 font-mono text-[10px] leading-relaxed">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 font-mono text-[11px] leading-relaxed pr-2">
                    {state.logs.length === 0 ? (
-                     <div className="h-full flex flex-col items-center justify-center text-slate-700">
+                     <div className="h-full flex flex-col items-center justify-center text-slate-700/50">
+                        <Cpu className="w-8 h-8 mb-2 opacity-50" />
                         <p>Waiting for command...</p>
                      </div>
                    ) : (
                      state.logs.map((log, i) => (
                        <div key={i} className="flex gap-2 animate-fade-in-left">
-                         <span className="text-slate-600 shrink-0">➜</span>
-                         <span className={`${log.includes("❌") ? "text-rose-400" : log.includes("✓") ? "text-emerald-400" : "text-indigo-200"}`}>
+                         <span className="text-slate-600 shrink-0 select-none">➜</span>
+                         <span className={`${log.includes("❌") ? "text-rose-400 font-bold" : log.includes("✓") ? "text-emerald-400 font-bold" : log.includes("🚀") ? "text-amber-400 font-bold" : "text-indigo-200"}`}>
                            {log.replace("✓ ", "").replace("🚀 ", "")}
                          </span>
                        </div>
@@ -334,28 +332,28 @@ const App: React.FC = () => {
              </div>
              
              {/* Info Card */}
-             <div className="bg-white/60 backdrop-blur-md rounded-2xl p-5 shadow-sm border border-white flex-1">
-                <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2"><GraduationCap className="w-4 h-4" /> Bản quyền</h4>
-                <div className="flex items-start gap-3">
+             <div className="bg-white/80 backdrop-blur-md rounded-2xl p-5 shadow-sm border border-white flex flex-col gap-3">
+                <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wide flex items-center gap-2"><GraduationCap className="w-4 h-4" /> Bản quyền</h4>
+                <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
                    <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-100">GV</div>
                    <div>
                       <p className="text-sm font-bold text-slate-800">Đặng Mạnh Hùng</p>
-                      <p className="text-[11px] text-slate-500">THPT Lý Nhân Tông</p>
-                      <p className="text-[10px] text-indigo-500 mt-1 font-mono">097 8386 357</p>
+                      <p className="text-[10px] text-slate-500 uppercase font-medium">THPT Lý Nhân Tông</p>
                    </div>
+                </div>
+                <div className="text-center pt-1">
+                   <p className="text-[10px] text-slate-400">Hỗ trợ kỹ thuật: <span className="text-indigo-500 font-mono font-medium">097 8386 357</span></p>
                 </div>
              </div>
           </div>
         </div>
       </main>
-
-      <footer className="text-center mt-auto pt-6">
-          <p className="text-[10px] text-slate-400 font-medium">© 2026 NLS Integrator Pro. All rights reserved.</p>
-      </footer>
       
       <style>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
         .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+        .animate-fade-in-left { animation: fadeInLeft 0.3s ease-out forwards; }
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 10px; }
