@@ -52,8 +52,8 @@ export const injectContentIntoDocx = async (
           if (lines.length === 0) return "";
 
           // Style chung (Màu xanh dương đậm)
-          let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; 
-          let rPrBody = `<w:color w:val="2E74B5"/>`;
+          let rPrHeader = `<w:b/><w:color w:val="2E74B5"/>`; // Header: Đậm
+          let rPrBody = `<w:color w:val="2E74B5"/>`; // Body: Thường
 
           // Áp dụng style sao chép
           if (style.fontSize) {
@@ -77,7 +77,6 @@ export const injectContentIntoDocx = async (
 
           // 2. Tạo các dòng Liệt kê
           lines.forEach(line => {
-              // Lọc sạch rác
               let cleanLine = line
                   .replace(/\*\*/g, "") 
                   .replace(/__/, "")
@@ -144,7 +143,6 @@ export const injectContentIntoDocx = async (
                  }
              });
         } else {
-            // Fallback
             const xmlBlock = createXmlBlock(content.objectives_addition, { fontSize: null, fontTag: "" });
             if (xmlBlock) {
                 const bodyTag = "<w:body>";
@@ -156,59 +154,67 @@ export const injectContentIntoDocx = async (
         }
         docXml = newXml;
 
-        // --- 4. CHÈN HOẠT ĐỘNG (TÌM KIẾM THÔNG MINH - SMART SEARCH) ---
-        // Phần này được nâng cấp để tìm được tên hoạt động ngay cả khi sai lệch
+        // --- 4. CHÈN HOẠT ĐỘNG (THUẬT TOÁN TÌM KIẾM ĐA TẦNG) ---
         if (Array.isArray(content.activities_enhancement)) {
             content.activities_enhancement.forEach(item => {
                 let safeName = escapeXml(item.activity_name);
                 let actIndex = -1;
 
-                // CHIẾN LƯỢC 1: Tìm chính xác tuyệt đối
+                // TẦNG 1: Tìm chính xác tuyệt đối
                 actIndex = docXml.indexOf(safeName);
 
-                // CHIẾN LƯỢC 2: Thử bỏ phần sau dấu hai chấm (VD: "Hoạt động 1: Mở đầu" -> tìm "Hoạt động 1")
-                if (actIndex === -1 && safeName.includes(":")) {
-                    let shortName = safeName.split(":")[0].trim();
-                    actIndex = docXml.indexOf(shortName);
-                }
-                
-                // CHIẾN LƯỢC 3: Thử tìm theo từ khóa cốt lõi (VD: "Khởi động", "Luyện tập")
+                // TẦNG 2: Tìm theo từ khóa cốt lõi (Khởi động, Luyện tập...)
                 if (actIndex === -1) {
                     const coreKeywords = ["Khởi động", "Hình thành kiến thức", "Luyện tập", "Vận dụng", "Mở đầu", "Kết nối"];
+                    
                     for (const key of coreKeywords) {
                         if (safeName.includes(key)) {
-                            // Tìm từ khóa này trong file word (viết hoa hoặc thường)
-                            // Lưu ý: indexOf phân biệt hoa thường, nên ta thử tìm chính xác từ khóa đó trong tên hoạt động
-                            const realKeyInDoc = key.toUpperCase(); // Thử tìm dạng viết hoa (VD: KHỞI ĐỘNG)
-                            let tempIndex = docXml.indexOf(realKeyInDoc);
-                            if (tempIndex === -1) tempIndex = docXml.indexOf(key); // Tìm dạng thường
+                            const upperKey = key.toUpperCase(); // Ví dụ: LUYỆN TẬP
                             
-                            if (tempIndex !== -1) {
-                                actIndex = tempIndex;
-                                break;
+                            // ƯU TIÊN 1: Tìm Tiêu đề lớn (Viết hoa toàn bộ hoặc có chữ HOẠT ĐỘNG)
+                            // Tránh tìm nhầm vào các câu văn thường như "chuyển sang phần luyện tập"
+                            const headerVariants = [
+                                `HOẠT ĐỘNG ${upperKey}`, // HOẠT ĐỘNG LUYỆN TẬP
+                                `HOẠT ĐỘNG ${key}`,      // HOẠT ĐỘNG Luyện tập
+                                `${upperKey}`            // LUYỆN TẬP (Đứng một mình)
+                            ];
+
+                            for (const variant of headerVariants) {
+                                let idx = docXml.indexOf(variant);
+                                if (idx !== -1) {
+                                    actIndex = idx;
+                                    break;
+                                }
                             }
+
+                            // ƯU TIÊN 2: Nếu không thấy tiêu đề lớn, mới chấp nhận tìm từ khóa thường
+                            if (actIndex === -1) {
+                                actIndex = docXml.indexOf(key);
+                            }
+                            
+                            if (actIndex !== -1) break;
                         }
                     }
                 }
 
-                // CHIẾN LƯỢC 4: Tìm theo số thứ tự hoạt động (VD: "Hoạt động 1", "HĐ 1")
+                // TẦNG 3: Tìm theo số thứ tự (Hoạt động 1, HĐ 2...)
                 if (actIndex === -1) {
                      const matchNum = safeName.match(/\d+/);
                      if (matchNum) {
                          const num = matchNum[0];
-                         // Thử các biến thể phổ biến
                          const variants = [`Hoạt động ${num}`, `HĐ ${num}`, `HĐ${num}`, `Nhiệm vụ ${num}`];
                          for (const v of variants) {
-                             let tempIndex = docXml.indexOf(v);
-                             if (tempIndex === -1) tempIndex = docXml.indexOf(v.toUpperCase());
-                             if (tempIndex !== -1) {
-                                 actIndex = tempIndex;
+                             let idx = docXml.indexOf(v);
+                             if (idx === -1) idx = docXml.indexOf(v.toUpperCase());
+                             if (idx !== -1) {
+                                 actIndex = idx;
                                  break;
                              }
                          }
                      }
                 }
 
+                // TIẾN HÀNH CHÈN
                 if (actIndex !== -1) {
                      const currentStyle = detectStyle(docXml, actIndex);
                      const closingTag = "</w:p>";
